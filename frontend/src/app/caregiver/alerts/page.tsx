@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { BellRinging, DeviceMobile, Envelope, PhoneCall, SlidersHorizontal, WarningCircle } from '@phosphor-icons/react';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 export default function AlertsConsole() {
   const [threshold, setThreshold] = useState(3);
@@ -64,57 +65,65 @@ export default function AlertsConsole() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button 
-            onClick={() => toggleRoute('ui')}
-            className={`p-6 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${routes.ui ? 'border-tertiary bg-tertiary/10' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}
-          >
-            <div className={`p-3 rounded-full ${routes.ui ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
-              <BellRinging size={24} weight="fill"/>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">In-App Banner</h3>
-              <p className="text-sm text-on-surface-variant">Shows a red takeover screen on the Caregiver Panel.</p>
-            </div>
-          </button>
+          <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+            <button 
+              onClick={() => toggleRoute('ui')}
+              className={`w-full h-full p-6 rounded-2xl flex items-center gap-4 transition-all text-left ${routes.ui ? 'bg-tertiary/10' : ''}`}
+            >
+              <div className={`p-3 rounded-full ${routes.ui ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
+                <BellRinging size={24} weight="fill"/>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">In-App Banner</h3>
+                <p className="text-sm text-on-surface-variant">Shows a red takeover screen on the Caregiver Panel.</p>
+              </div>
+            </button>
+          </GlowCard>
 
-          <button 
-            onClick={() => toggleRoute('sms')}
-            className={`p-6 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${routes.sms ? 'border-tertiary bg-tertiary/10' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}
-          >
-            <div className={`p-3 rounded-full ${routes.sms ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
-              <DeviceMobile size={24} weight="fill"/>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">SMS Text Message</h3>
-              <p className="text-sm text-on-surface-variant">Sends an SMS to 555-0188.</p>
-            </div>
-          </button>
+          <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+            <button 
+              onClick={() => toggleRoute('sms')}
+              className={`w-full h-full p-6 rounded-2xl flex items-center gap-4 transition-all text-left ${routes.sms ? 'bg-tertiary/10' : ''}`}
+            >
+              <div className={`p-3 rounded-full ${routes.sms ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
+                <DeviceMobile size={24} weight="fill"/>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">SMS Text Message</h3>
+                <p className="text-sm text-on-surface-variant">Sends an SMS to 555-0188.</p>
+              </div>
+            </button>
+          </GlowCard>
 
-          <button 
-            onClick={() => toggleRoute('email')}
-            className={`p-6 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${routes.email ? 'border-tertiary bg-tertiary/10' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}
-          >
-            <div className={`p-3 rounded-full ${routes.email ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
-              <Envelope size={24} weight="fill"/>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">Email Alert</h3>
-              <p className="text-sm text-on-surface-variant">Emails yuki.care@clarivo.app.</p>
-            </div>
-          </button>
+          <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+            <button 
+              onClick={() => toggleRoute('email')}
+              className={`w-full h-full p-6 rounded-2xl flex items-center gap-4 transition-all text-left ${routes.email ? 'bg-tertiary/10' : ''}`}
+            >
+              <div className={`p-3 rounded-full ${routes.email ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
+                <Envelope size={24} weight="fill"/>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Email Alert</h3>
+                <p className="text-sm text-on-surface-variant">Emails yuki.care@clarivo.app.</p>
+              </div>
+            </button>
+          </GlowCard>
 
-          <button 
-            onClick={() => toggleRoute('call')}
-            className={`p-6 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${routes.call ? 'border-tertiary bg-tertiary/10' : 'border-outline-variant/20 hover:border-outline-variant/50'}`}
-          >
-            <div className={`p-3 rounded-full ${routes.call ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
-              <PhoneCall size={24} weight="fill"/>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">Automated Voice Call</h3>
-              <p className="text-sm text-on-surface-variant">Requires Emergency plan upgrade.</p>
-            </div>
-          </button>
+          <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+            <button 
+              onClick={() => toggleRoute('call')}
+              className={`w-full h-full p-6 rounded-2xl flex items-center gap-4 transition-all text-left ${routes.call ? 'bg-tertiary/10' : ''}`}
+            >
+              <div className={`p-3 rounded-full ${routes.call ? 'bg-tertiary text-on-tertiary' : 'bg-surface-variant text-on-surface-variant'}`}>
+                <PhoneCall size={24} weight="fill"/>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Automated Voice Call</h3>
+                <p className="text-sm text-on-surface-variant">Requires Emergency plan upgrade.</p>
+              </div>
+            </button>
+          </GlowCard>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Sun, Moon, SidebarSimple, Desktop, Gear } from '@phosphor-icons/react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 
 export default function PatientScreen() {
@@ -56,18 +57,22 @@ export default function PatientScreen() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-16 w-56 bg-surface-container-highest shadow-xl rounded-2xl p-2 border border-outline-variant/20 flex flex-col z-50 backdrop-blur-xl"
+                  className="absolute right-0 top-16 w-56 z-50"
                 >
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant px-3 py-2 mb-1">Settings</h4>
-                  <button 
-                    onClick={() => {
-                      setTheme(theme === 'dark' ? 'light' : 'dark');
-                    }}
-                    className="flex items-center gap-3 px-3 py-3 w-full hover:bg-surface-container-low rounded-xl transition-colors text-on-surface font-semibold text-sm"
-                  >
-                    {theme === 'dark' ? <Sun size={20} weight="bold" className="text-orange-400" /> : <Moon size={20} weight="bold" className="text-purple-500" />}
-                    {theme === 'dark' ? 'Enable Light Mode' : 'Enable Dark Mode'}
-                  </button>
+                  <GlowCard customSize glowColor="blue" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-xl rounded-2xl">
+                    <div className="p-2">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant px-3 py-2 mb-1">Settings</h4>
+                      <button 
+                        onClick={() => {
+                          setTheme(theme === 'dark' ? 'light' : 'dark');
+                        }}
+                        className="flex items-center gap-3 px-3 py-3 w-full hover:bg-surface-container-low rounded-xl transition-colors text-on-surface font-semibold text-sm"
+                      >
+                        {theme === 'dark' ? <Sun size={20} weight="bold" className="text-orange-400" /> : <Moon size={20} weight="bold" className="text-purple-500" />}
+                        {theme === 'dark' ? 'Enable Light Mode' : 'Enable Dark Mode'}
+                      </button>
+                    </div>
+                  </GlowCard>
                 </motion.div>
               )}
             </AnimatePresence>

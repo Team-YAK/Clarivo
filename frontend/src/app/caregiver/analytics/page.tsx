@@ -7,6 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Area, AreaChart
 } from 'recharts';
 import { ChartLineUp, Brain, TrendUp, Info, Heartbeat } from '@phosphor-icons/react';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 const radarData = [
   { subject: 'Meals / Food', A: 80, fullMark: 100 },
@@ -67,58 +68,63 @@ export default function DeepAnalytics() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
         {/* Distress Triggers Radar */}
-        <div className="bg-surface-container rounded-3xl p-6 border border-outline-variant/20 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg text-on-surface">Distress Triggers</h3>
-            <Info size={20} className="text-on-surface-variant cursor-help" />
+        <GlowCard customSize glowColor="red" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-3xl">
+          <div className="p-6 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-on-surface">Distress Triggers</h3>
+              <Info size={20} className="text-on-surface-variant cursor-help" />
+            </div>
+            <p className="text-sm text-on-surface-variant mb-6">Categorical distribution of high-frustration communication attempts over the selected period.</p>
+            <div className="flex-1 min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 600 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Distress Volume" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
+                  <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <p className="text-sm text-on-surface-variant mb-6">Categorical distribution of high-frustration communication attempts over the selected period.</p>
-          <div className="flex-1 min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 600 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Distress Volume" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
-                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        </GlowCard>
 
         {/* Vocabulary Efficiency */}
-        <div className="bg-surface-container rounded-3xl p-6 border border-outline-variant/20 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg text-on-surface">AI Learning Efficacy</h3>
-            <TrendUp size={20} className="text-primary" />
+        <GlowCard customSize glowColor="green" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-3xl">
+          <div className="p-6 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-on-surface">AI Learning Efficacy</h3>
+              <TrendUp size={20} className="text-primary" />
+            </div>
+            <p className="text-sm text-on-surface-variant mb-6">Tracking successful independent sentence generations vs. times the AI had to ask for clarification.</p>
+            <div className="flex-1 min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={vocabularyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorVerified" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorClarif" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis dataKey="month" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
+                  <Area type="monotone" dataKey="verified" name="Verified Syntax" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVerified)" />
+                  <Area type="monotone" dataKey="clarifications" name="Clarifications Required" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorClarif)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <p className="text-sm text-on-surface-variant mb-6">Tracking successful independent sentence generations vs. times the AI had to ask for clarification.</p>
-          <div className="flex-1 min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={vocabularyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorVerified" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorClarif" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                <XAxis dataKey="month" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
-                <Area type="monotone" dataKey="verified" name="Verified Syntax" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVerified)" />
-                <Area type="monotone" dataKey="clarifications" name="Clarifications Required" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorClarif)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        </GlowCard>
 
         {/* Behavioral Heatmap */}
-        <div className="bg-surface-container rounded-3xl p-6 border border-outline-variant/20 shadow-sm xl:col-span-2">
+        <GlowCard customSize glowColor="orange" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-3xl xl:col-span-2">
+          <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-bold text-lg text-on-surface">365-Day High Distress Heatmap</h3>
@@ -161,7 +167,8 @@ export default function DeepAnalytics() {
             <div className="w-3 h-3 bg-red-700 rounded-sm" />
             <span>More</span>
           </div>
-        </div>
+          </div>
+        </GlowCard>
       </div>
     </div>
   );

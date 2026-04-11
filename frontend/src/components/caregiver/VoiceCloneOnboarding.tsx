@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { cloneVoice } from '@/utils/caregiverApi';
 import { Microphone, UploadSimple, CheckCircle, SpinnerGap, Warning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 export default function VoiceCloneOnboarding() {
   const [file, setFile] = useState<File | null>(null);
@@ -38,7 +39,8 @@ export default function VoiceCloneOnboarding() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-8 bg-surface rounded-3xl shadow-sm border border-outline-variant/20">
+    <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-3xl w-full max-w-2xl mx-auto">
+      <div className="p-8">
       <div className="flex items-center gap-4 mb-6">
         <div className="w-12 h-12 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center">
           <Microphone size={24} weight="fill" />
@@ -135,6 +137,7 @@ export default function VoiceCloneOnboarding() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </GlowCard>
   );
 }

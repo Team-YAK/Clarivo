@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid 
 } from 'recharts';
 import { ChartLineUp, Brain, Calendar, TrendUp } from '@phosphor-icons/react';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 export default function InsightsDashboard() {
   const [insights, setInsights] = useState<any>(null);
@@ -71,74 +72,82 @@ export default function InsightsDashboard() {
 
       <div className="grid grid-cols-2 gap-6">
         {/* Sessions by Day */}
-        <div className="bg-surface-container border border-outline-variant/30 p-5 rounded-2xl">
-          <div className="flex items-center gap-2 mb-6">
-            <Calendar size={20} className="text-tertiary" />
-            <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider">Session Frequency</h3>
+        <GlowCard customSize glowColor="blue" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-6">
+              <Calendar size={20} className="text-tertiary" />
+              <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider">Session Frequency</h3>
+            </div>
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sessionsByDayData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis dataKey="name" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="sessions" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sessionsByDayData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                <XAxis dataKey="name" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Bar dataKey="sessions" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        </GlowCard>
 
         {/* Time of Day */}
-        <div className="bg-surface-container border border-outline-variant/30 p-5 rounded-2xl">
-          <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider mb-6">Time of Day</h3>
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={periodData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {periodData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-              </PieChart>
-            </ResponsiveContainer>
+        <GlowCard customSize glowColor="orange" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+          <div className="p-5">
+            <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider mb-6">Time of Day</h3>
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={periodData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {periodData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </GlowCard>
 
         {/* Mood Trend */}
-        <div className="bg-surface-container border border-outline-variant/30 p-5 rounded-2xl">
-          <div className="flex items-center gap-2 mb-6">
-            <TrendUp size={20} className="text-error" />
-            <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider">Mood / Distress Trend</h3>
+        <GlowCard customSize glowColor="red" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendUp size={20} className="text-error" />
+              <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider">Mood / Distress Trend</h3>
+            </div>
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={insights.mood_log}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis dataKey="day" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <YAxis hide domain={[0, 'dataMax']} />
+                  <Tooltip contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Line type="monotone" dataKey="distress" stroke="#ef4444" strokeWidth={3} dot={{r: 4, fill: '#ef4444'}} activeDot={{r: 6}} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={insights.mood_log}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                <XAxis dataKey="day" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                <YAxis hide domain={[0, 'dataMax']} />
-                <Tooltip contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Line type="monotone" dataKey="distress" stroke="#ef4444" strokeWidth={3} dot={{r: 4, fill: '#ef4444'}} activeDot={{r: 6}} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        </GlowCard>
 
         {/* Top Paths */}
-        <div className="bg-surface-container border border-outline-variant/30 p-5 rounded-2xl">
-          <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider mb-6">Top Phrases</h3>
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={insights.top_paths}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" opacity={0.5} />
-                <XAxis type="number" hide />
-                <YAxis dataKey="path" type="category" width={100} tick={{fill: '#6b7280', fontSize: 11}} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        <GlowCard customSize glowColor="purple" className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-none rounded-2xl">
+          <div className="p-5">
+            <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider mb-6">Top Phrases</h3>
+            <div className="h-60 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={insights.top_paths}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="path" type="category" width={100} tick={{fill: '#6b7280', fontSize: 11}} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </GlowCard>
       </div>
     </div>
   );
