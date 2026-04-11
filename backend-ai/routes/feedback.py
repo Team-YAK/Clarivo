@@ -4,7 +4,9 @@ import logging
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from services.data_client import save_feedback, save_correction
+from services.data_client import save_feedback, save_correction, get_user
+from services.context import build_context_string
+from services.openai_client import refine_sentence_with_correction
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -23,7 +25,7 @@ async def feedback(req: FeedbackRequest):
 
     session = pending_sessions.get(req.session_id)
 
-    # Save feedback to E3
+    # Save initial feedback to E3
     await save_feedback(
         req.session_id,
         {
@@ -33,16 +35,26 @@ async def feedback(req: FeedbackRequest):
         },
     )
 
-    # If correction provided, save to correction history
+    # If correction provided, refine it and save to correction history
     if req.correction and session:
-        path_str = " > ".join(session.get("path", []))
+        user_data = await get_user(req.user_id)
+        context = build_context_string(user_data)
+        
+        refined_sentence = await refine_sentence_with_correction(
+            original=session.get("sentence", ""),
+            correction=req.correction,
+            path=session.get("path", []),
+            context=context
+        )
+
         await save_correction(
             req.user_id,
             {
-                "path": path_str,
+                "path": " > ".join(session.get("path", [])),
                 "original": session.get("sentence", ""),
-                "corrected": req.correction,
+                "corrected": refined_sentence,  # Store the AI-refined version
             },
         )
 
     return {"success": True}
+

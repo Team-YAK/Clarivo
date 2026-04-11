@@ -215,3 +215,28 @@ async def generate_digest(sessions: list, user_data: dict) -> str:
     except Exception as e:
         logger.warning(f"Digest generation failed: {e}")
         return f"{name} had {len(sessions)} communication sessions today."
+
+
+async def refine_sentence_with_correction(original: str, correction: str, path: list[str], context: str) -> str:
+    path_str = " > ".join(path)
+    try:
+        resp = await get_client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are the voice of an aphasia patient. A caregiver corrected a generated sentence. Create an improved version of the sentence that matches the intent of the path and the specific correction. Sound natural and use first person. Context: {context}",
+                },
+                {
+                    "role": "user",
+                    "content": f"Path: {path_str}\nOriginal: {original}\nCorrection: {correction}",
+                },
+            ],
+            max_tokens=60,
+            temperature=0.3,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        logger.warning(f"Sentence refinement failed: {e}")
+        return correction  # Fallback to the raw correction
+
