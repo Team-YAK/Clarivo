@@ -1,4 +1,10 @@
 E1_frontend_spec.md
 pdf_content.txt
 pdf_clean.txt
+
+# Prevent E1 from modifying E2/E3 domains
+/backend-ai/
+/backend-data/
+/frontend/Stitch Projects (1)/
+
 .env

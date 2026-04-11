@@ -11,115 +11,145 @@ import {
   KnowledgeScore,
   Alert
 } from '@/utils/api';
-import { Warning, PlayCircle, Clock } from '@phosphor-icons/react';
+import { Warning, Brain, ArrowCounterClockwise } from '@phosphor-icons/react';
 
 export default function CaregiverPanel() {
   const [liveActivity, setLiveActivity] = useState<LiveActivity | null>(null);
   const [history, setHistory] = useState<Session[]>([]);
   const [knowledge, setKnowledge] = useState<KnowledgeScore | null>(null);
-  const [alert, setAlert] = useState<Alert | null>(null);
+  const [alertState, setAlertState] = useState<Alert | null>(null);
 
   useEffect(() => {
-    // Load mock data via API layer
     Promise.all([
       fetchLiveActivity().then(setLiveActivity),
       fetchSessionHistory().then(setHistory),
       fetchKnowledgeScore().then(setKnowledge),
-      fetchUrgencyAlert().then(setAlert)
+      fetchUrgencyAlert().then(setAlertState)
     ]);
   }, []);
 
   return (
-    <div className="w-full h-full bg-zinc-50 border-l border-zinc-200 p-6 flex flex-col gap-6 overflow-y-auto">
-      <h2 className="text-xl font-semibold text-zinc-900">Caregiver Dashboard</h2>
-
-      {/* Urgency Alert */}
-      {alert?.active && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md flex items-start gap-3">
-          <Warning size={24} className="text-red-600 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-red-800">Urgency Alert</h3>
-            <p className="text-sm text-red-700 mt-1">{alert.message}</p>
-          </div>
+    <aside className="w-full h-full bg-surface-container-low border-l border-outline-variant/20 flex flex-col overflow-y-auto no-scrollbar ring-2 ring-error/10 ring-inset">
+      
+      {/* Urgency Alert (Pinned) */}
+      {alertState?.active && (
+        <div className="bg-error text-on-error p-4 flex items-center gap-4 shadow-lg animate-pulse">
+          <Warning size={24} weight="bold" />
+          <span className="font-headline font-extrabold text-sm tracking-wider uppercase">
+            {alertState.message}
+          </span>
         </div>
       )}
 
-      {/* Live Activity */}
-      <section className="bg-white rounded-xl shadow-sm border border-zinc-200 p-5">
-        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Live Activity</h3>
-        {liveActivity ? (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                {liveActivity.mode}
-              </span>
-              <span className="text-sm text-zinc-400">
-                {liveActivity.breadcrumb.join(' › ')}
-              </span>
-            </div>
-            <p className="text-lg text-zinc-800 italic border-l-2 border-zinc-200 pl-4 py-1">
-              "{liveActivity.streamingSentence}"
-            </p>
+      <div className="p-6 space-y-8 flex-1 overflow-y-auto no-scrollbar">
+        {/* Live Activity */}
+        <section>
+          <div className="bg-amber-100 text-amber-900 text-[10px] font-bold uppercase tracking-widest text-center py-1.5 rounded-t-xl mb-2">
+            Caregiver view — Yuki sees icons only
           </div>
-        ) : (
-          <div className="animate-pulse h-16 bg-zinc-100 rounded" />
-        )}
-      </section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Live Activity</h3>
+            {liveActivity && (
+              <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                {liveActivity.mode} Mode Active
+              </span>
+            )}
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border-l-4 border-primary">
+            {liveActivity ? (
+              <>
+                <p className="text-on-surface-variant italic mb-1 text-sm">Synthesizing draft based on: {liveActivity.breadcrumb.join(' > ')}...</p>
+                <p className="text-primary font-headline font-bold text-xl">"{liveActivity.streamingSentence}"</p>
+              </>
+            ) : (
+              <div className="animate-pulse h-16 bg-surface-variant rounded"></div>
+            )}
+          </div>
+        </section>
 
-      {/* Knowledge Score */}
-      <section className="bg-white rounded-xl shadow-sm border border-zinc-200 p-5">
-        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">AI Knowledge Score</h3>
-        {knowledge ? (
-          <div>
-            <div className="flex justify-between items-end mb-2">
-              <span className="font-semibold text-zinc-800">{knowledge.percentage}%</span>
-              <span className="text-xs text-zinc-500">{knowledge.label}</span>
+        {/* Knowledge Score */}
+        <section className="bg-surface-container-highest/30 p-6 rounded-xl">
+          <div className="flex items-center gap-6 mb-6">
+            <div className="relative w-24 h-24">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle className="text-surface-container-high" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" strokeWidth="8"></circle>
+                <circle 
+                  className="text-primary-container" 
+                  cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" 
+                  strokeDasharray="251.2" 
+                  strokeDashoffset={knowledge ? 251.2 - (251.2 * knowledge.percentage) / 100 : 251.2} 
+                  strokeWidth="8"
+                  style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
+                ></circle>
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="font-headline font-extrabold text-2xl text-primary">
+                  {knowledge ? `${knowledge.percentage}%` : '...'}
+                </span>
+              </div>
             </div>
-            <div className="w-full bg-zinc-100 rounded-full h-2.5">
-              <div 
-                className="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000 ease-out" 
-                style={{ width: `${knowledge.percentage}%` }}
-              ></div>
+            <div>
+              <h4 className="font-headline font-bold text-lg text-on-surface">Alex's Profile</h4>
+              <p className="text-on-surface-variant text-sm">Deep learning accuracy</p>
             </div>
           </div>
-        ) : (
-          <div className="animate-pulse h-8 bg-zinc-100 rounded" />
-        )}
-      </section>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase"><span>Profile</span><span>92%</span></div>
+              <div className="h-1 bg-surface-container-high rounded-full overflow-hidden"><div className="h-full bg-primary w-[92%]"></div></div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase"><span>Medical</span><span>78%</span></div>
+              <div className="h-1 bg-surface-container-high rounded-full overflow-hidden"><div className="h-full bg-primary w-[78%]"></div></div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase"><span>Preferences</span><span>85%</span></div>
+              <div className="h-1 bg-surface-container-high rounded-full overflow-hidden"><div className="h-full bg-primary w-[85%]"></div></div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase"><span>Conv.</span><span>64%</span></div>
+              <div className="h-1 bg-surface-container-high rounded-full overflow-hidden"><div className="h-full bg-primary w-[64%]"></div></div>
+            </div>
+          </div>
+        </section>
 
-      {/* Session History */}
-      <section className="bg-white rounded-xl shadow-sm border border-zinc-200 p-5 flex-1">
-        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Recent Sessions</h3>
-        {history.length > 0 ? (
-          <div className="space-y-4">
-            {history.map(session => (
-              <div key={session.id} className="flex flex-col gap-2 p-3 hover:bg-zinc-50 rounded-lg transition-colors border border-transparent hover:border-zinc-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-zinc-600">
-                    <Clock size={16} />
-                    <span>{session.date}</span>
-                    <span className="text-zinc-300">•</span>
-                    <span>{session.duration}</span>
+        {/* Claude Question Card */}
+        <section className="bg-primary-container text-on-primary-container p-6 rounded-xl shadow-md border-b-4 border-primary">
+          <div className="flex items-center gap-3 mb-4">
+            <Brain size={24} weight="fill" className="text-primary-fixed" />
+            <h4 className="font-headline font-bold">Insight Needed</h4>
+          </div>
+          <p className="mb-4 text-sm leading-relaxed opacity-90">Does Alex prefer a specific dessert for celebration tonight?</p>
+          <input className="w-full bg-white/10 border-none rounded-lg p-3 text-sm placeholder:text-white/40 focus:ring-2 focus:ring-primary-fixed outline-none" placeholder="Type answer here..." type="text" />
+        </section>
+
+        {/* Session History */}
+        <section>
+          <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest mb-4">Session History</h3>
+          <div className="space-y-3">
+            {history.length > 0 ? history.map((session, index) => {
+              // Assigning mock colors based on flags just for visual fidelity to design
+              const confidenceColor = session.flags > 0 ? "bg-red-500" : (index % 2 === 0 ? "bg-teal-500" : "bg-amber-500");
+              return (
+                <div key={session.id} className="bg-surface-container-lowest p-4 rounded-xl flex items-start justify-between group transition-all hover:translate-x-1 shadow-sm">
+                  <div className="flex gap-4">
+                    <div className={`w-2 h-2 rounded-full ${confidenceColor} mt-2`}></div>
+                    <div>
+                      <p className="text-xs text-on-surface-variant font-medium">{session.date} • {session.duration}</p>
+                      <p className="text-on-surface font-semibold text-sm">"{session.summary}"</p>
+                    </div>
                   </div>
-                  {session.flags > 0 && (
-                    <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                      {session.flags} Flag
-                    </span>
-                  )}
-                </div>
-                <p className="text-zinc-800 text-sm font-medium">{session.summary}</p>
-                <div className="flex gap-2 mt-2">
-                  <button className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-md transition-colors">
-                    <PlayCircle size={16} /> Lookback Audio
+                  <button className="text-on-surface-variant hover:text-primary transition-colors">
+                    <ArrowCounterClockwise size={20} weight="bold" />
                   </button>
                 </div>
-              </div>
-            ))}
+              )
+            }) : (
+              <div className="animate-pulse h-32 bg-surface-variant rounded-xl"></div>
+            )}
           </div>
-        ) : (
-          <div className="animate-pulse h-32 bg-zinc-100 rounded" />
-        )}
-      </section>
-    </div>
+        </section>
+      </div>
+    </aside>
   );
 }
