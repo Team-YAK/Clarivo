@@ -16,9 +16,10 @@ USE_MOCK = os.getenv("USE_MOCK", "false").lower() == "true"
 
 async def get_user(user_id: str) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK_USER for get_user({user_id})")
         return MOCK_USER
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.get(f"{E3_BASE}/api/profile", params={"user_id": user_id})
             if resp.status_code == 200:
                 return resp.json()
@@ -30,9 +31,10 @@ async def get_user(user_id: str) -> dict:
 
 async def create_session(session_data: dict) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK session for create_session({session_data.get('session_id')})")
         return {"success": True, "session_id": session_data.get("session_id")}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(f"{E3_BASE}/api/sessions/create", json=session_data)
             if resp.status_code == 200:
                 return resp.json()
@@ -44,9 +46,10 @@ async def create_session(session_data: dict) -> dict:
 
 async def save_feedback(session_id: str, feedback_data: dict) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK for save_feedback({session_id})")
         return {"success": True}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
                 f"{E3_BASE}/api/sessions/feedback",
                 json={"session_id": session_id, **feedback_data},
@@ -61,9 +64,10 @@ async def save_feedback(session_id: str, feedback_data: dict) -> dict:
 
 async def get_sessions_last_24h(user_id: str) -> list:
     if USE_MOCK:
+        logger.warning(f"Using MOCK_SESSIONS for get_sessions_last_24h({user_id})")
         return MOCK_SESSIONS
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.get(
                 f"{E3_BASE}/api/sessions/history",
                 params={"user_id": user_id, "limit": 50},
@@ -78,9 +82,10 @@ async def get_sessions_last_24h(user_id: str) -> list:
 
 async def save_context_question(user_id: str, question_data: dict) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK for save_context_question({user_id})")
         return {"success": True}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
                 f"{E3_BASE}/api/context/question",
                 json={"user_id": user_id, **question_data},
@@ -95,9 +100,10 @@ async def save_context_question(user_id: str, question_data: dict) -> dict:
 
 async def save_correction(user_id: str, correction_data: dict) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK for save_correction({user_id})")
         return {"success": True}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
                 f"{E3_BASE}/api/profile/correction",
                 json={"user_id": user_id, **correction_data},
@@ -112,9 +118,10 @@ async def save_correction(user_id: str, correction_data: dict) -> dict:
 
 async def save_voice_id(user_id: str, voice_id: str) -> dict:
     if USE_MOCK:
+        logger.warning(f"Using MOCK for save_voice_id({user_id})")
         return {"success": True}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
                 f"{E3_BASE}/api/profile/voice",
                 json={"user_id": user_id, "voice_id": voice_id},

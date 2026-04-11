@@ -53,6 +53,10 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
             async for chunk in audio:
                 f.write(chunk)
 
+        if os.path.getsize(filepath) == 0:
+            os.remove(filepath)
+            raise Exception("ElevenLabs returned a 0-byte audio file")
+
         return f"/audio/{filename}"
     except Exception as e:
         logger.error(f"Patient voice synthesis failed: {e}")
@@ -84,6 +88,10 @@ async def synthesize_caregiver_voice(text: str) -> str:
         with open(filepath, "wb") as f:
             async for chunk in audio:
                 f.write(chunk)
+
+        if os.path.getsize(filepath) == 0:
+            os.remove(filepath)
+            raise Exception("ElevenLabs returned a 0-byte audio file")
 
         return f"/audio/{filename}"
     except Exception as e:

@@ -1,5 +1,5 @@
 import pytest
-from services.context import build_context_string
+from services.context_service import build_context_string
 
 def test_context_assembly_completeness():
     """

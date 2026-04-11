@@ -1,10 +1,10 @@
 """POST /api/caregiver/simplify — Caregiver-to-patient text simplification."""
 
 import logging
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.openai_client import simplify_text
-from services.elevenlabs_client import synthesize_caregiver_voice
+from services.openai_service import simplify_text
+from services.elevenlabs_service import synthesize_caregiver_voice
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,6 +17,9 @@ class SimplifyRequest(BaseModel):
 
 @router.post("/api/caregiver/simplify")
 async def simplify(req: SimplifyRequest):
+    if not req.text or len(req.text.strip()) == 0:
+        raise HTTPException(status_code=400, detail="Text to simplify cannot be empty")
+
     simplified = await simplify_text(req.text)
 
     # Synthesize with caregiver voice (neutral preset, NOT Yuki's)

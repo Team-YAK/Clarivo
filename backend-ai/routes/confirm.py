@@ -5,10 +5,10 @@ import logging
 import asyncio
 from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
-from services.data_client import get_user, create_session, save_context_question
-from services.context import build_context_string
-from services.elevenlabs_client import synthesize_patient_voice
-from services.openai_client import generate_post_session_question
+from services.data_service import get_user, create_session, save_context_question
+from services.context_service import build_context_string
+from services.elevenlabs_service import synthesize_patient_voice
+from services.openai_service import generate_post_session_question
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,13 +29,22 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
         return {"error": "Session not found or expired"}, 404
 
     user_data = await get_user(req.user_id)
-    voice_id = user_data.get("voice_id") or os.getenv("YUKI_VOICE_ID", "")
+    # Cascade: E3 profile -> .env -> Preset Voice
+    voice_id = user_data.get("voice_id")
+    if not voice_id:
+        voice_id = os.getenv("YUKI_VOICE_ID")
+    if not voice_id:
+        voice_id = "21m00Tcm4TlvDq8ikWAM"  # Hardcoded fallback preset
 
-    if not voice_id or voice_id == "mock_voice_id":
+    if voice_id == "mock_voice_id":
         # In mock mode, return a placeholder audio URL
         audio_url = "/audio/mock_patient.mp3"
     else:
-        audio_url = await synthesize_patient_voice(session["sentence"], voice_id)
+        try:
+            audio_url = await synthesize_patient_voice(session["sentence"], voice_id)
+        except Exception as e:
+            logger.error(f"Synthesis failed in confirm: {e}")
+            return {"error": "Voice synthesis failed", "details": str(e)}, 500
 
     # Persist session to E3
     await create_session(

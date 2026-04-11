@@ -4,11 +4,13 @@ import json
 import uuid
 import asyncio
 import logging
-from fastapi import APIRouter, Request
+from typing import List, Optional
+from pydantic import BaseModel
+from fastapi import APIRouter, Request, HTTPException
 from sse_starlette.sse import EventSourceResponse
-from services.data_client import get_user
-from services.context import build_context_string
-from services.openai_client import stream_intent, compute_confidence
+from services.data_service import get_user
+from services.context_service import build_context_string
+from services.openai_service import stream_intent, compute_confidence
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,11 +19,18 @@ router = APIRouter()
 pending_sessions: dict[str, dict] = {}
 
 
+class IntentRequest(BaseModel):
+    path: Optional[List[str]] = None
+    user_id: str = "yuki_demo"
+
+
 @router.post("/api/intent")
-async def intent(request: Request):
-    body = await request.json()
-    path = body.get("path", [])
-    user_id = body.get("user_id", "yuki_demo")
+async def intent(req: IntentRequest):
+    if not req.path or len(req.path) == 0:
+        raise HTTPException(status_code=400, detail="Path cannot be empty or null")
+
+    path = req.path
+    user_id = req.user_id
 
     user_data = await get_user(user_id)
     context = build_context_string(user_data)

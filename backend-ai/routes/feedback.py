@@ -4,9 +4,9 @@ import logging
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from services.data_client import save_feedback, save_correction, get_user
-from services.context import build_context_string
-from services.openai_client import refine_sentence_with_correction
+from services.data_service import save_feedback, save_correction, get_user
+from services.context_service import build_context_string
+from services.openai_service import refine_sentence_with_correction
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

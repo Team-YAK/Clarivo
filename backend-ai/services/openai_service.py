@@ -7,6 +7,7 @@ import os
 import json
 import logging
 from typing import AsyncGenerator
+import openai
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ async def stream_intent(path: list[str], context: str) -> AsyncGenerator[str, No
                 {"role": "user", "content": user_prompt},
             ],
             stream=True,
-            max_tokens=60,
+            max_tokens=40,
             temperature=0.7,
         )
 
@@ -74,6 +75,15 @@ async def stream_intent(path: list[str], context: str) -> AsyncGenerator[str, No
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
+    except openai.RateLimitError as e:
+        logger.warning(f"OpenAI RateLimitError: {e}")
+        yield "I want... Please try again later. "
+    except openai.APITimeoutError as e:
+        logger.warning(f"OpenAI APITimeoutError: {e}")
+        yield "I want... Connection timed out. "
+    except openai.APIConnectionError as e:
+        logger.warning(f"OpenAI APIConnectionError: {e}")
+        yield "I want... Bad connection. "
     except Exception as e:
         logger.warning(f"Intent streaming failed: {e}")
         import asyncio
@@ -124,7 +134,17 @@ async def generate_clarification_options(path: list[str], context: str) -> list[
             if raw.endswith("```"):
                 raw = raw[:-3]
             raw = raw.strip()
-        return json.loads(raw)
+        data = json.loads(raw)
+        
+        # Enforce bounds
+        if not isinstance(data, list):
+            data = [data]
+        if len(data) < 2:
+            data.append({"label": "Tell me more", "icon": "💬", "path": path + ["more"]})
+        if len(data) > 3:
+            data = data[:3]
+            
+        return data
     except Exception as e:
         logger.warning(f"Clarification generation failed: {e}")
         return [

@@ -5,6 +5,10 @@ Max 300 tokens, priority-ordered.
 
 import tiktoken
 
+# 300 Token Limit Rationale: 
+# The context string is passed into the streaming API during Intent Generation.
+# A larger context window directly slows down the TTFT (Time to First Token).
+# Keeping the budget strictly at 300 ensures we meet the 500ms constraint.
 ENCODER = tiktoken.encoding_for_model("gpt-4o-mini")
 MAX_TOKENS = 300
 
@@ -27,11 +31,11 @@ def build_context_string(user_data: dict) -> str:
     sections: list[str] = []
     budget = MAX_TOKENS
 
-    profile = user_data.get("profile", {})
-    medical = user_data.get("medical", {})
-    prefs = user_data.get("preferences", {})
-    corrections = user_data.get("correction_history", [])[-10:]
-    context_answers = user_data.get("context_answers", [])[-15:]
+    profile = user_data.get("profile") or {}
+    medical = user_data.get("medical") or {}
+    prefs = user_data.get("preferences") or {}
+    corrections = (user_data.get("correction_history") or [])[-10:]
+    context_answers = (user_data.get("context_answers") or [])[-15:]
 
     # 1. Corrections — highest priority
     if corrections:
@@ -88,8 +92,8 @@ def build_context_string(user_data: dict) -> str:
             budget -= cost
 
     # 4. Medical context
-    meds = medical.get("medications", [])
-    allergies = medical.get("allergies", [])
+    meds = medical.get("medications") or []
+    allergies = medical.get("allergies") or []
     if meds or allergies:
         med_parts = []
         if meds:

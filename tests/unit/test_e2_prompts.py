@@ -1,5 +1,5 @@
 import pytest
-from services.openai_client import compute_confidence
+from services.openai_service import compute_confidence
 
 @pytest.mark.asyncio
 async def test_confidence_score_range():
