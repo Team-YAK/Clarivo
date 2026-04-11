@@ -25,8 +25,8 @@ def seed():
     
     yuki = {
         "_id": user_id,
-        "profile": {"name": "Yuki", "diagnosis_date": "2024-04-12", "caregiver_name": "Maya"},
-        "medical": {"medications": ["Aspirin 100mg", "Lisinopril 10mg"], "allergies": ["Penicillin"], "conditions": ["Hypertension"]},
+        "profile": {"name": "Yuki", "diagnosis_date": "2024-04-12", "caregiver_name": "Maya", "photo": "/mock-images/alex.jpg"},
+        "medical": {"medications": ["Aspirin 100mg", "Lisinopril 10mg"], "allergies": ["Penicillin"], "conditions": ["Hypertension"], "doctor": "Dr. Smith"},
         "preferences": {
             "communication_notes": "Yuki gets frustrated when misunderstood. Give him time.", 
             "known_preferences": "Loves Italian food, especially tiramisu. Watches football on Sundays.", 
@@ -35,6 +35,7 @@ def seed():
         "routine": {"meals": {"breakfast": "08:00", "lunch": "12:30", "dinner": "18:00"}},
         "voice_id": "mock_voice_id",
         "interface_settings": {"simplified_view": False, "show_subtitles": True, "shortcut_threshold": 5},
+        "pending_question": {"question": "Does Alex prefer a specific dessert?", "question_id": "q_dessert_pref"},
         "knowledge_score": 71,
         "knowledge_breakdown": {"overall": 71, "profile": 94, "medical": 78, "preferences": 61, "conversation": 42},
         "path_frequencies": {

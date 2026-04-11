@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from database import db
 from models import *
-from services.engines import is_first_occurrence
+from services.engines import is_first_occurrence, calculate_knowledge_score
 from datetime import datetime
 import uuid
 import subprocess
@@ -50,6 +50,8 @@ async def confirm_session(req: SessionConfirmRequest):
         {"$inc": {f"path_frequencies.{path_key}": 1}}
     )
     
+    await calculate_knowledge_score(session["user_id"])
+    
     return {"success": True}
 
 @router.post("/api/feedback")
@@ -83,6 +85,8 @@ async def process_feedback(req: FeedbackRequest):
         
         path_key = "_".join(session["path"])
         await db.sentences.delete_one({"_id": f"{req.user_id}_{path_key}"})
+        
+        await calculate_knowledge_score(req.user_id)
         
     return {"success": True}
 
