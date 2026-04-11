@@ -16,7 +16,7 @@ router = APIRouter()
 
 class ConfirmRequest(BaseModel):
     session_id: str
-    user_id: str = "alex_demo"
+    user_id: str = "yuki_demo"
 
 
 @router.post("/api/confirm")
@@ -29,7 +29,7 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
         return {"error": "Session not found or expired"}, 404
 
     user_data = await get_user(req.user_id)
-    voice_id = user_data.get("voice_id") or os.getenv("ALEX_VOICE_ID", "")
+    voice_id = user_data.get("voice_id") or os.getenv("YUKI_VOICE_ID", "")
 
     if not voice_id or voice_id == "mock_voice_id":
         # In mock mode, return a placeholder audio URL

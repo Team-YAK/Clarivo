@@ -48,7 +48,7 @@ async def test_intent():
             async with client.stream(
                 "POST",
                 f"{BASE}/api/intent",
-                json={"path": ["food", "dessert", "tiramisu"], "user_id": "alex_demo"},
+                json={"path": ["food", "dessert", "tiramisu"], "user_id": "yuki_demo"},
             ) as resp:
                 async for line in resp.aiter_lines():
                     if not line.startswith("data:"):
@@ -100,7 +100,7 @@ async def test_confirm(session_id: str):
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
                 f"{BASE}/api/confirm",
-                json={"session_id": session_id, "user_id": "alex_demo"},
+                json={"session_id": session_id, "user_id": "yuki_demo"},
             )
             latency = time.time() - start
             data = resp.json()
@@ -124,7 +124,7 @@ async def test_feedback(session_id: str):
             # Thumbs up
             resp = await client.post(
                 f"{BASE}/api/feedback",
-                json={"session_id": session_id, "thumbs_up": True, "user_id": "alex_demo"},
+                json={"session_id": session_id, "thumbs_up": True, "user_id": "yuki_demo"},
             )
             data = resp.json()
             result("Thumbs up", data.get("success") is True)
@@ -136,7 +136,7 @@ async def test_feedback(session_id: str):
                     "session_id": session_id,
                     "thumbs_up": False,
                     "correction": "I want tiramisu specifically",
-                    "user_id": "alex_demo",
+                    "user_id": "yuki_demo",
                 },
             )
             data = resp.json()
@@ -152,7 +152,7 @@ async def test_clarify():
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(
                 f"{BASE}/api/clarify",
-                json={"path": ["feelings"], "user_id": "alex_demo"},
+                json={"path": ["feelings"], "user_id": "yuki_demo"},
             )
             latency = time.time() - start
             data = resp.json()
@@ -181,7 +181,7 @@ async def test_simplify():
                 f"{BASE}/api/caregiver/simplify",
                 json={
                     "text": "We need to adjust your medication dosage today because your blood pressure has been higher than normal",
-                    "user_id": "alex_demo",
+                    "user_id": "yuki_demo",
                 },
             )
             latency = time.time() - start
@@ -204,7 +204,7 @@ async def test_digest():
     print("\n🔍 Digest (GET /api/digest)")
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(f"{BASE}/api/digest", params={"user_id": "alex_demo"})
+            resp = await client.get(f"{BASE}/api/digest", params={"user_id": "yuki_demo"})
             data = resp.json()
 
             result("Digest returned", bool(data.get("digest")), data.get("digest", "")[:80])

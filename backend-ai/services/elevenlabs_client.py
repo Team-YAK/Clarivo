@@ -91,7 +91,7 @@ async def synthesize_caregiver_voice(text: str) -> str:
         raise
 
 
-async def clone_voice(audio_data: bytes, name: str = "Alex") -> str:
+async def clone_voice(audio_data: bytes, name: str = "Yuki") -> str:
     """
     Clone a voice from audio data using ElevenLabs Instant Voice Cloning.
     Returns the new voice_id.

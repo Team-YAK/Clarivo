@@ -14,7 +14,7 @@ class FeedbackRequest(BaseModel):
     session_id: str
     thumbs_up: bool
     correction: Optional[str] = None
-    user_id: str = "alex_demo"
+    user_id: str = "yuki_demo"
 
 
 @router.post("/api/feedback")

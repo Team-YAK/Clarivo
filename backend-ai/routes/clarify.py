@@ -13,7 +13,7 @@ router = APIRouter()
 
 class ClarifyRequest(BaseModel):
     path: list[str]
-    user_id: str = "alex_demo"
+    user_id: str = "yuki_demo"
 
 
 @router.post("/api/clarify")

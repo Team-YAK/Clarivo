@@ -21,7 +21,7 @@ pending_sessions: dict[str, dict] = {}
 async def intent(request: Request):
     body = await request.json()
     path = body.get("path", [])
-    user_id = body.get("user_id", "alex_demo")
+    user_id = body.get("user_id", "yuki_demo")
 
     user_data = await get_user(user_id)
     context = build_context_string(user_data)

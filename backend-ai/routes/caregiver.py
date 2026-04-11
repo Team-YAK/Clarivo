@@ -12,14 +12,14 @@ router = APIRouter()
 
 class SimplifyRequest(BaseModel):
     text: str
-    user_id: str = "alex_demo"
+    user_id: str = "yuki_demo"
 
 
 @router.post("/api/caregiver/simplify")
 async def simplify(req: SimplifyRequest):
     simplified = await simplify_text(req.text)
 
-    # Synthesize with caregiver voice (neutral preset, NOT Alex's)
+    # Synthesize with caregiver voice (neutral preset, NOT Yuki's)
     combined_text = " ".join(simplified)
     try:
         audio_url = await synthesize_caregiver_voice(combined_text)

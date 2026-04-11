@@ -3,16 +3,16 @@ import httpx
 BASE = "http://localhost:8002"
 
 def test_profile():
-    r = httpx.get(f"{BASE}/api/profile", params={"user_id": "alex_demo"})
+    r = httpx.get(f"{BASE}/api/profile", params={"user_id": "yuki_demo"})
     if r.status_code != 200:
         print(f"FAILED profile: {r.status_code} - {r.text}")
         return
-    assert r.json()["profile"]["name"] == "Alex"
+    assert r.json()["profile"]["name"] == "Yuki"
     print("✓ profile")
 
 def test_knowledge_score():
     r = httpx.post(f"{BASE}/api/context/answer", json={
-        "user_id": "alex_demo",
+        "user_id": "yuki_demo",
         "question_id": "test_q",
         "question": "Favorite food?",
         "answer": "Tiramisu"
@@ -24,7 +24,7 @@ def test_knowledge_score():
     print("✓ knowledge score increases on answer")
 
 def test_shortcuts():
-    r = httpx.get(f"{BASE}/api/shortcuts", params={"user_id": "alex_demo"})
+    r = httpx.get(f"{BASE}/api/shortcuts", params={"user_id": "yuki_demo"})
     if r.status_code != 200:
         print(f"FAILED shortcuts: {r.status_code} - {r.text}")
         return
@@ -33,7 +33,7 @@ def test_shortcuts():
     print("✓ shortcuts return data")
 
 def test_panel():
-    r = httpx.get(f"{BASE}/api/caregiver/panel", params={"user_id": "alex_demo"})
+    r = httpx.get(f"{BASE}/api/caregiver/panel", params={"user_id": "yuki_demo"})
     if r.status_code != 200:
         print(f"FAILED panel: {r.status_code} - {r.text}")
         return
@@ -43,7 +43,7 @@ def test_panel():
     print("✓ caregiver panel returns correctly (urgency detected via seeds)")
 
 def test_insights():
-    r = httpx.get(f"{BASE}/api/insights", params={"user_id": "alex_demo"})
+    r = httpx.get(f"{BASE}/api/insights", params={"user_id": "yuki_demo"})
     if r.status_code != 200:
         print(f"FAILED insights: {r.status_code} - {r.text}")
         return

@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/api/digest")
-async def digest(user_id: str = Query(default="alex_demo")):
+async def digest(user_id: str = Query(default="yuki_demo")):
     user_data = await get_user(user_id)
     sessions = await get_sessions_last_24h(user_id)
     digest_text = await generate_digest(sessions, user_data)

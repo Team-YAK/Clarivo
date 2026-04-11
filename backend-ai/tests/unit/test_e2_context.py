@@ -8,7 +8,7 @@ def test_context_assembly_completeness():
     Verifies output string contains patient name, drug, preferences, correction.
     """
     user_data = {
-        "profile": {"name": "Alex"},
+        "profile": {"name": "Yuki"},
         "medical": {"medications": ["Aspirin 100mg"], "allergies": ["Penicillin"]},
         "preferences": {
             "known_preferences": "Loves tiramisu.",
@@ -24,7 +24,7 @@ def test_context_assembly_completeness():
     
     result = build_context_string(user_data)
     
-    assert "Alex" in result
+    assert "Yuki" in result
     assert "Aspirin 100mg" in result
     assert "Loves tiramisu." in result
     assert "I want tiramisu" in result
@@ -38,7 +38,7 @@ def test_context_assembly_token_cap():
     Counts the tokens using tiktoken.
     """
     user_data = {
-        "profile": {"name": "Alex"},
+        "profile": {"name": "Yuki"},
         "medical": {"medications": ["Aspirin 100mg"]},
         "preferences": {
             "known_preferences": "A " * 5000,  # Huge preference string
@@ -67,7 +67,7 @@ def test_context_assembly_priority_order():
     Let's verify corrections definitely appear, and large tier 3 truncates tier 4.
     """
     user_data = {
-        "profile": {"name": "AlexTheGreatWithALongName" * 10}, # Needs tokens
+        "profile": {"name": "YukiTheGreatWithALongName" * 10}, # Needs tokens
         "medical": {"medications": ["Med_" * 20]}, # Needs tokens
         "preferences": {
             "known_preferences": "Preference " * 150, # Tier 3

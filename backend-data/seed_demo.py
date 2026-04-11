@@ -20,15 +20,15 @@ def seed():
     db.sentences.delete_many({})
     db.context_log.delete_many({})
     
-    user_id = "alex_demo"
+    user_id = "yuki_demo"
     now = datetime.utcnow()
     
-    alex = {
+    yuki = {
         "_id": user_id,
-        "profile": {"name": "Alex", "diagnosis_date": "2024-04-12", "caregiver_name": "Maya"},
+        "profile": {"name": "Yuki", "diagnosis_date": "2024-04-12", "caregiver_name": "Maya"},
         "medical": {"medications": ["Aspirin 100mg", "Lisinopril 10mg"], "allergies": ["Penicillin"], "conditions": ["Hypertension"]},
         "preferences": {
-            "communication_notes": "Alex gets frustrated when misunderstood. Give him time.", 
+            "communication_notes": "Yuki gets frustrated when misunderstood. Give him time.", 
             "known_preferences": "Loves Italian food, especially tiramisu. Watches football on Sundays.", 
             "always_know": "His daughter Maria lives in Boston. He misses her."
         },
@@ -125,7 +125,7 @@ def seed():
         })
         
     db.sessions.insert_many(sessions)
-    db.users.insert_one(alex)
+    db.users.insert_one(yuki)
     
     # Pre-cache sentences
     paths = [

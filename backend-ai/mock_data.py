@@ -5,7 +5,7 @@ Used when E3 (localhost:8002) is unavailable.
 
 MOCK_USER = {
     "profile": {
-        "name": "Alex",
+        "name": "Yuki",
         "diagnosis_date": "2024-04-12",
         "caregiver_name": "Maya",
     },
@@ -15,7 +15,7 @@ MOCK_USER = {
         "conditions": ["Hypertension"],
     },
     "preferences": {
-        "communication_notes": "Alex gets frustrated when misunderstood. Give him time.",
+        "communication_notes": "Yuki gets frustrated when misunderstood. Give him time.",
         "known_preferences": "Loves tiramisu. Watches football on Sundays.",
         "always_know": "His daughter Maria lives in Boston. He misses her.",
     },
@@ -36,7 +36,7 @@ MOCK_USER = {
 MOCK_SESSIONS = [
     {
         "session_id": "s_mock_001",
-        "user_id": "alex_demo",
+        "user_id": "yuki_demo",
         "path": ["needs", "physical", "pain", "head"],
         "sentence": "I am experiencing a severe headache right now.",
         "confidence": 0.92,
@@ -48,7 +48,7 @@ MOCK_SESSIONS = [
     },
     {
         "session_id": "s_mock_002",
-        "user_id": "alex_demo",
+        "user_id": "yuki_demo",
         "path": ["food", "dessert", "tiramisu"],
         "sentence": "I would like some tiramisu please.",
         "confidence": 0.95,
@@ -62,5 +62,5 @@ MOCK_SESSIONS = [
 
 MOCK_PENDING_QUESTION = {
     "question_id": "q_mock_001",
-    "question": "What does Alex usually like to do after lunch?",
+    "question": "What does Yuki usually like to do after lunch?",
 }

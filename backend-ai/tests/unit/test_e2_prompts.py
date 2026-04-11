@@ -10,12 +10,12 @@ async def test_confidence_score_range():
     """
     
     # Very specific context
-    context_specific = "Alex loves tiramisu. It is his absolute favorite dessert."
+    context_specific = "Yuki loves tiramisu. It is his absolute favorite dessert."
     path_specific = ["food", "dessert", "tiramisu"]
     sentence_specific = "I want tiramisu specifically."
     
     # Completely ambiguous context
-    context_ambiguous = "Alex gets frustrated when misunderstood."
+    context_ambiguous = "Yuki gets frustrated when misunderstood."
     path_ambiguous = ["feelings"]
     sentence_ambiguous = "I am having some feelings."
     

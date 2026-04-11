@@ -77,7 +77,7 @@ cp .env.example .env
 # Fill in:
 # OPENAI_API_KEY
 # ELEVENLABS_API_KEY
-# ALEX_VOICE_ID        # pre-cloned voice ID
+# YUKI_VOICE_ID        # pre-cloned voice ID
 # MONGODB_URI
 ```
 
@@ -99,7 +99,7 @@ cd backend-data && python seed_demo.py
 
 ### Demo Mode
 
-Open the app and click **"Load Demo Profile"** on the onboarding screen. This seeds the database with a complete patient profile (Alex) and 30 days of session history, then drops you straight into the patient view.
+Open the app and click **"Load Demo Profile"** on the onboarding screen. This seeds the database with a complete patient profile (Yuki) and 30 days of session history, then drops you straight into the patient view.
 
 ---
 

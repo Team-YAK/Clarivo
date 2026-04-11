@@ -3,7 +3,7 @@
 ## Role Overview
 - **Identifier**: E2
 - **Domain**: `backend-ai/` (Full Ownership)
-- **Mindset**: You are the intelligence layer. Every sentence Alex speaks and every summary for Maya is yours.
+- **Mindset**: You are the intelligence layer. Every sentence Yuki speaks and every summary for Maya is yours.
 - **Primary Goal**: Fast, genuinely personalized AI interactions.
 
 ## Boundaries & Rules
@@ -34,7 +34,7 @@
   - `/api/confirm` (Voice): < 2s
   - `/api/clarify`: < 600ms
 - **Voice Distinction**: 
-  - **Patient (Alex)**: Cloned `voice_id` (ALEX_VOICE_ID in .env).
+  - **Patient (Yuki)**: Cloned `voice_id` (YUKI_VOICE_ID in .env).
   - **Caregiver**: Neutral preset ("Rachel").
 
 ## Key Workflows
