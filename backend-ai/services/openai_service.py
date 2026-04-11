@@ -55,9 +55,14 @@ Return ONLY the simplified sentences, one per line."""
 DIGEST_SYSTEM = """You are writing a warm daily summary for a caregiver about their loved one's communication sessions. Write 2-3 specific, warm sentences summarizing the sessions. Flag any first-time occurrences. Be encouraging and specific — use actual details from the sessions."""
 
 
-async def stream_intent(path: list[str], context: str) -> AsyncGenerator[str, None]:
-    path_str = " > ".join(path)
-    user_prompt = f"The patient selected: {path_str}"
+async def stream_intent(path: list[str], context: str, input_mode: str = "tree") -> AsyncGenerator[str, None]:
+    if input_mode == "composer":
+        # Note: mapping logic ideally resolves against E3, but fallback to Title Case here.
+        path_str = " + ".join([p.title() for p in path])
+        user_prompt = f"The patient entered a sequence of icons: {path_str}. Interpret this combination as a single coherent intent using their personal context to make it specific."
+    else:
+        path_str = " > ".join(path)
+        user_prompt = f"The patient selected: {path_str}"
 
     try:
         stream = await get_client().chat.completions.create(
@@ -115,14 +120,20 @@ async def compute_confidence(sentence: str, path: list[str], context: str) -> fl
         return 0.75
 
 
-async def generate_clarification_options(path: list[str], context: str) -> list[dict]:
-    path_str = " > ".join(path)
+async def generate_clarification_options(path: list[str], context: str, input_mode: str = "tree") -> list[dict]:
+    if input_mode == "composer":
+        path_str = " + ".join([p.title() for p in path])
+        user_prompt = f"Ambiguous Composer Icon Sequence: {path_str}\nProvide 3 potential interpretations what they mean."
+    else:
+        path_str = " > ".join(path)
+        user_prompt = f"Ambiguous path: {path_str}"
+        
     try:
         resp = await get_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"{CLARIFY_SYSTEM}\n\nPatient context:\n{context}"},
-                {"role": "user", "content": f"Ambiguous path: {path_str}"},
+                {"role": "user", "content": user_prompt},
             ],
             max_tokens=200,
             temperature=0.8,

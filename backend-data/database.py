@@ -15,6 +15,8 @@ class Database:
     sentences = None
     context_log = None
     anchors = None
+    tree_nodes = None
+    icons = None
 
 db = Database()
 
@@ -26,6 +28,8 @@ async def connect_to_mongo():
     db.sentences = db.db.sentences
     db.context_log = db.db.context_log
     db.anchors = db.db.anchors
+    db.tree_nodes = db.db.tree_nodes
+    db.icons = db.db.icons
 
 async def close_mongo_connection():
     if db.client:

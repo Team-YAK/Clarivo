@@ -19,10 +19,13 @@ router = APIRouter()
 pending_sessions: dict[str, dict] = {}
 
 
+import httpx
+from services.utils import path_to_key
+
 class IntentRequest(BaseModel):
     path: Optional[List[str]] = None
     user_id: str = "yuki_demo"
-
+    input_mode: str = "tree"
 
 @router.post("/api/intent")
 async def intent(req: IntentRequest):
@@ -31,6 +34,8 @@ async def intent(req: IntentRequest):
 
     path = req.path
     user_id = req.user_id
+    input_mode = req.input_mode
+    path_key = path_to_key(path, input_mode)
 
     user_data = await get_user(user_id)
     context = build_context_string(user_data)
@@ -39,7 +44,34 @@ async def intent(req: IntentRequest):
     async def event_generator():
         full_sentence = ""
         try:
-            async for token in stream_intent(path, context):
+            # 1. Check E3 Cache First
+            try:
+                # Mock E3 caching fetch. Note: httpx uses E3_BASE_URL internally. 
+                # For direct routing in this environment we assume:
+                e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+                async with httpx.AsyncClient(timeout=1.0) as client:
+                    resp = await client.get(f"{e3_url}/api/sentences/cached", params={"user_id": user_id, "path_key": path_key})
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data and data.get("sentence"):
+                            # CACHE HIT
+                            sentence = data["sentence"]
+                            yield {"data": json.dumps({"token": sentence})} # Dump everything natively
+                            confidence = data.get("confidence", 0.95)
+                            pending_sessions[session_id] = {
+                                "session_id": session_id, "user_id": user_id, "path": path, "path_key": path_key,
+                                "sentence": sentence, "confidence": confidence, "input_mode": input_mode
+                            }
+                            yield {"data": json.dumps({
+                                "done": True, "session_id": session_id,
+                                "full_sentence": sentence, "confidence": confidence
+                            })}
+                            return # Exit generator cleanly!
+            except Exception as e:
+                logger.warning(f"Failed cache check: {e}")
+
+            # 2. CACHE MISS. Proceed with OpenAI.
+            async for token in stream_intent(path, context, input_mode=input_mode):
                 full_sentence += token
                 yield {"data": json.dumps({"token": token})}
 
@@ -51,9 +83,23 @@ async def intent(req: IntentRequest):
                 "session_id": session_id,
                 "user_id": user_id,
                 "path": path,
+                "path_key": path_key,
                 "sentence": full_sentence,
                 "confidence": confidence,
+                "input_mode": input_mode
             }
+
+            # 3. Write cache asyncly
+            async def cache_push():
+                try:
+                    e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+                    async with httpx.AsyncClient(timeout=2.0) as client:
+                        await client.post(f"{e3_url}/api/sentences/cache", json={
+                            "user_id": user_id, "path_key": path_key, "sentence": full_sentence,
+                            "confidence": confidence, "input_mode": input_mode, "personalized": True
+                        })
+                except Exception: pass
+            asyncio.create_task(cache_push())
 
             # Schedule cleanup after 5 minutes
             async def cleanup():
