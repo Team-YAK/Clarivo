@@ -137,6 +137,22 @@ async def submit_feedback(req: FeedbackRequest):
         logger.error(f"Error submitting feedback: {e}")
         raise HTTPException(status_code=500, detail="Database update failed")
 
+class SessionUpdate(BaseModel):
+    session_id: str
+    updates: dict
+
+@router.post("/api/sessions/update")
+async def update_session(req: SessionUpdate):
+    try:
+        await db.sessions.update_one(
+            {"_id": req.session_id},
+            {"$set": req.updates}
+        )
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating session: {e}")
+        raise HTTPException(status_code=500, detail="Database update failed")
+
 @router.get("/api/sessions/history")
 async def get_history(user_id: str = Query(...), limit: int = 20, filter_category: Optional[str] = None):
     try:

@@ -51,7 +51,7 @@ async def save_feedback(session_id: str, feedback_data: dict) -> dict:
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
-                f"{E3_BASE}/api/sessions/feedback",
+                f"{E3_BASE}/api/feedback",
                 json={"session_id": session_id, **feedback_data},
             )
             if resp.status_code == 200:
@@ -80,15 +80,15 @@ async def get_sessions_last_24h(user_id: str) -> list:
         return MOCK_SESSIONS
 
 
-async def save_context_question(user_id: str, question_data: dict) -> dict:
+async def save_context_question(session_id: str, question_data: dict) -> dict:
     if USE_MOCK:
-        logger.warning(f"Using MOCK for save_context_question({user_id})")
+        logger.warning(f"Using MOCK for save_context_question({session_id})")
         return {"success": True}
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
-                f"{E3_BASE}/api/context/question",
-                json={"user_id": user_id, **question_data},
+                f"{E3_BASE}/api/sessions/update",
+                json={"session_id": session_id, "updates": {"post_session_question": question_data}},
             )
             if resp.status_code == 200:
                 return resp.json()
@@ -98,22 +98,9 @@ async def save_context_question(user_id: str, question_data: dict) -> dict:
         return {"success": True}
 
 
-async def save_correction(user_id: str, correction_data: dict) -> dict:
-    if USE_MOCK:
-        logger.warning(f"Using MOCK for save_correction({user_id})")
-        return {"success": True}
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            resp = await client.post(
-                f"{E3_BASE}/api/profile/correction",
-                json={"user_id": user_id, **correction_data},
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            raise Exception(f"E3 returned {resp.status_code}")
-    except Exception as e:
-        logger.warning(f"E3 unavailable — correction not saved: {e}")
-        return {"success": True}
+async def save_correction(user_id: str, session_id: str, correction: str) -> dict:
+    # Corrections are now handled via the feedback endpoint in E3
+    return await save_feedback(session_id, {"user_id": user_id, "thumbs_up": False, "correction": correction})
 
 
 async def save_voice_id(user_id: str, voice_id: str) -> dict:
@@ -123,8 +110,8 @@ async def save_voice_id(user_id: str, voice_id: str) -> dict:
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.post(
-                f"{E3_BASE}/api/profile/voice",
-                json={"user_id": user_id, "voice_id": voice_id},
+                f"{E3_BASE}/api/profile/update",
+                json={"user_id": user_id, "field": "voice_id", "value": voice_id},
             )
             if resp.status_code == 200:
                 return resp.json()
