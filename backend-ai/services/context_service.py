@@ -41,7 +41,10 @@ def build_context_string(user_data: dict) -> str:
     if corrections:
         lines = []
         for c in corrections:
-            lines.append(f'{c["path"]} = "{c["corrected"]}"')
+            # Handle both E3 format ('corrected_sentence') and mock format ('corrected')
+            corrected = c.get("corrected") or c.get("corrected_sentence", "")
+            path_str = c.get("path", "unknown")
+            lines.append(f'{path_str} = "{corrected}"')
         correction_text = "Corrections: " + " | ".join(lines)
         cost = _count_tokens(correction_text)
         if cost <= budget:

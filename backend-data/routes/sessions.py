@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 from database import db
 from pydantic import BaseModel
+from utils import path_to_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -12,10 +13,12 @@ router = APIRouter()
 class SessionCreate(BaseModel):
     user_id: str
     path: List[str]
-    path_key: str
+    path_key: Optional[str] = None
     sentence: str
     confidence: float
     input_mode: str = "tree"
+    session_id: Optional[str] = None
+    audio_url: Optional[str] = None
 
 class SessionConfirm(BaseModel):
     session_id: str
@@ -30,12 +33,14 @@ class FeedbackRequest(BaseModel):
 @router.post("/api/sessions/create")
 async def create_session(req: SessionCreate):
     try:
-        doc_id = f"s_{uuid.uuid4().hex[:10]}"
+        doc_id = req.session_id or f"s_{uuid.uuid4().hex[:10]}"
+        # Auto-generate path_key if not provided
+        p_key = req.path_key or path_to_key(req.path, req.input_mode)
         doc = req.model_dump()
         doc.update({
             "_id": doc_id,
-            "status": "pending",
-            "audio_url": None,
+            "path_key": p_key,
+            "status": "confirmed",
             "feedback": None,
             "correction": None,
             "is_first_occurrence": False,
@@ -43,8 +48,17 @@ async def create_session(req: SessionCreate):
             "post_session_question": None,
             "timestamp": datetime.utcnow().isoformat()
         })
+        # Remove session_id from doc body (it's in _id)
+        doc.pop("session_id", None)
         
         await db.sessions.insert_one(doc)
+        
+        # Increment path frequency for the user
+        await db.users.update_one(
+            {"_id": req.user_id},
+            {"$inc": {f"path_frequencies.{p_key}": 1}}
+        )
+        
         return {"session_id": doc_id}
     except Exception as e:
         logger.error(f"Error creating session: {e}")
@@ -158,14 +172,13 @@ async def get_history(user_id: str = Query(...), limit: int = 20, filter_categor
     try:
         query = {"user_id": user_id, "status": "confirmed"}
         if filter_category:
-            # Need to figure out category matching, wait paths array can guide us or we just scan path[0] == category
             query["path.0"] = filter_category
             
         cursor = db.sessions.find(query).sort("timestamp", -1).limit(limit)
         docs = await cursor.to_list(length=limit)
         for d in docs:
             d["id"] = d.pop("_id")
-        return docs
+        return {"sessions": docs}
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
         raise HTTPException(status_code=500, detail="Database query failed")

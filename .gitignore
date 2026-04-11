@@ -1,10 +1,57 @@
+# ─── Environment & Secrets ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+frontend/.env.local
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# ─── Node / Frontend ─────────────────────────────────────────────────────────
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+*.tsbuildinfo
+.npm
+
+# ─── OS & Editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── Logs & Temp ─────────────────────────────────────────────────────────────
+*.log
+*.pid
+*.seed
+*.tmp
+tmp/
+
+# ─── Legacy / Stitch ─────────────────────────────────────────────────────────
+frontend/Stitch\ Projects\ (1)/
 E1_frontend_spec.md
 pdf_content.txt
 pdf_clean.txt
-
-# Prevent E1 from modifying E2/E3 domains
-/backend-ai/
-/backend-data/
-/frontend/Stitch Projects (1)/
-
-.env

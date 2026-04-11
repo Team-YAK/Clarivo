@@ -24,6 +24,8 @@ MOCK_USER = {
             "path": "food > dessert > cake",
             "original": "I would like cake.",
             "corrected": "I want tiramisu specifically.",
+            "corrected_sentence": "I want tiramisu specifically.",
+            "original_sentence": "I would like cake.",
         }
     ],
     "context_answers": [

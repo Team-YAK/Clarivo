@@ -1,3 +1,5 @@
+import os
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import connect_to_mongo, close_mongo_connection
@@ -11,13 +13,19 @@ from routes.profile import router as profile_router
 from routes.aggregations import router as aggregations_router
 from contextlib import asynccontextmanager
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     yield
     await close_mongo_connection()
 
-app = FastAPI(title="VoiceMap Backend Data (E3)", lifespan=lifespan)
+app = FastAPI(title="Clarivo Data Backend (E3)", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,8 +46,18 @@ app.include_router(aggregations_router)
 from routes.demo import router as demo_router
 app.include_router(demo_router)
 
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "service": "Clarivo Data Backend (E3)", "port": 8002}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.getenv("PORT", 8002))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

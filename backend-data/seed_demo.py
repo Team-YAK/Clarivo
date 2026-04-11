@@ -230,7 +230,7 @@ def seed():
             "always_know": "His daughter Maria lives in Boston. He misses her."
         },
         "routine": {"meals": {"breakfast": "08:00", "lunch": "12:30", "dinner": "18:00"}},
-        "voice_id": "mock_voice_id",
+        "voice_id": "",  # Empty so E2 cascades to YUKI_VOICE_ID env var
         "interface_settings": {"simplified_view": False, "show_subtitles": True, "shortcut_threshold": 5},
         "knowledge_score": 71,
         "knowledge_breakdown": {"profile": 25, "medical": 20, "preferences": 15, "conversation": 11},

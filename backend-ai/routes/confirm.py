@@ -52,6 +52,8 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
             "session_id": session["session_id"],
             "user_id": req.user_id,
             "path": session["path"],
+            "path_key": session.get("path_key", ""),
+            "input_mode": session.get("input_mode", "tree"),
             "sentence": session["sentence"],
             "confidence": session["confidence"],
             "audio_url": audio_url,

@@ -6,6 +6,7 @@ Falls back to mock_data.py when E3 is unavailable.
 import os
 import logging
 import httpx
+from services.utils import path_to_key
 from mock_data import MOCK_USER, MOCK_SESSIONS, MOCK_PENDING_QUESTION
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,14 @@ async def get_user(user_id: str) -> dict:
 
 
 async def create_session(session_data: dict) -> dict:
+    """Create a session in E3. Ensures path_key and input_mode are included."""
+    # Auto-generate path_key if not present
+    if "path_key" not in session_data and "path" in session_data:
+        mode = session_data.get("input_mode", "tree")
+        session_data["path_key"] = path_to_key(session_data["path"], mode)
+    if "input_mode" not in session_data:
+        session_data["input_mode"] = "tree"
+
     if USE_MOCK:
         logger.warning(f"Using MOCK session for create_session({session_data.get('session_id')})")
         return {"success": True, "session_id": session_data.get("session_id")}
@@ -38,7 +47,7 @@ async def create_session(session_data: dict) -> dict:
             resp = await client.post(f"{E3_BASE}/api/sessions/create", json=session_data)
             if resp.status_code == 200:
                 return resp.json()
-            raise Exception(f"E3 returned {resp.status_code}")
+            raise Exception(f"E3 returned {resp.status_code}: {resp.text}")
     except Exception as e:
         logger.warning(f"E3 unavailable — session not persisted: {e}")
         return {"success": True, "session_id": session_data.get("session_id")}
@@ -80,19 +89,36 @@ async def get_sessions_last_24h(user_id: str) -> list:
         return MOCK_SESSIONS
 
 
-async def save_context_question(session_id: str, question_data: dict) -> dict:
+async def save_context_question(user_id: str, question_data: dict) -> dict:
+    """Save a post-session question. Called from confirm.py with user_id.
+    Finds the most recent session for this user and attaches the question."""
     if USE_MOCK:
-        logger.warning(f"Using MOCK for save_context_question({session_id})")
+        logger.warning(f"Using MOCK for save_context_question({user_id})")
         return {"success": True}
     try:
+        # Get the most recent session to attach the question to
         async with httpx.AsyncClient(timeout=2.0) as client:
-            resp = await client.post(
-                f"{E3_BASE}/api/sessions/update",
-                json={"session_id": session_id, "updates": {"post_session_question": question_data}},
+            # First get the latest session
+            hist_resp = await client.get(
+                f"{E3_BASE}/api/sessions/history",
+                params={"user_id": user_id, "limit": 1},
             )
-            if resp.status_code == 200:
-                return resp.json()
-            raise Exception(f"E3 returned {resp.status_code}")
+            if hist_resp.status_code == 200:
+                sessions = hist_resp.json()
+                # Handle both wrapped and unwrapped response formats
+                if isinstance(sessions, dict):
+                    sessions = sessions.get("sessions", sessions.get("data", []))
+                if sessions and len(sessions) > 0:
+                    session_id = sessions[0].get("id") or sessions[0].get("_id")
+                    if session_id:
+                        resp = await client.post(
+                            f"{E3_BASE}/api/sessions/update",
+                            json={"session_id": session_id, "updates": {"post_session_question": question_data}},
+                        )
+                        if resp.status_code == 200:
+                            return resp.json()
+            logger.warning(f"Could not find session to attach question for user {user_id}")
+            return {"success": True}
     except Exception as e:
         logger.warning(f"E3 unavailable — question not saved: {e}")
         return {"success": True}

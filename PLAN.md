@@ -1,428 +1,199 @@
-# Clarivo — Full Implementation Plan
-
-
+# Clarivo — Backend Implementation Plan (E3)
 
 ## Context
 
-
-
-The frontend is ~35% complete (static UI, zero backend integration), while both backends are ~80-85% complete. The frontend needs the most work, so it gets split into two engineers. One engineer handles both backends + infrastructure.
-
-
-
-### Bugs Found During Scan
-
-1. **`backend-ai/routes/feedback.py:101`** — calls `save_correction(user_id, correction_data_dict)` with 2 args, but `data_service.py` defines `save_correction(user_id, session_id, correction)` with 3. Runtime error on correction submit.
-
-2. **`backend-data/routes/frontend.py`** — dead code (not registered in `main.py`). Has missing `get_insights` import. Should be deleted.
-
-3. **`shared/api-contract.ts`** — referenced in CLAUDE.md but doesn't exist.
-
-
+E3 is the sole backend engineer owning both `backend-ai/` (port 8001) and `backend-data/` (port 8002). MongoDB Atlas is connected via `.env`. All API keys (OpenAI, ElevenLabs) are active. The frontend is owned by a separate engineer — **do not modify any files in `frontend/`**.
 
 ---
 
-
-
-## Engineer Split
-
-
-
-| Engineer | Ownership | Key Files |
-
-|----------|-----------|-----------|
-
-| **E1 — Patient Frontend** | `frontend/src/components/patient/`, `frontend/src/utils/patientApi.ts` | `ButtonGrid.tsx`, new `IconComposer.tsx`, `SentenceOutput.tsx`, `AudioPlayer.tsx` |
-
-| **E2 — Caregiver Frontend** | `frontend/src/components/caregiver/`, `frontend/src/utils/caregiverApi.ts` | `CaregiverPanel.tsx`, new `InsightsDashboard.tsx`, `VoiceCloneOnboarding.tsx`, `CorrectionEditor.tsx` |
-
-| **E3 — Backend + Infra** | `backend-ai/`, `backend-data/`, `shared/`, `frontend/src/types/`, `frontend/src/utils/api.ts`, `frontend/.env.local` | Route files, services, types, env config |
-
-
-
-Shared page `frontend/src/app/patient/page.tsx` — E3 owns layout; E1/E2 request changes.
-
-
-
----
-
-
-
-## Phase 0: Day 1 Blockers (E3 first)
-
-
-
-E3 must complete before E1/E2 start real API work:
-
-
-
-- [ ] Create `shared/api-contract.ts` with all request/response types for both backends
-
-- [ ] Create `frontend/src/types/index.ts` mirroring contract types
-
-- [ ] Update `frontend/src/utils/api.ts` — add base URLs (`NEXT_PUBLIC_AI_URL`, `NEXT_PUBLIC_DATA_URL`), shared fetch helper, default user ID
-
-- [ ] Create `frontend/.env.local` with `NEXT_PUBLIC_AI_URL=http://localhost:8001`, `NEXT_PUBLIC_DATA_URL=http://localhost:8002`, `NEXT_PUBLIC_DEFAULT_USER_ID=alex_demo`
-
-- [ ] Create `frontend/src/utils/iconMap.ts` — maps string icon names from DB (e.g. `"fork-knife"`) to Phosphor React components (e.g. `ForkKnife`)
-
-- [ ] Fix `backend-ai/routes/feedback.py` save_correction call signature
-
-- [ ] Delete dead `backend-data/routes/frontend.py`
-
-
-
----
-
-
-
-## Phase 1: Parallel Development
-
-
-
-### E1 — Patient Frontend
-
-
-
-**1.1 `patientApi.ts`** — API client for patient flows
-
-- SSE client for `POST /api/intent` (ReadableStream)
-
-- `fetchTreeRoot()`, `fetchTreeChildren(parentKey)`, `fetchPredictions()`, `fetchShortcuts()`, `fetchIcons()`, `searchIcons()`, `confirmSession()`, `fetchNextLikely()`
-
-
-
-**1.2 Refactor `ButtonGrid.tsx` — dynamic decision tree**
-
-- Fetch root categories from `GET /api/tree/root` on mount (currently hardcoded 9 buttons)
-
-- On button click → `fetchTreeChildren(node.key)` → re-render grid with children
-
-- Track breadcrumb as `TreeNode[]`, wire back button to pop
-
-- On leaf click → trigger intent generation (1.4)
-
-- Map DB icon names to Phosphor components via `iconMap.ts`
-
-
-
-**1.3 New: `IconComposer.tsx`** — free-form icon selection
-
-- Toggle via existing SquaresFour/Keyboard mode switch
-
-- Render icon grid from `fetchIcons()` grouped by category
-
-- "Sentence tray" at bottom showing selected icons
-
-- `fetchNextLikely()` for predictive next-icon suggestions
-
-- Submit sends icon array as `path` to `/api/intent`
-
-
-
-**1.4 New: `SentenceOutput.tsx`** — streaming sentence display
-
-- Consume SSE from `/api/intent`, show tokens with typewriter effect
-
-- On `done` event: show full sentence + confidence badge
-
-- "Speak" button → calls `/api/confirm`
-
-- Clarification UI: if confidence < threshold, show options from `/api/clarify`
-
-
-
-**1.5 New: `AudioPlayer.tsx`** — voice playback
-
-- After `/api/confirm` returns `audio_url`, render `<audio>` element
-
-- Large play/pause/replay buttons (aphasia accessibility)
-
-- Auto-play on confirm
-
-
-
-**1.6 Quick response bar** — wire to real predictions
-
-- Replace hardcoded 4 icons with `fetchPredictions(userId, currentHour)`
-
-- On tap → skip tree, go straight to intent generation
-
-
-
-**1.7 Shortcut bar** — wire to real data
-
-- Replace hardcoded Pill/Drop/PhoneCall with `fetchShortcuts(userId)`
-
-
-
-**1.8 MongoDB Atlas setup**
-
-- Create MongoDB Atlas cluster and get connection URI
-
-- Update `backend-data/.env` with real `MONGODB_URI`
-
-- Create indexes: `sessions` on `{user_id, timestamp}`, `tree_nodes` on `{parent_key}`, `sentences` on `{user_id, path_key}`
-
-- Run `python3 seed_demo.py` to populate demo data (Yuki profile, tree nodes, icons, sample sessions)
-
-- Verify backend-data connects successfully and seed data is queryable
-
-
-
-**1.9 Loading states** — skeletons while fetching, error toasts, SSE retry
-
-
-
----
-
-
-
-### E2 — Caregiver Frontend (Expanded Architecture)
-
-E2 is responsible for building a sprawling, comprehensive Caregiver ecosystem. This includes the minimal `CaregiverPanel.tsx` on the shared screen, but strictly focuses on `/caregiver/dashboard` — a completely independent, detail-rich interface for deep configuration, analytics, and AI administration.
-
-**2.1 `caregiverApi.ts` (API Client)**
-- Full integration layer: `fetchComprehensiveInsights`, `managePatientContext`, `configureAlerts`, `exportDoctorAudit`, `manageGlossary`, `submitFeedback`.
-
-**2.2 Full Caregiver Portal Dashboard (`/caregiver/dashboard`)**
-- A standalone Layout specifically for Caregivers, completely decoupled from the patient view.
-- Side navigation: Overview, Deep Analytics, Patient Context, Glossary & AI Rules, Settings.
-
-**2.3 Context & Behavioral Configuration (`PatientContextManager.tsx`)**
-- Extensive form interface to provide the LLM with deep patient identity:
-  - **Medical & Routine**: Tag-based medication schedules, meal time windows, known chronic conditions.
-  - **Emotional Baselines**: Selectors for "Common Frustrations", "Soothing Topics", and "Emergency Triggers".
-  - **Caregiver Relationships**: Mapping out family members, their relationship, and their names for the AI to recognize contextually.
-
-**2.4 "DeepInsights" Advanced Analytics (`DeepInsights.tsx`)**
-- **Trigger & Patterns Radar Chart**: Recharts radar chart mapping distress across variables (Time of Day, Food vs. Pain, Location).
-- **Behavioral Heatmap**: GitHub-style activity calendar heat-map showing session density and distress volume over the last 365 days.
-- **Vocabulary & Efficacy Timeline**: Line charts tracking the growth of verified phrases against the number of AI clarifications needed, proving the AI is "learning" the patient.
-- **AI Narrative Digests**: Segmented summaries generated by Claude (e.g., "Weekly Frustration Trend", "Notable Improvements").
-
-**2.5 Custom AI Glossary Editor (`GlossaryManager.tsx`)**
-- Interface for the caregiver to manually hardcode domain-specific knowledge to bypass AI guessing. 
-- E.g., Add rule: `[Noun: "Bobby"] -> [Def: "Patient's Golden Retriever"]`.
-- Toggle active/inactive states for specific vocabulary.
-
-**2.6 Real-Time Alerting Console (`AlertsConsole.tsx`)**
-- Configuration panel for urgency thresholds. Set conditions that trigger visual UI takeovers on the caregiver panel.
-- Placeholder UI toggles for routing critical distress sequences to SMS or Email notifications.
-
-**2.7 Session Auditing & Export (`SessionAuditor.tsx`)**
-- A robust, filterable data-grid (table) of all historical sequences with their AI confidence scores and timestamps.
-- **PDF/CSV Export Engine**: "Export for Doctor" functionality that compiles the behavioral heatmaps, top 5 distress triggers, and medication adherence logs into a clean, printable report.
-
-**2.8 Immediate Patient Panel (`CaregiverPanel.tsx`)**
-- The live side-pane on the patient's screen.
-- Real-time SSE streaming reader of the patient's current intent.
-- Inline Session Correction Editor: Thumbs down -> type exactly what the patient meant -> hot-patches the AI context.
-- Pending AI Questions: The AI asks the caregiver clarifying questions.
-
-**2.9 Voice Preservation Studio (`VoiceCloneOnboarding.tsx`)**
-- Step-by-step wizard for extracting, uploading, and verifying the patient's cloned voice identity.
-- Includes playback validation and quality indicator UI.
-
-**2.10 Loading States & Error Boundaries**
-- Comprehensive skeleton loaders for all heavy analytical charts.
-- Graceful error boundaries indicating when the connection to the backend telemetry fails.
-
-
-
----
-
-
-
-### E3 — Backend + Infrastructure
-
-
-
-**3.1 Phase 0 deliverables** (see above)
-
-
-
-**3.2 Add `GET /api/live` to backend-ai**
-
-- New file: `backend-ai/routes/live.py`
-
-- Returns current state from `pending_sessions` dict: `{mode, breadcrumb, streamingSentence}`
-
-- Register in `main.py`
-
-
-
-**3.3 Add question polling**
-
-- `GET /api/question/pending?user_id=` — checks most recent session for populated `post_session_question`
-
-- Frontend polls after confirming a session
-
-
-
-**3.4 ~~MongoDB Atlas setup~~ — MOVED TO E1**
-
-
-
-**3.5 Environment files**
-
-- `backend-ai/.env.example`, `backend-data/.env.example`, `frontend/.env.example`
-
-- Ensure `.gitignore` excludes `.env` with real keys
-
-
-
-**3.6 CORS audit**
-
-- backend-ai allows `localhost:3000` only — OK for dev
-
-- backend-data allows `*` — tighten to match
-
-
-
-**3.7 Integration testing**
-
-- Verify E2→E3 HTTP communication
-
-- Full flow: tree root → children → leaf → intent SSE → confirm → feedback
-
-- Voice clone with real audio file
-
-- Caregiver panel + insights with seeded data
-
-
-
----
-
-
-
-## Phase 2: Integration (Days 3-4)
-
-
-
-- **E1 + E3**: Tree navigation → intent SSE → confirm → audio playback end-to-end
-
-- **E2 + E3**: Panel hydration → feedback → knowledge score update end-to-end
-
-- **E1 + E2 coordination**: When patient confirms session (E1), caregiver panel (E2) should update. Options:
-
-  - Shared React context with a `sessionConfirmed` event
-
-  - E2 polls `/api/live` every 2-3 seconds
-
-  - Recommendation: simple polling (simpler, avoids shared state complexity)
-
-
-
----
-
-
-
-## Phase 3: Polish (Days 4-5)
-
-
-
-- Accessibility: large touch targets, screen reader labels, high contrast
-
-- Tablet responsive layout (primary device)
-
-- Error recovery and offline graceful degradation
-
-- Sound on audio playback completion
-
-
-
----
-
-
-
-## Dependency Graph
-
-
+## Architecture
 
 ```
+Frontend (Next.js :3000)
+    ├── Patient View → patientApi.ts (local mock data, does NOT call backend)
+    └── Caregiver View → caregiverApi.ts
+            ├── GET /api/caregiver/panel    → backend-data :8002
+            ├── GET /api/sessions/history   → backend-data :8002
+            ├── GET /api/insights           → backend-data :8002
+            ├── POST /api/context/answer    → backend-data :8002
+            ├── POST /api/feedback          → backend-ai :8001
+            ├── GET /api/digest             → backend-ai :8001
+            └── POST /api/voice/clone       → backend-ai :8001
 
-E3 Phase 0 (types, api config, iconMap) ──┬──> E1 Task 1.1 (patientApi)
-
-                                           └──> E2 Task 2.1 (caregiverApi)
-
-
-
-E1 1.8 (MongoDB Atlas + seed) ──> All real API testing
-
-E3 3.2 (/api/live) ──> E2 2.2 (live activity)
-
-E3 3.3 (question polling) ──> E2 2.4 (question engine)
-
-
-
-E1 1.2 (tree nav) ──> E1 1.4 (SSE streaming)
-
-E1 1.4 (SSE) ──> E1 1.5 (audio playback)
-
-E1 1.3 (composer) ──> E1 1.4 (SSE)
-
-
-
-E2 2.2 (panel wiring) ──> E2 2.3 (feedback)
-
-E2 2.5 (insights) — independent
-
-E2 2.6 (voice clone) — independent
-
+backend-ai (FastAPI :8001)            backend-data (FastAPI :8002)
+    ├── /api/intent (SSE)                  ├── /api/tree/root
+    ├── /api/confirm                       ├── /api/tree/children
+    ├── /api/feedback                      ├── /api/icons
+    ├── /api/clarify                       ├── /api/sessions/create
+    ├── /api/caregiver/simplify            ├── /api/sessions/history
+    ├── /api/digest                        ├── /api/caregiver/panel
+    ├── /api/voice/clone                   ├── /api/insights
+    ├── /api/live                          ├── /api/predictions
+    └── /api/demo/seed (proxy)             ├── /api/shortcuts
+                                           ├── /api/profile
+                  E2 ──HTTP──► E3          ├── /api/context/answer
+                                           ├── /api/knowledge_score
+                                           ├── /api/mood/log
+                                           ├── /api/settings/update
+                                           └── /api/demo/seed
 ```
 
+---
 
+## Completed Work
+
+### Phase 1: MongoDB Atlas Connection ✅
+- [x] `backend-data/.env` — Atlas URI configured, `USE_MOCK_DB=false`
+- [x] `backend-data/database.py` — default changed from mock to real MongoDB
+
+### Phase 2: E2 → E3 Data Flow ✅
+- [x] `backend-ai/services/data_service.py` — `create_session()` now includes `path_key` and `input_mode`
+- [x] `backend-ai/services/data_service.py` — `save_context_question()` fixed to accept `user_id` and find latest session
+- [x] `backend-ai/routes/confirm.py` — passes `path_key` and `input_mode` to `create_session`
+
+### Phase 3: Response Format Fixes ✅
+- [x] `backend-data/routes/sessions.py` — `GET /api/sessions/history` returns `{sessions: [...]}`
+- [x] `backend-data/routes/sessions.py` — `SessionCreate` auto-generates `path_key` from `path`, accepts E2's `session_id`
+- [x] `backend-data/routes/sessions.py` — `create_session` now auto-increments path frequencies and confirms immediately
+- [x] `backend-data/main.py` — added `GET /health`, `GET /`, logging
+
+### Phase 4: Dead Code Removal ✅
+- [x] Deleted `backend-data/routes/internal.py` — duplicate routes not registered in main.py
+
+### Phase 5: Seed Data ✅
+- [x] `seed_demo.py` — `voice_id` set to empty string for env cascade
+- [x] `seed_service.py` — Added `interface_settings`, `routine`, `correction_history`, `context_answers`, `always_know`
+- [x] `mock_db.py` — Added `$push`, `$pull`, `$unset`, `$slice` support
+
+### Phase 6: Context Data Consistency ✅
+- [x] `context_service.py` — handles both `corrected` and `corrected_sentence` field names
+- [x] `mock_data.py` — added `corrected_sentence` and `original_sentence` fields
+
+### Phase 7: Infrastructure ✅
+- [x] `CLAUDE.md` — updated for E3 sole backend ownership
+- [x] CORS already correct on both backends (localhost:3000 only)
 
 ---
 
+## API Endpoints — Complete Reference
 
+### backend-ai (port 8001)
 
-## Verification Checklist
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/health` | Health check | ✅ |
+| POST | `/api/intent` | SSE streaming sentence generation | ✅ |
+| POST | `/api/confirm` | ElevenLabs synthesis + persist session | ✅ |
+| POST | `/api/feedback` | Learning from corrections | ✅ |
+| POST | `/api/clarify` | Low-confidence alternatives | ✅ |
+| POST | `/api/caregiver/simplify` | Simplify text for patient | ✅ |
+| GET | `/api/digest` | Daily caregiver summary (GPT-4o) | ✅ |
+| POST | `/api/voice/clone` | Upload audio → clone voice | ✅ |
+| GET | `/api/live` | Current patient session state | ✅ |
+| POST | `/api/demo/seed` | Proxy to E3 seed | ✅ |
 
+### backend-data (port 8002)
 
-
-1. Patient taps Food → Dessert → Tiramisu → sentence streams → "Speak" → audio plays in user's voice
-
-2. Caregiver sees session in history → thumbs down with correction → knowledge score updates
-
-3. Caregiver answers context question → score increases
-
-4. Quick response bar shows time-aware predictions that change by hour
-
-5. Icon composer: select 🏃 + ☀️ + Morning → "I want to go for a morning run" streams in
-
-6. Insights dashboard renders 4 charts with real seeded data
-
-7. Voice clone upload succeeds → subsequent confirm uses cloned voice
-
-8. Urgency alert fires after 3+ distress sessions in 2 hours
-
-
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/health` | Health check | ✅ |
+| GET | `/api/tree/root` | Root decision tree categories | ✅ |
+| GET | `/api/tree/children` | Children of a tree node | ✅ |
+| GET | `/api/tree/leaf` | Single leaf node lookup | ✅ |
+| GET | `/api/icons` | Composer mode icons | ✅ |
+| GET | `/api/icons/search` | Search icons by tag/label | ✅ |
+| POST | `/api/sessions/create` | Create + confirm session | ✅ |
+| POST | `/api/sessions/confirm` | Confirm a pending session | ✅ |
+| POST | `/api/sessions/update` | Update session fields | ✅ |
+| GET | `/api/sessions/history` | Session history (wrapped) | ✅ |
+| POST | `/api/feedback` | Submit feedback on session | ✅ |
+| GET | `/api/question/pending` | Get unanswered post-session question | ✅ |
+| GET | `/api/profile` | Full user profile | ✅ |
+| POST | `/api/profile/update` | Update profile field | ✅ |
+| POST | `/api/context/answer` | Submit caregiver answer | ✅ |
+| GET | `/api/context/answers` | Get all context answers | ✅ |
+| GET | `/api/knowledge_score` | Knowledge score breakdown | ✅ |
+| POST | `/api/mood/log` | Log daily mood | ✅ |
+| GET | `/api/mood/log` | Get mood history | ✅ |
+| POST | `/api/settings/update` | Update interface settings | ✅ |
+| GET | `/api/caregiver/panel` | Caregiver dashboard data | ✅ |
+| GET | `/api/insights` | 14-day analytics | ✅ |
+| GET | `/api/predictions` | Time-aware predictions | ✅ |
+| GET | `/api/shortcuts` | Frequent path shortcuts | ✅ |
+| GET | `/api/frequencies` | Raw path frequencies | ✅ |
+| GET | `/api/frequencies/next_likely` | Next icon prediction | ✅ |
+| POST | `/api/sentences/cache` | Cache a generated sentence | ✅ |
+| GET | `/api/sentences/cached` | Get cached sentence | ✅ |
+| POST | `/api/sentences/invalidate` | Invalidate cache entry | ✅ |
+| POST | `/api/buttons/add` | Add custom button | ✅ |
+| GET | `/api/buttons/custom` | Get user's custom buttons | ✅ |
+| DELETE | `/api/buttons/custom/{id}` | Delete custom button | ✅ |
+| POST | `/api/demo/seed` | Seed demo data | ✅ |
 
 ---
 
+## Known Limitation
 
+The patient-side frontend (`patientApi.ts`) uses hardcoded local mock data and does NOT call the backend for tree navigation or intent streaming. This is a frontend-owned file and cannot be modified by E3. The caregiver dashboard (`caregiverApi.ts`) DOES call real backend endpoints and is fully functional.
 
-## Infrastructure Setup Checklist
+---
 
+## Verification
 
+### Quick Smoke Test
+```bash
+# 1. Start both backends
+python start.py
 
-| Item | Owner | Status |
+# 2. Seed demo data
+curl -X POST http://localhost:8002/api/demo/seed
 
-|------|-------|--------|
+# 3. Verify data layer
+curl http://localhost:8002/health
+curl http://localhost:8002/api/tree/root
+curl "http://localhost:8002/api/caregiver/panel?user_id=alex_demo"
+curl "http://localhost:8002/api/sessions/history?user_id=alex_demo"
+curl "http://localhost:8002/api/insights?user_id=alex_demo"
 
-| MongoDB Atlas URI | E1 | Needed |
+# 4. Verify AI layer
+curl http://localhost:8001/health
+cd backend-ai && python test_endpoints.py
+```
 
-| OpenAI API key (in backend-ai/.env) | E3 | Verify active |
+### Demo Checklist
+1. ✅ Caregiver panel shows real knowledge score
+2. ✅ Session history table populates with seeded sessions
+3. ✅ Urgency alert fires (3 distress sessions seeded)
+4. ✅ Context question card appears if pending
+5. ✅ Feedback thumbs up/down persists to DB
+6. ✅ Correction invalidates sentence cache
+7. ✅ Voice clone upload → ElevenLabs API
+8. ✅ Daily digest generates via GPT-4o
 
-| ElevenLabs API key (in backend-ai/.env) | E3 | Verify active |
+---
 
-| `npm install` in frontend/ | All | Run once |
+## Environment Variables
 
-| `pip install -r requirements.txt` in both backends | All | Run once |
+### backend-ai/.env
+```
+OPENAI_API_KEY=sk-proj-...
+ELEVENLABS_API_KEY=sk_...
+YUKI_VOICE_ID=kZMkZDS1CEEqIA2z3WtJ
+E3_BASE_URL=http://localhost:8002
+USE_MOCK=false
+```
 
-| `python3 seed_demo.py` against MongoDB | E1 | After Atlas setup |
+### backend-data/.env
+```
+MONGODB_URI=mongodb+srv://...
+DB_NAME=voicemap
+PORT=8002
+USE_MOCK_DB=false
+```
 
-| Three terminals: frontend (3000), backend-ai (8001), backend-data (8002) | All | Dev workflow |
-
+### frontend/.env.local
+```
+NEXT_PUBLIC_AI_URL=http://localhost:8001
+NEXT_PUBLIC_DATA_URL=http://localhost:8002
+NEXT_PUBLIC_DEFAULT_USER_ID=alex_demo
+```

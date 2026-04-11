@@ -7,7 +7,7 @@ load_dotenv()
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "voicemap")
 
-USE_MOCK = os.getenv("USE_MOCK_DB", "true").lower() == "true"
+USE_MOCK = os.getenv("USE_MOCK_DB", "false").lower() == "true"
 
 class Database:
     client: AsyncIOMotorClient = None
