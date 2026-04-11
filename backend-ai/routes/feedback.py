@@ -47,14 +47,7 @@ async def feedback(req: FeedbackRequest):
             context=context
         )
 
-        await save_correction(
-            req.user_id,
-            {
-                "path": " > ".join(session.get("path", [])),
-                "original": session.get("sentence", ""),
-                "corrected": refined_sentence,  # Store the AI-refined version
-            },
-        )
+        await save_correction(req.user_id, req.session_id, refined_sentence)
 
     return {"success": True}
 
