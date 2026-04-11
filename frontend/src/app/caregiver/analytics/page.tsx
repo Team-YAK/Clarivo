@@ -80,7 +80,7 @@ export default function DeepAnalytics() {
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 600 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar name="Distress Volume" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
-                <RechartsTooltip />
+                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -109,7 +109,7 @@ export default function DeepAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
                 <XAxis dataKey="month" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
                 <YAxis tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                <RechartsTooltip contentStyle={{borderRadius: 12, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', color: 'var(--color-on-surface)', borderRadius: '16px', border: '1px solid var(--color-outline-variant)' }} itemStyle={{ color: 'var(--color-on-surface)' }} />
                 <Area type="monotone" dataKey="verified" name="Verified Syntax" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVerified)" />
                 <Area type="monotone" dataKey="clarifications" name="Clarifications Required" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorClarif)" />
               </AreaChart>
@@ -140,9 +140,12 @@ export default function DeepAnalytics() {
                     return (
                       <div 
                         key={dIdx} 
-                        className={`w-3.5 h-3.5 rounded-sm ${color} transition-colors hover:ring-2 hover:ring-outline`}
-                        title={`Distress Level: ${intensity}`}
-                      />
+                        className={`relative group w-3.5 h-3.5 rounded-sm ${color} transition-all hover:scale-125 hover:ring-2 hover:ring-outline hover:z-10`}
+                      >
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-surface-container-highest text-on-surface text-[10px] font-bold rounded-lg border border-outline-variant/30 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                          Intensity: {intensity}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

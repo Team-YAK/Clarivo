@@ -15,6 +15,7 @@ import {
   FlowerLotus,
   ArrowLeft
 } from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
 
 export default function CaregiverLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -32,14 +33,14 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-surface-container-lowest text-on-surface overflow-hidden font-sans">
       {/* Sidebar Navigation */}
-      <aside className="w-72 bg-surface-container shadow-xl flex flex-col border-r border-outline-variant/30 z-20 shrink-0">
+      <aside className="w-72 bg-surface backdrop-blur-xl flex flex-col border-r border-outline-variant/30 z-20 shrink-0">
         <div className="p-8 flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-xl text-on-primary shadow-lg shadow-primary/20">
+          <div className="bg-gradient-to-br from-primary to-primary-container p-2 rounded-xl text-on-primary shadow-lg shadow-primary/20 ring-1 ring-white/10">
             <FlowerLotus size={28} weight="fill" />
           </div>
           <div>
-            <h1 className="font-headline font-black text-2xl tracking-tight text-primary">Clarivo</h1>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Caregiver Portal</p>
+            <h1 className="font-headline font-black text-2xl tracking-tight bg-gradient-to-br from-primary to-primary-container bg-clip-text text-transparent">Clarivo</h1>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant/70">Caregiver Portal</p>
           </div>
         </div>
 
@@ -49,24 +50,32 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto mt-4">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-2">
           {navLinks.map((link) => {
             const isActive = pathname === link.href || (link.href !== '/caregiver' && pathname.startsWith(link.href));
             return (
               <Link 
                 key={link.href} 
                 href={link.href}
-                className={`
-                  flex items-center gap-4 px-4 py-3 rounded-2xl transition-all font-medium text-sm
-                  ${isActive 
-                    ? 'bg-primary text-on-primary shadow-md shadow-primary/10 tracking-wide font-bold' 
-                    : 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'}
-                `}
+                className="relative block group"
               >
-                <div className={`${isActive ? 'text-on-primary' : 'text-primary'}`}>
-                  {React.cloneElement(link.icon as React.ReactElement<any>, { weight: isActive ? 'fill' : 'regular' })}
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-0 bg-primary/10 rounded-2xl border border-primary/20 shadow-[0_0_20px_rgba(134,212,210,0.15)]"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                {!isActive && (
+                  <div className="absolute inset-0 bg-surface-container-highest/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
+                <div className={`relative flex items-center gap-4 px-4 py-3 transition-colors z-10 font-bold text-sm ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                  <div className={`transition-transform ${isActive ? 'text-primary scale-110' : 'text-on-surface-variant group-hover:scale-110 group-hover:text-primary transition-colors'}`}>
+                    {React.cloneElement(link.icon as React.ReactElement<any>, { weight: isActive ? 'fill' : 'regular' })}
+                  </div>
+                  {link.label}
                 </div>
-                {link.label}
               </Link>
             );
           })}

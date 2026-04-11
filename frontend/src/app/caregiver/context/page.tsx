@@ -89,7 +89,7 @@ export default function PatientContextManager() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={addTag}
             placeholder={`Type a rule and press Enter...`}
-            className="w-full bg-surface-variant/30 border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest outline-none transition-all placeholder:text-on-surface-variant/50"
+            className="w-full bg-surface-variant/30 border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-container focus:bg-surface-container-lowest outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] placeholder:text-on-surface-variant/50 focus:placeholder:text-transparent hover:bg-surface-variant/50"
           />
 
           <div className="mt-6 flex flex-wrap gap-2 min-h-[100px]">
@@ -128,7 +128,7 @@ export default function PatientContextManager() {
           <label className="font-bold text-on-surface mb-2 block">Caregiver Relationship Mapping</label>
           <textarea 
             rows={5} 
-            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none"
+            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Wife: Sarah\nSon: Tommy\nDog: Bobby"}
           ></textarea>
         </div>
@@ -136,7 +136,7 @@ export default function PatientContextManager() {
           <label className="font-bold text-on-surface mb-2 block">Emergency Override Contacts</label>
           <textarea 
             rows={5} 
-            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none"
+            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Dr. Smith: 555-0199\nSarah Cell: 555-0188"}
           ></textarea>
         </div>

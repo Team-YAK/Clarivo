@@ -99,7 +99,17 @@ export default function GlossaryManager() {
             ))}
             {rules.length === 0 && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-on-surface-variant italic">No glossary rules defined.</td>
+                <td colSpan={4} className="p-16 text-center bg-surface-container-lowest">
+                    <div className="flex flex-col items-center justify-center gap-4 animate-in zoom-in duration-500">
+                      <div className="p-6 bg-surface-container rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]">
+                         <BookBookmark size={48} className="text-outline-variant" weight="duotone" />
+                      </div>
+                      <div>
+                        <p className="font-headline font-black text-xl text-on-surface mb-1">Glossary is Empty</p>
+                        <p className="text-on-surface-variant text-sm font-medium">Add semantic rules using the panel above to enforce AI comprehension.</p>
+                      </div>
+                    </div>
+                </td>
               </tr>
             )}
           </tbody>

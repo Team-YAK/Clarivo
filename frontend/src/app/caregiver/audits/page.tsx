@@ -109,7 +109,23 @@ export default function SessionAuditor() {
               ))}
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-on-surface-variant italic">No sessions found matching filters.</td>
+                  <td colSpan={5} className="p-16 text-center bg-surface-container-lowest">
+                    <div className="flex flex-col items-center justify-center gap-4 animate-in zoom-in duration-500">
+                      <div className="p-6 bg-surface-container rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]">
+                         <MagnifyingGlass size={48} className="text-outline-variant" weight="duotone" />
+                      </div>
+                      <div>
+                        <p className="font-headline font-black text-xl text-on-surface mb-1">No Sessions Found</p>
+                        <p className="text-on-surface-variant text-sm font-medium">Try adjusting your search criteria or removing filters.</p>
+                      </div>
+                      <button 
+                        onClick={() => setSearchTerm('')}
+                        className="mt-2 px-6 py-2 bg-primary/10 text-primary font-bold rounded-full hover:bg-primary/20 transition-colors"
+                      >
+                        Clear Search
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               )}
             </tbody>
