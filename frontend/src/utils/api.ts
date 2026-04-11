@@ -30,7 +30,7 @@ export const MOCK_DATA = {
     { id: '2', date: '2026-04-09', duration: '45m', summary: 'Patient was distressed about lunch.', flags: 1 },
     { id: '3', date: '2026-04-08', duration: '10m', summary: 'General check-in.', flags: 0 },
   ] as Session[],
-  
+
   liveActivity: {
     mode: 'Composer',
     breadcrumb: ['Needs', 'Physical', 'I am in pain', 'My head'],
