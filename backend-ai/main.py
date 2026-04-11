@@ -1,5 +1,5 @@
 """
-VoiceMap AI Backend — FastAPI app on port 8001.
+Clarivo AI Backend — FastAPI app on port 8001.
 E2: AI + Voice (brain + mouth)
 """
 
