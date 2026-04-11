@@ -6,13 +6,12 @@ import {
   fetchSessionHistory,
   submitContextAnswer,
   submitFeedback,
-  CaregiverPanelResponse,
 } from '@/utils/caregiverApi';
-import { Session } from '@/utils/api';
+import { Session, CaregiverPanel as CaregiverPanelData } from '../../../../shared/api-contract';
 import { Warning, Brain, ArrowCounterClockwise, ThumbsUp, ThumbsDown, Check } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -20,13 +19,13 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15, scale: 0.98 },
   show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
 export default function CaregiverPanel() {
-  const [panelData, setPanelData] = useState<CaregiverPanelResponse | null>(null);
+  const [panelData, setPanelData] = useState<CaregiverPanelData | null>(null);
   const [history, setHistory] = useState<Session[]>([]);
   const [contextAnswer, setContextAnswer] = useState("");
   const [correctionText, setCorrectionText] = useState("");
@@ -119,8 +118,8 @@ export default function CaregiverPanel() {
           <div className="bg-surface-container-lowest p-5 rounded-xl shadow-md border-l-4 border-primary transition-shadow">
             {panelData?.last_session ? (
               <>
-                <p className="text-on-surface-variant italic mb-1 text-sm">Synthesizing draft based on: {panelData.last_session.summary.substring(0, 30)}...</p>
-                <p className="text-primary font-headline font-bold text-xl">&quot;{panelData.last_session.summary}&quot;</p>
+                <p className="text-on-surface-variant italic mb-1 text-sm">Synthesizing draft...</p>
+                <p className="text-primary font-headline font-bold text-xl">&quot;{panelData.last_session.sentence}&quot;</p>
               </>
             ) : (
               <div className="animate-pulse h-16 bg-surface-variant rounded"></div>
@@ -209,7 +208,7 @@ export default function CaregiverPanel() {
           <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest mb-4">Session History</h3>
           <motion.div variants={containerVariants} className="space-y-3">
             {history.length > 0 ? history.map((session, index) => {
-              const confidenceColor = session.flags > 0 ? "bg-red-500" : (index % 2 === 0 ? "bg-teal-500" : "bg-amber-500");
+              const confidenceColor = session.flagged ? "bg-red-500" : (index % 2 === 0 ? "bg-teal-500" : "bg-amber-500");
               const isEditing = editingSessionId === session.id;
               
               return (
@@ -218,8 +217,8 @@ export default function CaregiverPanel() {
                     <div className="flex gap-4">
                       <div className={`w-2 h-2 rounded-full ${confidenceColor} mt-2`}></div>
                       <div>
-                        <p className="text-xs text-on-surface-variant font-medium">{session.date} • {session.duration}</p>
-                        <p className="text-on-surface font-semibold text-sm">&quot;{session.summary}&quot;</p>
+                        <p className="text-xs text-on-surface-variant font-medium">{session.timestamp}</p>
+                        <p className="text-on-surface font-semibold text-sm">&quot;{session.sentence}&quot;</p>
                       </div>
                     </div>
                     {/* Replay button */}
