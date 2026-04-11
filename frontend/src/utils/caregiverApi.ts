@@ -1,34 +1,15 @@
-import { Session, LiveActivity, KnowledgeScore, Alert, ChartData, MOCK_DATA } from './api';
+import { MOCK_DATA } from './api';
+import { CaregiverPanel, Session, InsightsResponse, PostSessionQuestion } from '../../../shared/api-contract';
 
 const DATA_BASE_URL = process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:8002';
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
 const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || 'yuki_demo';
 
-export interface PendingQuestion {
-  question: string;
-  question_id: string;
-}
-
-export interface CaregiverPanelResponse {
-  last_session: Session | null;
-  pending_question: PendingQuestion | null;
-  knowledge_score: number;
-  knowledge_breakdown: {
-    overall: number;
-    profile: number;
-    medical: number;
-    preferences: number;
-    conversation: number;
-  };
-  urgent: boolean;
-}
-
-export const MOCK_CAREGIVER_PANEL: CaregiverPanelResponse = {
-  last_session: MOCK_DATA.sessionHistory[0],
-  pending_question: { question: "Does Alex prefer a specific dessert for celebration tonight?", question_id: "q1" },
+export const MOCK_CAREGIVER_PANEL: CaregiverPanel = {
+  last_session: MOCK_DATA.sessionHistory[0] as unknown as Session,
+  pending_question: { question: "Does Alex prefer a specific dessert for celebration tonight?", question_id: "q1" } as PostSessionQuestion,
   knowledge_score: 78,
   knowledge_breakdown: {
-    overall: 78,
     profile: 92,
     medical: 78,
     preferences: 85,
@@ -38,7 +19,7 @@ export const MOCK_CAREGIVER_PANEL: CaregiverPanelResponse = {
 };
 
 // --- API Functions ---
-export const fetchCaregiverPanel = async (userId: string = DEFAULT_USER_ID): Promise<CaregiverPanelResponse> => {
+export const fetchCaregiverPanel = async (userId: string = DEFAULT_USER_ID): Promise<CaregiverPanel> => {
   try {
     const res = await fetch(`${DATA_BASE_URL}/api/caregiver/panel?user_id=${userId}`);
     if (!res.ok) throw new Error('Failed to fetch');
@@ -57,11 +38,11 @@ export const fetchSessionHistory = async (userId: string = DEFAULT_USER_ID): Pro
     return data.sessions || [];
   } catch (error) {
     console.warn('Backend unavailable — using mock data for Session History');
-    return MOCK_DATA.sessionHistory;
+    return MOCK_DATA.sessionHistory as unknown as Session[];
   }
 };
 
-export const fetchInsights = async (userId: string = DEFAULT_USER_ID): Promise<any> => {
+export const fetchInsights = async (userId: string = DEFAULT_USER_ID): Promise<InsightsResponse> => {
   try {
     const res = await fetch(`${DATA_BASE_URL}/api/insights?user_id=${userId}`);
     if (!res.ok) throw new Error('Failed to fetch');
@@ -70,10 +51,10 @@ export const fetchInsights = async (userId: string = DEFAULT_USER_ID): Promise<a
     console.warn('Backend unavailable — using mock data for Insights');
     return {
       sessions_by_day: { "Mon": 5, "Tue": 8, "Wed": 6, "Thu": 10, "Fri": 15 },
-      top_paths: [{ path: "Food > Dessert", count: 12 }, { path: "Needs > Physical", count: 8 }],
-      sessions_by_period: { "Morning": 12, "Afternoon": 25, "Evening": 8 },
-      mood_log: MOCK_DATA.analytics
-    };
+      top_paths: [{ input_mode: 'tree', path_key: 'food_dessert', label: "Food > Dessert", count: 12 }, { input_mode: 'tree', path_key: 'needs_physical', label: "Needs > Physical", count: 8 }],
+      sessions_by_period: { "morning": 12, "afternoon": 25, "evening": 8 },
+      mood_log: MOCK_DATA.analytics as any
+    } as InsightsResponse;
   }
 };
 
