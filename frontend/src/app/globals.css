@@ -59,6 +59,27 @@
     --background: var(--color-surface);
     --foreground: var(--color-on-surface);
   }
+
+  .dark {
+    --color-surface: #0f1414;
+    --color-surface-container: #151b1b;
+    --color-surface-container-low: #131818;
+    --color-surface-container-lowest: #0e1212;
+    --color-surface-container-high: #1c2323;
+    --color-surface-container-highest: #222b2b;
+    --color-on-surface: #e1e3e4;
+    --color-on-surface-variant: #bec9c8;
+    --color-primary: #86d4d2;
+    --color-on-primary: #003736;
+    --color-primary-container: #00504f;
+    --color-on-primary-container: #a2f0ee;
+    --color-outline: #899392;
+    --color-outline-variant: #3e4948;
+    --color-surface-variant: #3e4948;
+    
+    --background: var(--color-surface);
+    --foreground: var(--color-on-surface);
+  }
 }
 
 body {

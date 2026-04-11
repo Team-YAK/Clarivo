@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -26,9 +27,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="w-full min-h-full flex flex-col font-body bg-surface text-on-surface">
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
