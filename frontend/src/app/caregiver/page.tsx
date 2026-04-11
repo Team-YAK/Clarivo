@@ -181,7 +181,7 @@ export default function CaregiverDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map((session, index) => (
+                    {history.map((session) => (
                       <tr key={session.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low transition-colors">
                         <td className="p-4 font-medium text-on-surface">{session.date}</td>
                         <td className="p-4 text-on-surface-variant">{session.duration}</td>

@@ -11,6 +11,7 @@ export function ThemeProvider({
 
   // Prevent hydration mismatch by ensuring we only render after mounting on the client
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

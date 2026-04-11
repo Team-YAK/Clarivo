@@ -85,7 +85,7 @@ export default function CaregiverPanel() {
             {liveActivity ? (
               <>
                 <p className="text-on-surface-variant italic mb-1 text-sm">Synthesizing draft based on: {liveActivity.breadcrumb.join(' > ')}...</p>
-                <p className="text-primary font-headline font-bold text-xl">"{liveActivity.streamingSentence}"</p>
+                <p className="text-primary font-headline font-bold text-xl">&quot;{liveActivity.streamingSentence}&quot;</p>
               </>
             ) : (
               <div className="animate-pulse h-16 bg-surface-variant rounded"></div>
@@ -115,7 +115,7 @@ export default function CaregiverPanel() {
               </div>
             </div>
             <div>
-              <h4 className="font-headline font-bold text-lg text-on-surface">Alex's Profile</h4>
+              <h4 className="font-headline font-bold text-lg text-on-surface">Alex&apos;s Profile</h4>
               <p className="text-on-surface-variant text-sm">Deep learning accuracy</p>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function CaregiverPanel() {
                     <div className={`w-2 h-2 rounded-full ${confidenceColor} mt-2`}></div>
                     <div>
                       <p className="text-xs text-on-surface-variant font-medium">{session.date} • {session.duration}</p>
-                      <p className="text-on-surface font-semibold text-sm">"{session.summary}"</p>
+                      <p className="text-on-surface font-semibold text-sm">&quot;{session.summary}&quot;</p>
                     </div>
                   </div>
                   <button className="text-on-surface-variant hover:text-primary transition-colors">
