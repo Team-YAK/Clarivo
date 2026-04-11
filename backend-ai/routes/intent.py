@@ -1,5 +1,6 @@
 """POST /api/intent — SSE streaming sentence generation."""
 
+import os
 import json
 import uuid
 import asyncio
