@@ -35,10 +35,11 @@ async def test_health():
         result("GET /health", resp.status_code == 200, f"status={resp.status_code}")
 
 
-async def test_intent() -> str | None:
+async def test_intent():
     print("\n🔍 Intent Streaming (POST /api/intent)")
     session_id = None
     full_sentence = ""
+    confidence = 0
     first_token_time = None
 
     start = time.time()

@@ -58,21 +58,29 @@ async def stream_intent(path: list[str], context: str) -> AsyncGenerator[str, No
     path_str = " > ".join(path)
     user_prompt = f"The patient selected: {path_str}"
 
-    stream = await get_client().chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": f"{INTENT_SYSTEM}\n\nPatient context:\n{context}"},
-            {"role": "user", "content": user_prompt},
-        ],
-        stream=True,
-        max_tokens=60,
-        temperature=0.7,
-    )
+    try:
+        stream = await get_client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"{INTENT_SYSTEM}\n\nPatient context:\n{context}"},
+                {"role": "user", "content": user_prompt},
+            ],
+            stream=True,
+            max_tokens=60,
+            temperature=0.7,
+        )
 
-    async for chunk in stream:
-        delta = chunk.choices[0].delta
-        if delta.content:
-            yield delta.content
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+    except Exception as e:
+        logger.warning(f"Intent streaming failed: {e}")
+        import asyncio
+        mock_sentence = f"I want {path[-1]} please."
+        for word in mock_sentence.split():
+            yield word + " "
+            await asyncio.sleep(0.05)
 
 
 async def compute_confidence(sentence: str, path: list[str], context: str) -> float:
@@ -125,7 +133,7 @@ async def generate_clarification_options(path: list[str], context: str) -> list[
         ]
 
 
-async def generate_post_session_question(session_data: dict, context: str) -> dict | None:
+async def generate_post_session_question(session_data: dict, context: str):
     try:
         path_str = " > ".join(session_data.get("path", []))
         sentence = session_data.get("sentence", "")
