@@ -60,21 +60,53 @@ signal.signal(signal.SIGTERM, shutdown)
 
 
 def ensure_npm_dependencies():
-    """Ensure npm dependencies are installed."""
+    """Ensure npm dependencies are installed and build cache is clean."""
     frontend_dir = os.path.join(root_dir, "frontend")
     node_modules = os.path.join(frontend_dir, "node_modules")
+    tailwindcss_path = os.path.join(node_modules, "tailwindcss")
+    next_cache = os.path.join(frontend_dir, ".next")
 
-    if not os.path.exists(node_modules):
+    # Clean Next.js build cache to fix module resolution issues
+    if os.path.exists(next_cache):
+        import shutil
+        print("Cleaning Next.js build cache...")
+        try:
+            shutil.rmtree(next_cache)
+        except Exception as e:
+            print(f"Warning: Could not clean .next: {e}")
+
+    # Check if tailwindcss specifically is installed
+    if not os.path.exists(tailwindcss_path):
         print("Installing frontend dependencies...")
+
+        # First try standard npm install
         result = subprocess.run(
             ["npm", "install"],
             cwd=frontend_dir,
             capture_output=True,
             text=True,
         )
+
+        # If it fails or tailwindcss still missing, try with legacy peer deps
+        if result.returncode != 0 or not os.path.exists(tailwindcss_path):
+            print("Retrying with --legacy-peer-deps flag...")
+            result = subprocess.run(
+                ["npm", "install", "--legacy-peer-deps"],
+                cwd=frontend_dir,
+                capture_output=True,
+                text=True,
+            )
+
         if result.returncode != 0:
-            print(f"Failed to install dependencies: {result.stderr}")
+            print(f"npm install failed:")
+            print(result.stdout)
+            print(result.stderr)
             return False
+
+        if not os.path.exists(tailwindcss_path):
+            print("Error: tailwindcss still not installed after npm install")
+            return False
+
         print("Frontend dependencies installed.\n")
     return True
 
