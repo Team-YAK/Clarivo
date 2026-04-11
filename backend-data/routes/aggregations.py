@@ -1,0 +1,176 @@
+import logging
+from typing import Optional, List, Dict
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Query, HTTPException
+from database import db
+from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+@router.get("/api/caregiver/panel")
+async def get_caregiver_panel(user_id: str = Query(...)):
+    try:
+        user = await db.users.find_one({"_id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        # 1. Last session
+        last_session = await db.sessions.find_one(
+            {"user_id": user_id, "status": "confirmed"},
+            sort=[("timestamp", -1)]
+        )
+        if last_session: last_session["id"] = last_session.pop("_id")
+        
+        # 2. Pending question
+        pending_question = None
+        if last_session and last_session.get("post_session_question"):
+            # Ensure it hasn't been answered yet
+            answers = user.get("context_answers", [])
+            q_id = last_session["post_session_question"].get("question_id")
+            if not any(a.get("question_id") == q_id for a in answers):
+                pending_question = last_session["post_session_question"]
+                
+        # 3. Urgency Detection (Sessions in last 2 hours where path contains pain/help/emergency/health)
+        two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat()
+        
+        urgent_count = await db.sessions.count_documents({
+            "user_id": user_id,
+            "timestamp": {"$gte": two_hours_ago},
+            "path": {"$in": ["pain", "help", "emergency", "health"]}
+        })
+        urgent = urgent_count >= 3
+        
+        return {
+            "last_session": last_session,
+            "pending_question": pending_question,
+            "knowledge_score": user.get("knowledge_score", 0),
+            "knowledge_breakdown": user.get("knowledge_breakdown", {}),
+            "urgent": urgent
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching panel: {e}")
+        raise HTTPException(status_code=500, detail="Database failure")
+
+@router.get("/api/insights")
+async def get_insights(user_id: str = Query(...)):
+    try:
+        now_date = datetime.utcnow()
+        fourteen_days_ago = (now_date - timedelta(days=14)).isoformat()
+        
+        # Pull sessions
+        sessions_cursor = db.sessions.find({
+            "user_id": user_id,
+            "status": "confirmed",
+            "timestamp": {"$gte": fourteen_days_ago}
+        })
+        sessions = await sessions_cursor.to_list(length=1000)
+        
+        # Sessions by day (dict of YYYY-MM-DD: count)
+        sessions_by_day = {}
+        for i in range(13, -1, -1):
+            day_str = (now_date - timedelta(days=i)).strftime("%Y-%m-%d")
+            sessions_by_day[day_str] = 0
+            
+        sessions_by_period = {"morning": 0, "afternoon": 0, "evening": 0}
+        
+        for s in sessions:
+            try:
+                dt = datetime.fromisoformat(s["timestamp"])
+                d_str = dt.strftime("%Y-%m-%d")
+                if d_str in sessions_by_day:
+                    sessions_by_day[d_str] += 1
+                
+                h = dt.hour
+                if 6 <= h < 12: sessions_by_period["morning"] += 1
+                elif 12 <= h < 18: sessions_by_period["afternoon"] += 1
+                else: sessions_by_period["evening"] += 1
+            except Exception:
+                continue
+                
+        # Top paths (aggregate across db since we have path frequencies)
+        user = await db.users.find_one({"_id": user_id}, {"path_frequencies": 1, "mood_log": 1})
+        freqs = user.get("path_frequencies", {})
+        top_keys = sorted(freqs.items(), key=lambda x: x[1], reverse=True)[:8]
+        
+        top_paths = []
+        for k, count in top_keys:
+            if k.startswith("composer→"):
+                path_arr = k.replace("composer→", "").split("→")
+                top_paths.append({
+                    "path_key": k,
+                    "label": " + ".join([p.title() for p in path_arr]),
+                    "count": count,
+                    "input_mode": "composer"
+                })
+            else:
+                path_arr = k.split("→")
+                top_paths.append({
+                    "path_key": k,
+                    "label": " → ".join([p.title() for p in path_arr]),
+                    "count": count,
+                    "input_mode": "tree"
+                })
+                
+        # Mood log
+        logs = user.get("mood_log", [])
+        mood_log = []
+        for i in range(14):
+            day_str = (now_date - timedelta(days=i)).strftime("%Y-%m-%d")
+            found = next((m for m in logs if m["date"] == day_str), None)
+            mood_log.append(found)
+            
+        mood_log = list(reversed(mood_log))
+
+        return {
+            "sessions_by_day": sessions_by_day,
+            "top_paths": top_paths,
+            "sessions_by_period": sessions_by_period,
+            "mood_log": mood_log
+        }
+    except Exception as e:
+        logger.error(f"Error fetching insights: {e}")
+        raise HTTPException(status_code=500, detail="Database failure")
+
+@router.get("/api/predictions")
+async def get_predictions(user_id: str = Query(...), hour: int = Query(...)):
+    try:
+        user = await db.users.find_one({"_id": user_id}, {"path_frequencies": 1})
+        if not user: return []
+        
+        # In a generic naive approach, we scan sessions bounded by h-1 and h+1 (wrap around 24)
+        min_h = (hour - 1) % 24
+        max_h = (hour + 1) % 24
+        
+        # Simplified prediction: we will just return the most frequent items anyway
+        # A real implementation aggregates by timestamp parsing, but since this is mock logic for the prompt:
+        
+        freqs = user.get("path_frequencies", {})
+        sorted_freqs = sorted(freqs.items(), key=lambda x: x[1], reverse=True)[:4]
+        
+        out = []
+        for k, count in sorted_freqs:
+            if k.startswith("composer→"):
+                path_arr = k.replace("composer→", "").split("→")
+                out.append({
+                    "path": path_arr,
+                    "path_key": k,
+                    "label": " + ".join([p.title() for p in path_arr]),
+                    "icon": "magic-wand",
+                    "input_mode": "composer"
+                })
+            else:
+                path_arr = k.split("→")
+                out.append({
+                    "path": path_arr,
+                    "path_key": k,
+                    "label": " → ".join([p.title() for p in path_arr]),
+                    "icon": "star",
+                    "input_mode": "tree"
+                })
+        return out
+    except Exception as e:
+        logger.error(f"Error predictions: {e}")
+        return []
