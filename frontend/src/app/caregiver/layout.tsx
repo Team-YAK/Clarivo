@@ -12,7 +12,8 @@ import {
   Microphone, 
   SquaresFour,
   SignOut,
-  FlowerLotus
+  FlowerLotus,
+  ArrowLeft
 } from '@phosphor-icons/react';
 
 export default function CaregiverLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,12 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
             <h1 className="font-headline font-black text-2xl tracking-tight text-primary">Clarivo</h1>
             <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Caregiver Portal</p>
           </div>
+        </div>
+
+        <div className="px-6 pb-2">
+          <Link href="/patient" className="w-full flex items-center justify-center gap-2 py-3 bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface rounded-xl transition-all font-bold text-sm shadow-sm border border-outline-variant/10 group">
+            <ArrowLeft size={18} weight="bold" className="group-hover:-translate-x-1 transition-transform" /> Back to Tablet
+          </Link>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto mt-4">
