@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SquaresFour, Keyboard, ArrowLeft } from '@phosphor-icons/react';
-import { fetchTreeRoot, fetchTreeChildren, TreeNode } from '@/utils/patientApi';
+import { fetchTreeRoot, fetchTreeChildren, TreeNode, fetchPredictions } from '@/utils/patientApi';
 import { getIconComponent } from '@/utils/iconMap';
 import SentenceOutput from './SentenceOutput';
+import IconComposer from './IconComposer';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -23,10 +24,13 @@ export default function ButtonGrid() {
   const [breadcrumb, setBreadcrumb] = useState<TreeNode[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedPath, setStreamedPath] = useState<string[]>([]);
+  const [mode, setMode] = useState<'core' | 'type'>('core');
+  const [predictions, setPredictions] = useState<TreeNode[]>([]);
   
   // Load root nodes on mount
   useEffect(() => {
     fetchTreeRoot().then(setNodes);
+    fetchPredictions(new Date().getHours()).then(setPredictions);
   }, []);
 
   const handleNodeClick = async (node: TreeNode) => {
@@ -91,45 +95,85 @@ export default function ButtonGrid() {
         </div>
 
         <div className="flex bg-surface-container p-2 rounded-full shadow-inner border border-outline-variant/10">
-          <button className="flex items-center justify-center p-3 px-6 bg-primary text-on-primary rounded-full shadow-md font-bold text-sm tracking-wide gap-2">
+          <button 
+            onClick={() => setMode('core')}
+            className={`flex items-center justify-center p-3 px-6 rounded-full font-bold text-sm tracking-wide transition-all gap-2 ${mode === 'core' ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+          >
             <SquaresFour size={20} weight="fill" /> Core
           </button>
-          <button className="flex items-center justify-center p-3 px-6 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full font-bold text-sm tracking-wide transition-all gap-2">
+          <button 
+            onClick={() => setMode('type')}
+            className={`flex items-center justify-center p-3 px-6 rounded-full font-bold text-sm tracking-wide transition-all gap-2 ${mode === 'type' ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+          >
             <Keyboard size={20} weight="fill" /> Type
           </button>
         </div>
       </div>
 
-      {/* Dynamic Grid */}
-      <motion.div 
-        key={currentNode || 'root'}
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-2 md:grid-cols-3 gap-6 flex-1 min-h-[400px] pb-8 content-start"
-      >
-        {nodes.map(node => {
-          const Icon = getIconComponent(node.iconName);
-          return (
-            <motion.button 
-              key={node.key}
-              variants={itemVariants} 
-              whileHover={{ scale: 1.03, y: -4 }} 
-              whileTap={{ scale: 0.97 }} 
-              onClick={() => handleNodeClick(node)}
-              className={`group flex flex-col items-center justify-center p-8 rounded-[2rem] ${node.colorClass} transition-shadow shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] border-b-[8px] border-black/20 aspect-video md:aspect-auto`}
+      {/* Dynamic Grid / Composer Rendering */}
+      {mode === 'core' ? (
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* AI Suggested Quick Actions */}
+          {breadcrumb.length === 0 && predictions.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-surface-container-low p-4 rounded-3xl border border-secondary/20 shadow-sm"
             >
-              <Icon size={72} weight="fill" className="text-white drop-shadow-md group-hover:scale-110 transition-transform mb-4" />
-              <span className="text-white font-headline font-black text-2xl tracking-wide opacity-95 drop-shadow-sm text-center px-4 leading-tight">{node.label}</span>
-            </motion.button>
-          )
-        })}
-        {nodes.length === 0 && (
-          <div className="col-span-full flex items-center justify-center p-12 text-on-surface-variant font-bold">
-            No items available in this category.
-          </div>
-        )}
-      </motion.div>
+              <h3 className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                Suggested for {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}
+              </h3>
+              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2">
+                {predictions.map(pred => {
+                  const Icon = getIconComponent(pred.iconName);
+                  return (
+                    <button
+                      key={pred.key}
+                      onClick={() => handleNodeClick(pred)}
+                      className={`flex items-center gap-3 px-6 py-4 rounded-2xl ${pred.colorClass} text-white font-bold shadow-md hover:-translate-y-1 transition-all shrink-0 hover:shadow-lg`}
+                    >
+                      <Icon size={24} weight="fill" />
+                      <span className="whitespace-nowrap">{pred.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          <motion.div 
+            key={currentNode || 'root'}
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 md:grid-cols-3 gap-6 flex-1 min-h-[400px] pb-8 content-start"
+          >
+            {nodes.map(node => {
+              const Icon = getIconComponent(node.iconName);
+              return (
+                <motion.button 
+                  key={node.key}
+                  variants={itemVariants} 
+                  whileHover={{ scale: 1.03, y: -4 }} 
+                  whileTap={{ scale: 0.97 }} 
+                  onClick={() => handleNodeClick(node)}
+                  className={`group flex flex-col items-center justify-center p-8 rounded-[2rem] ${node.colorClass} transition-shadow shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] border-b-[8px] border-black/20 aspect-video md:aspect-auto`}
+                >
+                  <Icon size={72} weight="fill" className="text-white drop-shadow-md group-hover:scale-110 transition-transform mb-4" />
+                  <span className="text-white font-headline font-black text-2xl tracking-wide opacity-95 drop-shadow-sm text-center px-4 leading-tight">{node.label}</span>
+                </motion.button>
+              )
+            })}
+            {nodes.length === 0 && (
+              <div className="col-span-full flex items-center justify-center p-12 text-on-surface-variant font-bold">
+                No items available in this category.
+              </div>
+            )}
+          </motion.div>
+        </div>
+      ) : (
+        <IconComposer />
+      )}
 
       {/* Sentence Streaming Overlay superimposed over the grid */}
       <AnimatePresence>

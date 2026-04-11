@@ -31,14 +31,20 @@ async def get_caregiver_panel(user_id: str = Query(...)):
             if not any(a.get("question_id") == q_id for a in answers):
                 pending_question = last_session["post_session_question"]
                 
-        # 3. Urgency Detection (Sessions in last 2 hours where path contains pain/help/emergency/health)
+        # 3. Urgency Detection (3+ distress sessions in last 2 hours)
         two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat()
-        
-        urgent_count = await db.sessions.count_documents({
+        DISTRESS_TERMS = {"pain", "help", "emergency", "headache", "dizzy", "stomach_pain", "back_pain", "in_pain"}
+
+        recent_cursor = db.sessions.find({
             "user_id": user_id,
             "timestamp": {"$gte": two_hours_ago},
-            "path": {"$in": ["pain", "help", "emergency", "health"]}
+            "status": "confirmed",
         })
+        recent_sessions = await recent_cursor.to_list(length=200)
+        urgent_count = sum(
+            1 for s in recent_sessions
+            if any(p in DISTRESS_TERMS for p in s.get("path", []))
+        )
         urgent = urgent_count >= 3
         
         return {

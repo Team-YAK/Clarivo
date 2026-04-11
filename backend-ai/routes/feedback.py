@@ -47,7 +47,11 @@ async def feedback(req: FeedbackRequest):
             context=context
         )
 
-        await save_correction(req.user_id, req.session_id, refined_sentence)
+        await save_correction(
+            req.user_id,
+            req.session_id,
+            refined_sentence,
+        )
 
     return {"success": True}
 

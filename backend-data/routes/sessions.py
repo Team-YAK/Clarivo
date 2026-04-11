@@ -169,3 +169,36 @@ async def get_history(user_id: str = Query(...), limit: int = 20, filter_categor
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
         raise HTTPException(status_code=500, detail="Database query failed")
+
+
+@router.get("/api/question/pending")
+async def get_pending_question(user_id: str = Query(...)):
+    """
+    Returns the post_session_question from the patient's most recent confirmed session,
+    if the caregiver hasn't answered it yet. Frontend polls this after each session confirm.
+    """
+    try:
+        last_session = await db.sessions.find_one(
+            {"user_id": user_id, "status": "confirmed"},
+            sort=[("timestamp", -1)]
+        )
+        if not last_session or not last_session.get("post_session_question"):
+            return {"pending": False, "question": None}
+
+        q = last_session["post_session_question"]
+
+        # Check if already answered — look in user's context_answers
+        user = await db.users.find_one({"_id": user_id})
+        if not user:
+            return {"pending": False, "question": None}
+
+        answered_ids = {a.get("question_id") for a in user.get("context_answers", [])}
+        q_id = q.get("question_id")
+
+        if q_id and q_id in answered_ids:
+            return {"pending": False, "question": None}
+
+        return {"pending": True, "question": q, "session_id": str(last_session["_id"])}
+    except Exception as e:
+        logger.error(f"Error fetching pending question: {e}")
+        raise HTTPException(status_code=500, detail="Database query failed")

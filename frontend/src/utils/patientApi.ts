@@ -37,7 +37,27 @@ export const fetchTreeChildren = async (parentKey: string): Promise<TreeNode[]> 
   return Promise.resolve(TREE_DATA[parentKey] || []);
 };
 
-export const fetchPredictions = async () => Promise.resolve([]);
+export const fetchPredictions = async (currentHour: number): Promise<TreeNode[]> => {
+  if (currentHour < 11) {
+    return [
+      { key: 'breakfast', label: 'Breakfast', iconName: 'Coffee', isLeaf: true, colorClass: 'bg-amber-700' },
+      { key: 'bathroom', label: 'Bathroom', iconName: 'Toilet', isLeaf: true, colorClass: 'bg-slate-500' },
+      { key: 'stretch', label: 'Stretch', iconName: 'PersonArmsSpread', isLeaf: true, colorClass: 'bg-teal-600' }
+    ];
+  } else if (currentHour < 17) {
+    return [
+      { key: 'water', label: 'Water', iconName: 'Drop', isLeaf: true, colorClass: 'bg-sky-500' },
+      { key: 'pain', label: 'Check Pain', iconName: 'Heartbeat', isLeaf: true, colorClass: 'bg-red-600' },
+      { key: 'outdoors', label: 'Outside', iconName: 'Sun', isLeaf: true, colorClass: 'bg-orange-500' }
+    ];
+  } else {
+    return [
+      { key: 'dinner', label: 'Dinner', iconName: 'ForkKnife', isLeaf: true, colorClass: 'bg-amber-600' },
+      { key: 'tv', label: 'Watch TV', iconName: 'Television', isLeaf: true, colorClass: 'bg-indigo-500' },
+      { key: 'sleep', label: 'Sleep', iconName: 'Moon', isLeaf: true, colorClass: 'bg-purple-800' }
+    ];
+  }
+};
 export const fetchShortcuts = async () => Promise.resolve([]);
 export const fetchIcons = async () => Promise.resolve([]);
 

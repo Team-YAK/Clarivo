@@ -57,6 +57,7 @@ from routes.caregiver import router as caregiver_router
 from routes.digest import router as digest_router
 from routes.voice import router as voice_router
 from routes.demo import router as demo_router
+from routes.live import router as live_router
 
 app.include_router(intent_router)
 app.include_router(confirm_router)
@@ -66,6 +67,7 @@ app.include_router(caregiver_router)
 app.include_router(digest_router)
 app.include_router(voice_router)
 app.include_router(demo_router)
+app.include_router(live_router)
 
 
 @app.get("/")
