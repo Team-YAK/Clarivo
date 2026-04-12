@@ -17,6 +17,20 @@ interface ButtonGridProps {
 }
 
 // ── Lazy-loaded icon card ──────────────────────────────────
+const getColorFromClass = (cls: string) => {
+  if (!cls) return '#1d4ed8'; // Default blue
+  if (cls.includes('teal')) return '#14b8a6';
+  if (cls.includes('red')) return '#ef4444';
+  if (cls.includes('indigo')) return '#6366f1';
+  if (cls.includes('amber')) return '#f59e0b';
+  if (cls.includes('sky') || cls.includes('blue')) return '#0ea5e9';
+  if (cls.includes('purple')) return '#a855f7';
+  if (cls.includes('pink')) return '#ec4899';
+  if (cls.includes('slate')) return '#94a3b8';
+  if (cls.includes('orange')) return '#f97316';
+  return '#3b82f6';
+};
+
 function LazyIconCard({
   node,
   onAdd,
@@ -65,11 +79,11 @@ function LazyIconCard({
                 onAdd(node);
               }
             }}
-            className={`!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col border border-white/20 shadow-lg ${node.colorClass}`}
+            className="!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col border border-white/5 shadow-lg bg-surface-container-high/20"
           >
             <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4">
-              <Icon weight="fill" className="!w-20 !h-20 sm:!w-24 sm:!h-24 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
-              <span className="font-headline font-black text-lg text-white text-center leading-tight drop-shadow-md px-2">
+              <Icon weight="fill" color={getColorFromClass(node.colorClass)} className="!w-20 !h-20 sm:!w-24 sm:!h-24 drop-shadow-[0_2px_15px_rgba(0,0,0,0.6)] relative z-10" />
+              <span className="font-headline font-black text-lg text-on-surface text-center leading-tight drop-shadow-md px-2 z-10">
                 {node.label}
               </span>
             </div>
@@ -217,7 +231,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
       </div>
 
       {/* Scrollable Grid */}
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-28 px-1 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex-1 overflow-y-auto overscroll-contain pt-8 pb-32 px-1 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={gridKey}
@@ -225,7 +239,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
-            className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 content-start px-4 md:px-8"
+            className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 content-start px-4 md:px-8 pb-12"
           >
             {nodes.map((node) => (
               <LazyIconCard
