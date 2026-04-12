@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { UserList, Check, Tag, CloudArrowUp, ArrowsClockwise, Pill, ForkKnife, Sparkle } from '@phosphor-icons/react';
+import { UserList, Check, Tag, CloudArrowUp, ArrowsClockwise, Pill, ForkKnife, Sparkle, Brain } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { syncAI, fetchProfile, updateProfileField } from '@/utils/caregiverApi';
 import { PageTransition } from '@/components/ui/page-transition';
@@ -16,11 +16,15 @@ export default function PatientContextManager() {
   const [emergency, setEmergency] = useState("");
   const [inputValue, setInputValue] = useState('');
   const [activeCategory, setActiveCategory] = useState<'needs' | 'meals' | 'meds'>('needs');
+  const [answers, setAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProfile().then(data => {
-      if (!data) return;
+      if (!data) {
+        setLoading(false);
+        return;
+      }
       // Baselines (Preferences)
       if (data.preferences?.known_preferences) {
         setNeeds(data.preferences.known_preferences.split('. ').filter((s: string) => s.length > 0));
@@ -43,6 +47,9 @@ export default function PatientContextManager() {
       // Emergency
       const doctor = data.medical?.doctor_name || "Not set";
       setEmergency(`Doctor: ${doctor}`);
+
+      // Q&A Context
+      setAnswers(data.context_answers || []);
 
       setLoading(false);
     }).catch(err => {
@@ -270,6 +277,36 @@ export default function PatientContextManager() {
           />
         </div>
       </div>
+      
+      {/* Knowledge Bank - The List of Context Sentences */}
+      <div className="bg-[#050505]/60 rounded-3xl p-8 border border-white/10 shadow-2xl relative overflow-hidden liquid-glass-card">
+        <h2 className="text-2xl font-bold font-headline text-white mb-8 flex items-center gap-2 z-10 relative">
+          <Brain className="text-[#6C5CE7]" /> Neural Knowledge Bank
+        </h2>
+        <p className="text-white/40 text-sm mb-8 z-10 relative">Historical context sentences ingested from caregiver interactions and AI clarifications.</p>
+        
+        <div className="space-y-4 z-10 relative">
+          {answers.length > 0 ? (
+            answers.map((ans, idx) => (
+              <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-[#14F1D9]/30 transition-all">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[10px] uppercase tracking-widest font-black text-[#14F1D9]">Context Node</span>
+                  <span className="text-[10px] font-mono text-white/30">{new Date(ans.timestamp).toLocaleDateString()}</span>
+                </div>
+                <h4 className="text-sm font-bold text-white/90 mb-2">{ans.question}</h4>
+                <div className="bg-black/40 rounded-xl p-4 border border-white/5">
+                  <p className="text-sm text-[#14F1D9] font-medium italic">"{ans.answer}"</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-2xl">
+              <p className="text-white/20 text-xs font-bold uppercase tracking-widest">No historical sentences found</p>
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
     </PageTransition>
   );

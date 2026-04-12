@@ -73,6 +73,16 @@ export const submitContextAnswer = async (questionId: string, answer: string, us
   return await res.json();
 };
 
+export const fetchContextAnswers = async (userId: string = DEFAULT_USER_ID): Promise<any[]> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/context/answers?user_id=${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch context answers');
+    return await res.json();
+  } catch {
+    return [];
+  }
+};
+
 export const submitFeedback = async (sessionId: string, thumbsUp: boolean, correction?: string, userId: string = DEFAULT_USER_ID) => {
   const res = await fetch(`${AI_BASE_URL}/api/feedback`, {
     method: 'POST',

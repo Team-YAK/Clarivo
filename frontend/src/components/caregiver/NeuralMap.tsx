@@ -18,14 +18,14 @@ interface NeuralMapProps {
 
 const NeuralMap: React.FC<NeuralMapProps> = ({ timeOffset }) => {
   const nodes: Node[] = useMemo(() => [
-    { id: 1, label: "Sarah", x: 20, y: 30, type: 'person', delay: 0 },
-    { id: 2, label: "Bobby", x: 75, y: 25, type: 'pet', delay: 0.2 },
-    { id: 3, label: "Aspirin", x: 80, y: 70, type: 'meds', delay: 0.4 },
-    { id: 4, label: "Knee Pain", x: 30, y: 80, type: 'physical', delay: 0.6 },
-    { id: 5, label: "Oatmeal", x: 50, y: 50, type: 'food', delay: 0.3 },
-    { id: 6, label: "Coffee", x: 15, y: 60, type: 'food', delay: 0.8 },
-    { id: 7, label: "Walk", x: 60, y: 15, type: 'activity', delay: 1.0 },
-    { id: 8, label: "Thirsty", x: 40, y: 25, type: 'physical', delay: 1.2 },
+    { id: 1, label: "Yuki", x: 20, y: 30, type: 'person', delay: 0 },
+    { id: 2, label: "Hachi", x: 75, y: 25, type: 'pet', delay: 0.2 },
+    { id: 3, label: "Atorvastatin", x: 80, y: 70, type: 'meds', delay: 0.4 },
+    { id: 4, label: "Stiffness", x: 30, y: 80, type: 'physical', delay: 0.6 },
+    { id: 5, label: "Earl Grey", x: 50, y: 50, type: 'food', delay: 0.3 },
+    { id: 6, label: "Debussy", x: 15, y: 60, type: 'activity', delay: 0.8 },
+    { id: 7, label: "Garden", x: 60, y: 15, type: 'activity', delay: 1.0 },
+    { id: 8, label: "The Studio", x: 40, y: 25, type: 'activity', delay: 1.2 },
   ], []);
 
   // Filter nodes based on timeOffset (simulating history)
