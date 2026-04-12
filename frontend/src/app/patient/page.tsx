@@ -17,6 +17,8 @@ export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
   const [splitPercent, setSplitPercent] = useState(50);
   const [isResizing, setIsResizing] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
+  const [isInitializingDemo, setIsInitializingDemo] = useState(false);
 
   // ── Drag handlers ──
   const startResizing = useCallback(() => {
@@ -147,7 +149,32 @@ export default function PatientScreen() {
             <span className="font-headline font-black text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">Clarivo</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={async () => {
+                const newMode = !demoMode;
+                setDemoMode(newMode);
+                if (newMode) {
+                  setIsInitializingDemo(true);
+                  try {
+                    const dataUrl = process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:8002';
+                    await fetch(`${dataUrl}/api/demo/start-exercise-demo`, { method: 'POST' });
+                    setConversationVersion(v => v + 1);
+                  } catch (e) {
+                    console.error("Failed to init demo state", e);
+                  } finally {
+                    setIsInitializingDemo(false);
+                  }
+                }
+              }}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${
+                demoMode 
+                  ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]" 
+                  : "bg-white/5 text-white/30 border-white/10 hover:border-white/20"
+              }`}
+            >
+              {isInitializingDemo ? "Initializing..." : demoMode ? "Demo Mode ON" : "Demo Mode"}
+            </button>
             <Link
               href="/caregiver"
               className="flex items-center justify-center p-2.5 rounded-full transition-all text-white/40 hover:text-white hover:bg-white/10"
@@ -183,17 +210,20 @@ export default function PatientScreen() {
               
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                 {drawingMode ? (
-                  <DrawingCanvas onComplete={(data) => {
-                    handleAddToStack({
-                      key: data.label.toLowerCase(),
-                      label: data.label,
-                      icon: data.iconKey || "✏️"
-                    });
-                    // Trigger TTS immediately for this inferred concept
-                    setTimeout(() => {
-                      setIsSynthesizing(true);
-                    }, 100);
-                  }} />
+                  <DrawingCanvas
+                    demoMode={demoMode}
+                    onComplete={(data) => {
+                      handleAddToStack({
+                        key: data.label.toLowerCase(),
+                        label: data.label,
+                        icon: data.iconKey || "✏️"
+                      });
+                      // Trigger TTS immediately for this inferred concept
+                      setTimeout(() => {
+                        setIsSynthesizing(true);
+                      }, 100);
+                    }}
+                  />
                 ) : (
                   <ButtonGrid onAddToStack={handleAddToStack} conversationVersion={conversationVersion} />
                 )}
@@ -230,6 +260,7 @@ export default function PatientScreen() {
           {isSynthesizing && (
             <SentenceOutput
               path={stackState.items.map((item) => item.key)}
+              demo={demoMode}
               onClose={handleSynthesisClose}
               onSpeak={() => console.log("Playing synthesized audio...")}
             />

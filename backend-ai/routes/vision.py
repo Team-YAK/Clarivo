@@ -14,6 +14,7 @@ router = APIRouter()
 class DrawingRequest(BaseModel):
     image: str
     user_id: str = DEFAULT_USER_ID
+    demo: bool = False
 
 
 async def fetch_vision_context(user_id: str) -> str:
@@ -71,6 +72,9 @@ async def fetch_vision_context(user_id: str) -> str:
 @router.post("/api/analyze-drawing")
 async def analyze_drawing_endpoint(req: DrawingRequest):
     try:
+        if req.demo:
+            return {"sentence": "I want an apple.", "confidence": 0.99}
+            
         from services.vision_service import analyze_drawing
         context = await fetch_vision_context(req.user_id)
         result = await analyze_drawing(req.image, context)

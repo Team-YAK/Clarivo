@@ -40,16 +40,16 @@ export interface IntentFlowResult {
   error: string | null;
 }
 
-export async function* generateIntentStream(
   path: string[],
   userId: string = DEFAULT_USER_ID_INTENT,
   inputMode: string = 'tree',
+  demo: boolean = false
 ): AsyncGenerator<IntentStreamEvent> {
   try {
     const res = await fetch(`${AI_URL_INTENT}/api/intent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, user_id: userId, input_mode: inputMode }),
+      body: JSON.stringify({ path, user_id: userId, input_mode: inputMode, demo }),
     });
     if (!res.ok || !res.body) {
       throw new Error(`Intent failed: ${res.status}`);
@@ -100,12 +100,13 @@ export async function* generateIntentStream(
 export const confirmIntentSession = async (
   sessionId: string,
   userId: string = DEFAULT_USER_ID_INTENT,
+  demo: boolean = false
 ): Promise<ConfirmIntentResponse | null> => {
   try {
     const res = await fetch(`${AI_URL_INTENT}/api/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, user_id: userId }),
+      body: JSON.stringify({ session_id: sessionId, user_id: userId, demo }),
     });
     if (!res.ok) {
       throw new Error(`Confirm failed: ${res.status}`);
@@ -122,18 +123,20 @@ export const streamAndConfirmIntent = async ({
   userId = DEFAULT_USER_ID_INTENT,
   inputMode = 'tree',
   onToken,
+  demo = false
 }: {
   path: string[];
   userId?: string;
   inputMode?: string;
   onToken?: (token: string) => void | Promise<void>;
+  demo?: boolean;
 }): Promise<IntentFlowResult> => {
   let builtSentence = '';
   let sessionId: string | undefined;
   let confidence: number | undefined;
   let error: string | null = null;
 
-  for await (const event of generateIntentStream(path, userId, inputMode)) {
+  for await (const event of generateIntentStream(path, userId, inputMode, demo)) {
     if (event.type === 'token') {
       builtSentence += event.token;
       await onToken?.(event.token);
@@ -162,7 +165,7 @@ export const streamAndConfirmIntent = async ({
     };
   }
 
-  const confirmed = await confirmIntentSession(sessionId, userId);
+  const confirmed = await confirmIntentSession(sessionId, userId, demo);
   if (!confirmed) {
     return {
       sentence,

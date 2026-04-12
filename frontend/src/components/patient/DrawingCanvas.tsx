@@ -6,9 +6,10 @@ import "tldraw/tldraw.css";
 
 interface DrawingCanvasProps {
   onComplete: (data: { label: string; iconKey: string }) => void;
+  demoMode?: boolean;
 }
 
-export default function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
+export default function DrawingCanvas({ onComplete, demoMode = false }: DrawingCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,7 +62,7 @@ export default function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
       const res = await fetch(`${API_URL}/api/analyze-drawing`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64Image, user_id: "alex_demo" }),
+        body: JSON.stringify({ image: base64Image, user_id: "alex_demo", demo: demoMode }),
       });
 
       if (!res.ok) throw new Error("Vision API failed!");

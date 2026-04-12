@@ -35,6 +35,7 @@ class IntentRequest(BaseModel):
     path: Optional[List[str]] = None
     user_id: str = DEFAULT_USER_ID
     input_mode: str = "tree"
+    demo: bool = False
 
 @router.post("/api/intent")
 async def intent(req: IntentRequest):
@@ -81,6 +82,31 @@ async def intent(req: IntentRequest):
 
     async def event_generator():
         full_sentence = ""
+        # HARDCODED DEMO LOGIC
+        if req.demo:
+            path_str = " ".join(req.path).lower()
+            # If path contains running or is the specific demo sequence
+            if "running" in path_str and "sunny" in path_str:
+                full_sentence = "I want to run in the morning."
+            elif "running" in path_str:
+                full_sentence = "I want to go running."
+            elif "apple" in path_str:
+                full_sentence = "I want an apple."
+            
+            if full_sentence:
+                yield {"data": json.dumps({"token": full_sentence})}
+                confidence = 0.99
+                session_doc = {
+                    "session_id": session_id, "user_id": user_id, "path": path, "path_key": path_key,
+                    "sentence": full_sentence, "confidence": confidence, "input_mode": input_mode,
+                }
+                pending_sessions[session_id] = session_doc
+                yield {"data": json.dumps({
+                    "done": True, "session_id": session_id,
+                    "full_sentence": full_sentence, "confidence": confidence
+                })}
+                return
+
         try:
             # 1. Check E3 Cache — skip entirely if there's an active conversation
             #    (cached sentence was generated without current conversation context)

@@ -8,12 +8,14 @@ interface SentenceOutputProps {
   path: string[];
   onClose: () => void;
   onSpeak: () => void;
+  demo?: boolean;
 }
 
 export default function SentenceOutput({
   path,
   onClose,
   onSpeak,
+  demo = false,
 }: SentenceOutputProps) {
   const [sentence, setSentence] = useState("");
   const [isDone, setIsDone] = useState(false);
@@ -33,6 +35,7 @@ export default function SentenceOutput({
 
       const result = await streamAndConfirmIntent({
         path,
+        demo,
         onToken: (token) => {
           if (!active) return;
           sentenceRef.current += token;
