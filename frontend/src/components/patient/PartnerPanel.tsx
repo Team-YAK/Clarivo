@@ -51,7 +51,7 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
 
   // Session refs
   const isListeningRef = useRef(false);
@@ -78,7 +78,7 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
       ctx.createMediaStreamSource(stream).connect(analyser);
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
-      dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+      dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
 
       const tick = () => {
         if (!analyserRef.current || !dataArrayRef.current) return;

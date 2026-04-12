@@ -17,7 +17,7 @@ export default function InsightsDashboard() {
   useEffect(() => {
     Promise.all([fetchInsights(), fetchDigest()]).then(([ins, dig]) => {
       setInsights(ins);
-      setDigest(dig.summary);
+      setDigest(dig?.summary ?? "");
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
