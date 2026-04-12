@@ -85,9 +85,9 @@ export default function WordStack({
               onClick={() => onAddToStack({ key: action.key, label: action.label, icon: action.icon })}
               className="flex flex-col items-center group"
             >
-              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-primary/10 border border-white/5 transition-all">
-                <Icon size={28} className="text-on-surface" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-on-surface/50 group-hover:text-primary transition-colors">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-[#14F1D9]/10 border border-white/5 transition-all text-white/50 group-hover:text-[#14F1D9]">
+                <Icon size={28} className="text-white" />
+                <span className="text-[11px] font-black uppercase tracking-widest transition-colors">
                   {action.label}
                 </span>
               </div>
@@ -97,13 +97,13 @@ export default function WordStack({
       </div>
 
       {/* ── Word Stack (The Queue - Enlarged) ── */}
-      <div className="flex-1 flex gap-4 bg-black/30 rounded-3xl p-3 border border-white/5 min-h-0 overflow-hidden shadow-inner">
+      <div className="flex-1 flex gap-4 bg-white/5 backdrop-blur-md rounded-3xl p-3 border border-white/10 min-h-0 overflow-hidden">
         {/* Left Side: Controls */}
         <div className="flex flex-col justify-center gap-1 shrink-0 border-r border-white/5 pr-3">
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-all disabled:opacity-20"
+            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
             title="Undo"
           >
             <ArrowCounterClockwise size={22} weight="bold" />
@@ -111,7 +111,7 @@ export default function WordStack({
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-white/10 transition-all disabled:opacity-20"
+            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all disabled:opacity-20"
             title="Redo"
           >
             <ArrowClockwise size={22} weight="bold" />
@@ -124,7 +124,7 @@ export default function WordStack({
           className="flex-1 overflow-x-auto no-scrollbar flex items-center pr-2"
         >
           {items.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-on-surface-variant/30 font-bold text-sm tracking-wide bg-white/5 rounded-2xl border border-dashed border-white/10">
+            <div className="flex-1 flex items-center justify-center text-white/20 font-bold text-sm tracking-wide bg-white/5 rounded-2xl border border-dashed border-white/10">
               Tap icons to build your message...
             </div>
           ) : (
@@ -149,7 +149,7 @@ export default function WordStack({
                       className="h-full"
                       as="div"
                     >
-                      <div className="group relative h-full aspect-square rounded-2xl liquid-glass-card border border-white/10 flex flex-col items-center justify-center p-2 cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all shadow-lg overflow-hidden"
+                      <div className="group relative h-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center p-2 cursor-grab active:cursor-grabbing hover:bg-white/10 transition-all shadow-lg overflow-hidden"
                            style={{ '--depth-color': color } as React.CSSProperties}>
                         
                         {/* Remove button */}
@@ -158,20 +158,20 @@ export default function WordStack({
                             e.stopPropagation();
                             onRemoveItem(item.id);
                           }}
-                          className="absolute top-1.5 right-1.5 z-20 p-1 rounded-full bg-error/10 text-error opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error/20"
+                          className="absolute top-1.5 right-1.5 z-20 p-1 rounded-full bg-[#FF2E63]/10 text-[#FF2E63] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#FF2E63]/20"
                         >
                           <X size={12} weight="bold" />
                         </button>
 
                         <div className="flex-1 w-full flex items-center justify-center relative z-10" style={{ containerType: 'size' }}>
-                          <Icon size="110%" className="!w-[110%] !h-[110%] block text-on-surface transition-transform duration-300 group-hover:scale-110" />
+                          <Icon size="110%" className="!w-[110%] !h-[110%] block text-white transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <span className="relative z-10 text-center text-[8px] font-black uppercase tracking-[0.2em] leading-none mb-1 mt-1 opacity-70 group-hover:opacity-100 transition-opacity"
-                              style={{ color: `color-mix(in srgb, ${color} 80%, var(--color-on-surface))` }}>
+                              style={{ color: `color-mix(in srgb, ${color} 80%, white)` }}>
                           {item.label}
                         </span>
 
-                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-[#14F1D9]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </Reorder.Item>
                   );
@@ -186,7 +186,7 @@ export default function WordStack({
           <button
             onClick={onClear}
             disabled={items.length === 0}
-            className="flex items-center justify-center p-3 rounded-xl text-error/60 hover:text-error hover:bg-error/10 transition-all disabled:opacity-20 border border-transparent hover:border-error/20"
+            className="flex items-center justify-center p-3 rounded-xl text-[#FF2E63]/60 hover:text-[#FF2E63] hover:bg-[#FF2E63]/10 transition-all disabled:opacity-20 border border-transparent hover:border-[#FF2E63]/20"
             title="Clear All"
           >
             <Trash size={22} weight="bold" />
@@ -194,7 +194,7 @@ export default function WordStack({
           <button
             onClick={onSubmit}
             disabled={items.length === 0}
-            className="flex flex-col items-center justify-center px-4 py-3 bg-gradient-to-br from-primary to-teal-500 text-on-primary rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_8px_20px_-4px_rgba(20,184,166,0.4)] hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
+            className="flex flex-col items-center justify-center px-4 py-3 bg-[#14F1D9] text-[#050505] rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_8px_20px_-4px_rgba(20,241,217,0.4)] hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
           >
             <PaperPlaneRight size={24} weight="fill" className="mb-1" />
             <span>Speak</span>

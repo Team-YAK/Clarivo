@@ -104,7 +104,7 @@ function OptionCard({
             onClick={() => onSelect(option)}
             whileHover={{ y: -12, scale: 1.05, transition: { duration: 0.2, ease: "easeOut" } }}
             whileTap={{ scale: 0.92 }}
-            className="relative w-full aspect-square rounded-[2.5rem] liquid-glass-card flex flex-col items-center justify-center cursor-pointer overflow-hidden p-3"
+            className="relative w-full aspect-square rounded-[2.5rem] bg-white/5 border border-white/10 flex flex-col items-center justify-center cursor-pointer overflow-hidden p-3 shadow-2xl group-hover:bg-white/10 transition-colors"
             style={{ '--depth-color': color } as React.CSSProperties}
             aria-label={option.label}
           >
@@ -130,7 +130,7 @@ function OptionCard({
             {/* Label — larger font, more prominent */}
             <span
               className="relative z-10 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] leading-none mb-2 mt-1"
-              style={{ color: `color-mix(in srgb, ${color} 80%, var(--color-on-surface))` }}
+              style={{ color: `color-mix(in srgb, ${color} 80%, white)` }}
             >
               {option.label}
             </span>
@@ -144,14 +144,12 @@ function OptionCard({
             }}
             className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-1/2 z-20
               flex items-center justify-center px-4 py-1.5 rounded-full
-              glass-card text-[11px] font-black uppercase tracking-widest
+              bg-[#050505] text-[11px] font-black uppercase tracking-widest
               opacity-0 group-hover:opacity-100
               hover:scale-110 active:scale-90
-              transition-all duration-300 shadow-xl whitespace-nowrap"
+              transition-all duration-300 shadow-xl whitespace-nowrap border border-white/10"
             style={{
               color,
-              background: `color-mix(in srgb, ${color} 18%, var(--glass-bg))`,
-              border: `1.5px solid color-mix(in srgb, ${color} 40%, transparent)`,
             }}
           >
             <CaretDown size={12} weight="bold" className="mr-1.5" /> more
@@ -332,7 +330,7 @@ export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: Bu
       {/* Breadcrumb — glass container */}
       <div className="flex items-center gap-3 px-2 pb-3 flex-shrink-0">
         {currentFrame.breadcrumbs.length > 0 && (
-          <div className="flex items-center gap-2 glass-card rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
             {currentFrame.breadcrumbs.map((crumb, i) => {
               const BreadcrumbIcon = getIconComponent(crumb.icon);
               const isLast = i === currentFrame.breadcrumbs.length - 1;
@@ -343,8 +341,8 @@ export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: Bu
                     className={[
                       "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all",
                       isLast
-                        ? "bg-primary/10"
-                        : "cursor-pointer hover:bg-surface-container-high",
+                        ? "bg-[#14F1D9]/10"
+                        : "cursor-pointer hover:bg-white/5",
                     ].join(" ")}
                     onClick={() => {
                       if (!isLast && navStack[i + 1]) {
@@ -357,12 +355,12 @@ export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: Bu
                     <BreadcrumbIcon
                       size={18}
                       weight="fill"
-                      className={isLast ? "text-primary" : "text-on-surface-variant/50"}
+                      className={isLast ? "text-[#14F1D9]" : "text-white/30"}
                     />
                     <span
                       className={[
                         "text-xs font-bold",
-                        isLast ? "text-primary" : "text-on-surface-variant/40",
+                        isLast ? "text-[#14F1D9]" : "text-white/40",
                       ].join(" ")}
                     >
                       {crumb.label}
@@ -381,9 +379,9 @@ export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: Bu
               animate={{ opacity: 1, x: 0, width: "auto" }}
               exit={{ opacity: 0, x: -20, width: 0 }}
               onClick={handleBack}
-              className="flex items-center justify-center w-8 h-8 glass-card rounded-full hover:border-outline-variant/40 transition-all shrink-0"
+              className="flex items-center justify-center w-8 h-8 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all shrink-0"
             >
-              <ArrowLeft size={18} weight="bold" className="text-on-surface" />
+              <ArrowLeft size={18} weight="bold" className="text-white" />
             </motion.button>
           )}
         </AnimatePresence>
@@ -399,10 +397,10 @@ export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: Bu
               disabled={refreshing}
               title={isRefreshed ? "Restore original options" : "Shuffle for different options"}
               className={[
-                "flex items-center justify-center w-8 h-8 glass-card rounded-full transition-all shrink-0 ml-auto",
+                "flex items-center justify-center w-8 h-8 bg-white/5 border border-white/10 rounded-full transition-all shrink-0 ml-auto",
                 isRefreshed
-                  ? "border-primary/40 text-primary"
-                  : "hover:border-outline-variant/40 text-on-surface-variant",
+                  ? "border-[#14F1D9]/40 text-[#14F1D9]"
+                  : "hover:border-white/40 text-white/50",
                 refreshing ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
               ].join(" ")}
             >

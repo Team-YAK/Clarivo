@@ -345,7 +345,7 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
   const isActive = mode !== "idle";
 
   return (
-    <div className="flex flex-col h-full w-full liquid-glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#050505]/60 rounded-3xl p-6 border border-white/5 relative overflow-hidden liquid-glass-card">
       {/* Ambient glow when listening */}
       <AnimatePresence>
         {mode === "listening" && (
@@ -365,12 +365,12 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
-        <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-md">
-          <ChatCircleText size={24} weight="fill" className="text-white" />
+        <div className="p-2.5 rounded-xl bg-[#14F1D9]/10 border border-[#14F1D9]/20 shadow-sm">
+          <ChatCircleText size={24} weight="fill" className="text-[#14F1D9]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-headline font-black text-on-surface">Partner Input</h2>
-          <p className="text-sm text-outline font-medium truncate">
+          <h2 className="text-xl font-headline font-black text-white">Partner Input</h2>
+          <p className="text-sm text-white/50 font-medium truncate">
             {mode === "listening"
               ? "Listening for speech…"
               : mode === "processing"
@@ -412,7 +412,7 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
         {!isActive ? (
           <button
             onClick={handleStart}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-white/10 hover:bg-white/20 border border-white/20 text-white shadow-lg backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-[#14F1D9] text-[#050505] hover:bg-[#14F1D9]/80 shadow-[0_0_20px_rgba(20,241,217,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
             <Play size={20} weight="fill" />
             Start Conversation
@@ -420,7 +420,7 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
         ) : (
           <button
             onClick={handleEnd}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-red-500/15 text-red-500 ring-1 ring-red-500/30 hover:bg-red-500/20 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-[#FF2E63]/10 text-[#FF2E63] ring-1 ring-[#FF2E63]/30 hover:bg-[#FF2E63]/20 active:scale-[0.98] transition-all"
           >
             <StopCircle size={20} weight="fill" />
             End Conversation
@@ -494,10 +494,10 @@ export default function PartnerPanel({ onTranslationComplete }: PartnerPanelProp
                   initial={{ opacity: 0, scale: 0.8, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: i * 0.06, type: "spring", stiffness: 280, damping: 22 }}
-                  className="flex flex-col items-center justify-center bg-surface w-32 h-32 rounded-3xl shadow-sm border border-outline-variant/20 hover:border-tertiary/50 transition-colors cursor-default"
+                  className="flex flex-col items-center justify-center bg-white/5 w-32 h-32 rounded-3xl shadow-sm border border-white/10 hover:border-[#14F1D9]/50 transition-colors cursor-default"
                 >
                   <span className="text-5xl mb-3 select-none">{item.icon}</span>
-                  <span className="font-extrabold text-on-surface text-center px-2 w-full text-sm tracking-tight capitalize leading-tight line-clamp-2">
+                  <span className="font-extrabold text-white text-center px-2 w-full text-sm tracking-tight capitalize leading-tight line-clamp-2">
                     {item.label}
                   </span>
                 </motion.div>

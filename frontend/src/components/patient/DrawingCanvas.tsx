@@ -79,21 +79,21 @@ export default function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-surface-container/30 rounded-3xl overflow-hidden border border-white/5 p-4 liquid-glass-card shadow-2xl">
+    <div className="w-full h-full flex flex-col relative bg-[#050505]/60 rounded-3xl overflow-hidden border border-white/5 p-4 liquid-glass-card shadow-2xl">
       <div className="flex items-center justify-between mb-4 shrink-0">
-        <h3 className="font-headline font-black text-xl text-on-surface">Draw to Communicate</h3>
+        <h3 className="font-headline font-black text-xl text-white">Draw to Communicate</h3>
         <div className="flex gap-3">
           <button
             onClick={handleClear}
             disabled={isProcessing}
-            className="px-4 py-2 rounded-2xl bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center border border-red-500/20"
+            className="px-4 py-2 rounded-2xl bg-[#FF2E63]/10 text-[#FF2E63] hover:bg-[#FF2E63]/20 active:scale-95 transition-all flex items-center justify-center border border-[#FF2E63]/20"
           >
             <Trash size={24} weight="fill" />
           </button>
           <button
             onClick={handleSubmit}
             disabled={isProcessing}
-            className="px-6 py-2 rounded-2xl bg-gradient-to-r from-teal-500 to-[#6C5CE7] text-white hover:opacity-90 shadow-[0_0_20px_rgba(20,241,217,0.3)] active:scale-95 transition-all flex items-center justify-center font-bold"
+            className="px-6 py-2 rounded-2xl bg-[#14F1D9] text-[#050505] hover:bg-[#14F1D9]/80 shadow-[0_0_20px_rgba(20,241,217,0.3)] active:scale-95 transition-all flex items-center justify-center font-bold"
           >
             {isProcessing ? <Spinner size={24} className="animate-spin" /> : "Complete"}
           </button>

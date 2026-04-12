@@ -151,20 +151,19 @@ export default function SentenceOutput({
       initial={{ opacity: 0, y: 50, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      className="fixed inset-x-4 bottom-24 z-50 liquid-glass-card shadow-[0_32px_80px_rgba(0,0,0,0.35)] rounded-[2rem] p-8 flex flex-col gap-6"
-      style={{ '--depth-color': 'var(--color-primary)' } as React.CSSProperties}
+      className="fixed inset-x-4 bottom-24 z-50 bg-[#0a0a0a] border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.6)] rounded-[2rem] p-8 flex flex-col gap-6"
     >
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <p className="text-sm font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <p className="text-sm font-bold uppercase tracking-widest text-[#14F1D9] mb-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#14F1D9] animate-pulse" />
             AI Intent Flow
           </p>
           <div className="min-h-[60px]">
-            <p className="text-3xl font-headline font-black text-on-surface leading-tight">
+            <p className="text-3xl font-headline font-black text-white leading-tight">
               {sentence ? `\"${sentence}\"` : "…"}
               {!isDone && (
-                <span className="animate-pulse ml-2 text-primary">|</span>
+                <span className="animate-pulse ml-2 text-[#14F1D9]">|</span>
               )}
             </p>
             {errorMessage && (
@@ -176,7 +175,7 @@ export default function SentenceOutput({
         </div>
         <button
           onClick={onClose}
-          className="p-3 bg-surface hover:bg-surface-variant rounded-full transition-colors shrink-0 shadow-sm border border-outline-variant/10"
+          className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors shrink-0 shadow-sm border border-white/10 text-white"
         >
           <X size={24} weight="bold" />
         </button>
@@ -186,7 +185,7 @@ export default function SentenceOutput({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-row items-center justify-between gap-3 border-t border-outline-variant/20 pt-6"
+          className="flex flex-row items-center justify-between gap-3 border-t border-white/10 pt-6"
         >
           {/* Voice source badge */}
           {voiceSource && (
@@ -195,10 +194,10 @@ export default function SentenceOutput({
               animate={{ opacity: 1, scale: 1 }}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
                 voiceSource === "cloned"
-                  ? "bg-emerald-500/15 text-emerald-600 ring-1 ring-emerald-500/30"
+                  ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
                   : voiceSource === "browser"
-                    ? "bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30"
-                    : "bg-primary/10 text-primary ring-1 ring-primary/20"
+                    ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
+                    : "bg-[#14F1D9]/10 text-[#14F1D9] ring-1 ring-[#14F1D9]/20"
               }`}
             >
               {voiceSource === "cloned" ? (
@@ -229,14 +228,13 @@ export default function SentenceOutput({
               onClick={playAudio}
               whileHover={!isPlaying && !isFinalizing ? { y: -3, scale: 1.03 } : {}}
               whileTap={!isPlaying && !isFinalizing ? { scale: 0.97 } : {}}
-              className="relative flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-xl transition-all liquid-glass-card overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
+              className="relative flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-xl transition-all overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                '--depth-color': 'var(--color-primary)',
                 background: isPlaying || isFinalizing
-                  ? 'var(--glass-bg)'
-                  : 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 70%, #3b82f6), color-mix(in srgb, var(--color-primary) 40%, #06b6d4))',
-                color: isPlaying || isFinalizing ? 'var(--color-primary)' : 'var(--color-on-primary)',
-                boxShadow: isPlaying || isFinalizing ? 'none' : '0 0 32px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 8px 24px rgba(0,0,0,0.2)',
+                  ? 'rgba(255,255,255,0.05)'
+                  : '#14F1D9',
+                color: isPlaying || isFinalizing ? '#14F1D9' : '#050505',
+                boxShadow: isPlaying || isFinalizing ? 'none' : '0 0 32px rgba(20,241,217,0.4), 0 8px 24px rgba(0,0,0,0.2)',
               } as React.CSSProperties}
             >
               <SpeakerHigh
