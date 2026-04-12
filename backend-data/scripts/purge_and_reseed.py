@@ -18,7 +18,7 @@ from services.seed_service import seed
 
 COLLECTIONS_TO_PURGE = [
     "users", "sessions", "sentences", "context_log",
-    "conversations", "prompts", "icons",
+    "conversations", "prompts", "icons", "anchors", "live_sessions"
 ]
 
 
