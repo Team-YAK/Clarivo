@@ -40,6 +40,7 @@ export interface IntentFlowResult {
   error: string | null;
 }
 
+export async function* generateIntentStream(
   path: string[],
   userId: string = DEFAULT_USER_ID_INTENT,
   inputMode: string = 'tree',
