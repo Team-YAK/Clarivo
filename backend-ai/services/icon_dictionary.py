@@ -6,23 +6,22 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-ICON_DICTIONARY_PATH = Path(__file__).resolve().parents[2] / "shared" / "icon-dictionary.json"
-
+ICON_DICTIONARY_PATH = Path(__file__).resolve().parents[2] / "shared" / "emoji-dictionary.json"
 
 def _load_dictionary() -> dict[str, str]:
     if not ICON_DICTIONARY_PATH.exists():
         logger.warning(
-            "icon dictionary missing at %s; using minimal built-in fallback",
+            "emoji dictionary missing at %s; using minimal built-in fallback",
             ICON_DICTIONARY_PATH,
         )
         return {
-            "warning": "pain warning",
-            "toilet": "bathroom restroom",
-            "fork-knife": "food eating",
-            "pill": "medicine medication",
-            "smiley": "feelings emotion",
-            "users": "family people",
-            "dots-three-circle": "more options",
+            "warning": "⚠️",
+            "toilet": "🚽",
+            "food": "🍽️",
+            "pill": "💊",
+            "smiley": "😊",
+            "user": "🧍",
+            "more": "➕",
         }
     with ICON_DICTIONARY_PATH.open("r", encoding="utf-8") as f:
         data = json.load(f)

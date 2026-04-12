@@ -975,7 +975,31 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join("");
 
-  // New backend payload: kebab-case Phosphor name, e.g. "fork-knife"
+  // New backend payload: emoji (native text rendering)
+  if (key && (/\p{Emoji}/u.test(key) || Array.from(key).length <= 2)) {
+    const EmojiIcon = (props: { className?: string; style?: React.CSSProperties; color?: string; weight?: string; size?: number | string }) => {
+      return (
+        <span
+          className={props.className}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: props.size !== undefined ? props.size : "3.5rem",
+            transform: "translateY(2%)", // minor optical alignment
+            ...props.style,
+          }}
+        >
+          {key}
+        </span>
+      );
+    };
+    EmojiIcon.displayName = "EmojiIcon";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return EmojiIcon as any;
+  }
+
+  // legacy backend payload: kebab-case Phosphor name, e.g. "fork-knife"
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const directKebab = (PhosphorIcons as any)[toPascal(key)];
   if (directKebab) return directKebab;
@@ -984,8 +1008,8 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = (PhosphorIcons as any)[iconName];
   if (!Icon) {
-    console.warn(`Icon "${iconName}" (key: "${key}") not found in Phosphor Icons, falling back to DotsThreeCircle.`);
-    return PhosphorIcons.DotsThreeCircle;
+    console.warn(`Icon "${iconName}" (key: "${key}") not found in Phosphor or Emoji mapping, falling back to Help.`);
+    return PhosphorIcons.Question;
   }
   return Icon;
 };

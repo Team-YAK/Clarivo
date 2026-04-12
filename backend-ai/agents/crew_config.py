@@ -95,7 +95,7 @@ def _semantic_key(*parts: str) -> str:
 
 def _score_candidate(concept: str, candidate: str) -> float:
     concept_tokens = set(_tokenize(concept))
-    haystack = f"{candidate} {ICON_DICTIONARY.get(candidate, '')}"
+    haystack = f"{candidate}"
     cand_tokens = set(_tokenize(haystack))
     if not concept_tokens:
         return 0.0
@@ -144,53 +144,12 @@ def _attempt_reword_match(concept: str) -> str | None:
 
     for variant in variants:
         if variant in ICON_DICTIONARY:
-            return variant
+            return ICON_DICTIONARY[variant]
     return None
-
-
-def _layer_icon(first: str, second: str) -> str | None:
-    if first in ICON_DICTIONARY and second in ICON_DICTIONARY and first != second:
-        return f"layer:{first}+{second}"
-    return None
-
-
-def _custom_svg_for_concept(concept: str) -> str:
-    tokens = set(_tokenize(concept))
-
-    if tokens.intersection({"run", "running", "exercise", "jog", "sprint"}):
-        return (
-            "<svg viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'>"
-            "<path d='M24 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z' fill='currentColor'/>"
-            "<path d='M22 18l8 4-4 6 6 8h-5l-4-6-5 6h-5l7-8 2-10Z' fill='currentColor'/>"
-            "</svg>"
-        )
-
-    if tokens.intersection({"morning", "sunrise", "early"}):
-        return (
-            "<svg viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'>"
-            "<path d='M10 32h28v3H10z' fill='currentColor'/>"
-            "<path d='M24 14a9 9 0 0 1 9 9H15a9 9 0 0 1 9-9Z' fill='currentColor'/>"
-            "<path d='M24 8v4M14 12l3 3M34 12l-3 3' stroke='currentColor' stroke-width='2' fill='none'/>"
-            "</svg>"
-        )
-
-    return (
-        "<svg viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'>"
-        "<path d='M24 8 40 24 24 40 8 24Z' fill='currentColor'/>"
-        "<path d='M24 16v16M16 24h16' stroke='white' stroke-width='3'/>"
-        "</svg>"
-    )
-
 
 def _is_valid_icon_payload(icon_value: str) -> bool:
-    if icon_value in ICON_DICTIONARY:
-        return True
-    if icon_value.startswith("layer:"):
-        pair = icon_value.replace("layer:", "", 1).split("+")
-        return len(pair) == 2 and pair[0] in ICON_DICTIONARY and pair[1] in ICON_DICTIONARY
-    if icon_value.strip().startswith("<svg"):
-        return icon_value.count("<path") <= 4 and "</svg>" in icon_value
-    return False
+    # Any string containing an emoji or extended unicode is considered valid
+    return bool(icon_value and any(ord(c) > 127 for c in icon_value)) or icon_value in ICON_DICTIONARY.values()
 
 
 async def context_agent(context_data: dict) -> dict:
@@ -308,18 +267,13 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
         scored = [(c, _score_candidate(concept, c)) for c in candidates if c in ICON_DICTIONARY]
         scored.sort(key=lambda x: x[1], reverse=True)
         if scored and scored[0][1] >= 1.25:
-            return scored[0][0]
+            return ICON_DICTIONARY[scored[0][0]]
 
         reword = _attempt_reword_match(concept)
         if reword:
             return reword
 
-        if len(scored) >= 2:
-            layered = _layer_icon(scored[0][0], scored[1][0])
-            if layered:
-                return layered
-
-        return _custom_svg_for_concept(concept)
+        return "🔘" # fallback generic emoji
 
     for idx, opt in enumerate(resolved.get("options", [])):
         concept = (opt.get("concept") or opt.get("label") or "").strip()
@@ -351,7 +305,7 @@ def manager_agent(result: dict) -> dict:
 
         if not _is_valid_icon_payload(icon):
             fallback_pool = _prefilter_candidates(concept, limit=5)
-            icon = fallback_pool[0] if fallback_pool else _custom_svg_for_concept(concept)
+            icon = ICON_DICTIONARY[fallback_pool[0]] if fallback_pool else "🔘"
 
         cleaned.append({"label": label, "key": key, "icon": icon})
 
