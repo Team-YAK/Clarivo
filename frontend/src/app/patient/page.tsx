@@ -16,6 +16,39 @@ const nextId = () => `stack-${++idCounter}`;
 
 export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
+  const [splitPercent, setSplitPercent] = useState(50);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // ── Drag handlers ──
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const newPercent = (e.clientX / window.innerWidth) * 100;
+    if (newPercent >= 20 && newPercent <= 80) {
+      setSplitPercent(newPercent);
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", stopResizing);
+    } else {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, onMouseMove, stopResizing]);
 
   // ── Stack state ──
   const [stackItems, setStackItems] = useState<StackItem[]>([]);
@@ -119,26 +152,31 @@ export default function PatientScreen() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex w-full h-full pt-14 overflow-hidden">
-        {/* Patient Area (Left 50%) */}
+      <main className="flex w-full h-full pt-14 overflow-hidden select-none">
+        {/* Patient Area (Left) */}
         <motion.div
           layout
-          className="flex-1 w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+          style={{ width: `${splitPercent}%` }}
+          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
         >
           <div className="h-full flex flex-col">
             <ButtonGrid onAddToStack={handleAddToStack} />
           </div>
         </motion.div>
 
-        {/* Vertical Separator */}
-        <div className="w-2 h-full bg-surface-container-high shadow-inner shrink-0 relative transition-colors duration-500">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-outline-variant/40 rounded-full" />
+        {/* Vertical Resizable Separator */}
+        <div 
+          onMouseDown={startResizing}
+          className={`w-1.5 h-full bg-surface-container-high shadow-inner shrink-0 relative transition-colors duration-200 cursor-col-resize hover:bg-primary/20 hover:w-2 active:bg-primary/40 ${isResizing ? 'bg-primary/30 w-2' : ''}`}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-12 bg-outline-variant/40 rounded-full" />
         </div>
 
-        {/* Partner Area (Right 50%) */}
+        {/* Partner Area (Right) */}
         <motion.div
           layout
-          className="flex-1 w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+          style={{ width: `${100 - splitPercent}%` }}
+          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
         >
           <div className="h-full flex flex-col">
             <PartnerPanel />
