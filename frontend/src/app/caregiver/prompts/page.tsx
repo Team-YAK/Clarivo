@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { CPU, Sparkle, MagicWand, HardDrive, CheckCircle, Warning, ArrowClockwise, Info } from '@phosphor-icons/react';
+import { Cpu, Sparkle, MagicWand, HardDrive, CheckCircle, Warning, ArrowClockwise, Info } from '@phosphor-icons/react';
 import { GlowCard } from '@/components/ui/spotlight-card';
 import { PageTransition } from '@/components/ui/page-transition';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const AI_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
 const DATA_URL = process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:8002';
@@ -152,7 +153,7 @@ export default function PromptArchitect() {
                     "p-3 rounded-2xl transition-all duration-300",
                     activeTab === p.id ? "bg-[#14F1D9] text-black" : "bg-white/5 text-white/40 group-hover:text-white"
                   )}>
-                    {p.id.includes('icon') ? <Sparkle size={22} weight="fill" /> : <CPU size={22} weight="fill" />}
+                    {p.id.includes('icon') ? <Sparkle size={22} weight="fill" /> : <Cpu size={22} weight="fill" />}
                   </div>
                   <div>
                     <h3 className={cn("font-bold text-sm tracking-tight", activeTab === p.id ? "text-white" : "text-white/60")}>{p.name}</h3>

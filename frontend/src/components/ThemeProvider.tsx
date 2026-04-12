@@ -7,16 +7,6 @@ export function ThemeProvider({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div suppressHydrationWarning style={{ display: 'contents' }}>{children}</div>;
-  }
-
   return (
     <NextThemesProvider {...props} enableColorScheme={false}>
       {children}
