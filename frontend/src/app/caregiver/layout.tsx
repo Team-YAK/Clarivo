@@ -88,7 +88,7 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm truncate text-on-surface">Yuki Caregiver</p>
-              <p className="text-xs text-on-surface-variant truncate">Caring for: Alex</p>
+              <p className="text-xs text-on-surface-variant truncate">Caring for: Kishan</p>
             </div>
           </div>
           <button className="w-full flex items-center justify-center gap-2 py-3 text-error hover:bg-error-container hover:text-on-error-container rounded-xl transition-colors font-bold text-sm">

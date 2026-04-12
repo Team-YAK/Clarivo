@@ -22,7 +22,7 @@ export default function AlertsConsole() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl">
       <div>
         <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Real-Time Alert Console</h1>
-        <p className="text-on-surface-variant text-lg">Configure how the system notifies you when Alex is experiencing acute distress.</p>
+        <p className="text-on-surface-variant text-lg">Configure how the system notifies you when Kishan is experiencing acute distress.</p>
       </div>
 
       <div className="bg-surface-container rounded-3xl p-8 border border-outline-variant/20 shadow-sm relative overflow-hidden">
@@ -55,7 +55,7 @@ export default function AlertsConsole() {
 
         <div className="mt-6 flex items-start gap-4 p-4 bg-error/10 text-error rounded-2xl border border-error/20">
           <WarningCircle size={24} weight="fill" className="shrink-0 mt-0.5" />
-          <p className="text-sm font-medium">Under this configuration, if Alex taps <strong>"I am frustrated"</strong> or <strong>"Pain"</strong> {threshold} times within a {timeframe}-hour window, it will instantly ping your selected routing channels.</p>
+          <p className="text-sm font-medium">Under this configuration, if Kishan taps <strong>"I am frustrated"</strong> or <strong>"Pain"</strong> {threshold} times within a {timeframe}-hour window, it will instantly ping your selected routing channels.</p>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export default function AlertsConsole() {
               </div>
               <div>
                 <h3 className="font-bold text-lg">Automated Voice Call</h3>
-                <p className="text-sm text-on-surface-variant">Requires Emergency plan upgrade.</p>
+                <p className="text-sm text-on-surface-variant">Automated call to your emergency contact on trigger.</p>
               </div>
             </button>
           </GlowCard>

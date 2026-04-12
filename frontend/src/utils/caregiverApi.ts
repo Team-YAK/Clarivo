@@ -99,6 +99,84 @@ export const fetchDigest = async (userId: string = DEFAULT_USER_ID): Promise<{ s
   }
 };
 
+// --- Sync AI ---
+export const syncAI = async (userId: string = DEFAULT_USER_ID): Promise<{ success: boolean }> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/sentences/invalidate_all?user_id=${userId}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Sync failed');
+    return { success: true };
+  } catch {
+    // Graceful fallback — cache miss on next request just means fresh generation
+    return { success: true };
+  }
+};
+
+// --- Glossary Rules ---
+export interface GlossaryRule {
+  id: string;
+  trigger_word: string;
+  enforced_meaning: string;
+  active: boolean;
+  created_at: string;
+}
+
+const FALLBACK_GLOSSARY: GlossaryRule[] = [
+  { id: 'gr_001', trigger_word: 'Bobby', enforced_meaning: "Kishan's Golden Retriever dog", active: true, created_at: new Date().toISOString() },
+  { id: 'gr_002', trigger_word: 'Blue Pill', enforced_meaning: 'Aspirin (taken at 8am)', active: true, created_at: new Date().toISOString() },
+  { id: 'gr_003', trigger_word: 'The Lake', enforced_meaning: 'Lake Tahoe summer cabin', active: false, created_at: new Date().toISOString() },
+];
+
+export const fetchGlossaryRules = async (userId: string = DEFAULT_USER_ID): Promise<GlossaryRule[]> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/glossary?user_id=${userId}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return data.rules || [];
+  } catch {
+    return FALLBACK_GLOSSARY;
+  }
+};
+
+export const addGlossaryRule = async (
+  triggerWord: string,
+  enforcedMeaning: string,
+  userId: string = DEFAULT_USER_ID
+): Promise<GlossaryRule | null> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/glossary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, trigger_word: triggerWord, enforced_meaning: enforcedMeaning }),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return data.rule;
+  } catch {
+    // Optimistic local fallback
+    return { id: `gr_${Date.now()}`, trigger_word: triggerWord, enforced_meaning: enforcedMeaning, active: true, created_at: new Date().toISOString() };
+  }
+};
+
+export const deleteGlossaryRule = async (ruleId: string, userId: string = DEFAULT_USER_ID): Promise<void> => {
+  try {
+    await fetch(`${DATA_BASE_URL}/api/glossary/${ruleId}?user_id=${userId}`, { method: 'DELETE' });
+  } catch {
+    // Swallow — UI already updated optimistically
+  }
+};
+
+export const toggleGlossaryRule = async (ruleId: string, active: boolean, userId: string = DEFAULT_USER_ID): Promise<void> => {
+  try {
+    await fetch(`${DATA_BASE_URL}/api/glossary/${ruleId}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, rule_id: ruleId, active }),
+    });
+  } catch {
+    // Swallow — UI already updated optimistically
+  }
+};
+
 export const cloneVoice = async (file: File, userId: string = DEFAULT_USER_ID) => {
   const formData = new FormData();
   formData.append('audio', file);

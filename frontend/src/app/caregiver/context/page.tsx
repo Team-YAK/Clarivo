@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { UserList, Check, Plus, Tag, CloudArrowUp } from '@phosphor-icons/react';
+import { UserList, Check, Tag, CloudArrowUp, ArrowsClockwise, Pill, ForkKnife, Sparkle } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { syncAI } from '@/utils/caregiverApi';
 
 export default function PatientContextManager() {
-  const [saving, setSaving] = useState(false);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const [needs, setNeeds] = useState(['Prefers quiet environments', 'Needs water with pills']);
   const [meals, setMeals] = useState(['Breakfast 8:00 AM', 'Lunch 12:30 PM']);
   const [meds, setMeds] = useState(['Ibuprofen prn', 'Aspirin daily']);
@@ -28,25 +29,55 @@ export default function PatientContextManager() {
     if (category === 'meds') setMeds(meds.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => setSaving(false), 800);
+  const handleSync = async () => {
+    setSyncState('syncing');
+    try {
+      const result = await syncAI();
+      if (result.success) {
+        setSyncState('done');
+        setTimeout(() => setSyncState('idle'), 2500);
+      } else {
+        setSyncState('error');
+        setTimeout(() => setSyncState('idle'), 2500);
+      }
+    } catch {
+      setSyncState('error');
+      setTimeout(() => setSyncState('idle'), 2500);
+    }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Patient Context Manager</h1>
-          <p className="text-on-surface-variant text-lg">Define Alex's routines and emotional baselines to grant the AI deeper predictive awareness.</p>
+          <p className="text-on-surface-variant text-lg">Define Kishan&apos;s routines and emotional baselines to grant the AI deeper predictive awareness.</p>
         </div>
-        <button 
-          onClick={handleSave} 
-          disabled={saving}
-          className="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold font-headline shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all w-40 justify-center"
-        >
-          {saving ? 'Saving...' : <><CloudArrowUp size={24} weight="bold" /> Sync AI</>}
-        </button>
+
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <button
+            onClick={handleSync}
+            disabled={syncState === 'syncing'}
+            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold font-headline shadow-lg transition-all text-base min-w-[180px] justify-center
+              ${syncState === 'done' ? 'bg-emerald-500 text-white shadow-emerald-200' :
+                syncState === 'error' ? 'bg-error text-on-error' :
+                syncState === 'syncing' ? 'bg-primary/80 text-on-primary cursor-wait' :
+                'bg-primary text-on-primary hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-xl'}`}
+          >
+            <ArrowsClockwise
+              size={22}
+              weight="bold"
+              className={syncState === 'syncing' ? 'animate-spin' : ''}
+            />
+            {syncState === 'syncing' ? 'Syncing...' :
+             syncState === 'done' ? 'Synced ✓' :
+             syncState === 'error' ? 'Retry Sync' :
+             'Sync AI'}
+          </button>
+          <p className="text-xs text-on-surface-variant text-right max-w-[180px] leading-snug">
+            Clears prediction cache — next generations use fresh context
+          </p>
+        </div>
       </div>
 
       <div className="bg-surface-container rounded-3xl p-8 border border-outline-variant/20 shadow-sm relative overflow-hidden">
@@ -55,25 +86,25 @@ export default function PatientContextManager() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <button 
+          <button
             onClick={() => setActiveCategory('needs')}
             className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'needs' ? 'border-primary bg-primary/5' : 'border-outline-variant/20 hover:border-outline-variant'}`}
           >
             <h3 className="font-bold mb-1 w-full flex justify-between">Baselines / Needs {activeCategory === 'needs' && <Check className="text-primary"/>}</h3>
             <p className="text-xs text-on-surface-variant">General preferences and emotional triggers.</p>
           </button>
-          <button 
+          <button
             onClick={() => setActiveCategory('meals')}
             className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meals' ? 'border-tertiary bg-tertiary/5' : 'border-outline-variant/20 hover:border-outline-variant'}`}
           >
             <h3 className="font-bold mb-1 w-full flex justify-between">Meal Schedule {activeCategory === 'meals' && <Check className="text-tertiary"/>}</h3>
             <p className="text-xs text-on-surface-variant">Expected dietary hours and favorite foods.</p>
           </button>
-          <button 
+          <button
             onClick={() => setActiveCategory('meds')}
-            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meds' ? 'border-error bg-error/5' : 'border-outline-variant/20 hover:border-outline-variant'}`}
+            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meds' ? 'border-rose-400 bg-rose-50' : 'border-outline-variant/20 hover:border-outline-variant'}`}
           >
-            <h3 className="font-bold mb-1 w-full flex justify-between">Medications {activeCategory === 'meds' && <Check className="text-error"/>}</h3>
+            <h3 className="font-bold mb-1 w-full flex justify-between">Medications {activeCategory === 'meds' && <Check className="text-rose-500"/>}</h3>
             <p className="text-xs text-on-surface-variant">Prescriptions to cross-reference against requests.</p>
           </button>
         </div>
@@ -83,8 +114,8 @@ export default function PatientContextManager() {
             <Tag />
             Add new {activeCategory} tag
           </label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={addTag}
@@ -93,49 +124,52 @@ export default function PatientContextManager() {
           />
 
           <div className="mt-6 flex flex-wrap gap-2 min-h-[100px]">
-             <AnimatePresence>
+            <AnimatePresence>
               {(activeCategory === 'needs' ? needs : activeCategory === 'meals' ? meals : meds).map((tag, idx) => (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   key={`${tag}-${idx}`}
-                  className={`
-                    px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 group cursor-pointer
-                    ${activeCategory === 'needs' ? 'bg-primary/10 text-primary-fixed-dim hover:bg-primary/20' : ''}
-                    ${activeCategory === 'meals' ? 'bg-tertiary/10 text-tertiary-fixed-dim hover:bg-tertiary/20' : ''}
-                    ${activeCategory === 'meds' ? 'bg-error/10 text-error hover:bg-error/20' : ''}
-                  `}
                   onClick={() => removeTag(activeCategory, idx)}
+                  className={`
+                    px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 group cursor-pointer shadow-sm border transition-all
+                    ${activeCategory === 'needs' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' : ''}
+                    ${activeCategory === 'meals' ? 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20' : ''}
+                    ${activeCategory === 'meds' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : ''}
+                  `}
                 >
+                  {activeCategory === 'needs' && <Sparkle size={14} weight="fill" className="shrink-0" />}
+                  {activeCategory === 'meals' && <ForkKnife size={14} weight="fill" className="shrink-0" />}
+                  {activeCategory === 'meds' && <Pill size={14} weight="fill" className="shrink-0" />}
                   {tag}
-                  <span className="opacity-0 group-hover:opacity-100 font-bold transition-opacity">×</span>
+                  <span className="opacity-0 group-hover:opacity-100 font-bold transition-opacity text-current">×</span>
                 </motion.div>
               ))}
             </AnimatePresence>
             {(activeCategory === 'needs' ? needs : activeCategory === 'meals' ? meals : meds).length === 0 && (
-               <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-sm italic py-4">
-                 No active rules in this category.
-               </div>
+              <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-sm italic py-4">
+                No active rules in this category.
+              </div>
             )}
           </div>
         </div>
       </div>
-      
+
       {/* Extraneous Form Fields */}
       <div className="grid grid-cols-2 gap-8">
         <div>
           <label className="font-bold text-on-surface mb-2 block">Caregiver Relationship Mapping</label>
-          <textarea 
-            rows={5} 
+          <textarea
+            rows={5}
             className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Wife: Sarah\nSon: Tommy\nDog: Bobby"}
           ></textarea>
         </div>
         <div>
           <label className="font-bold text-on-surface mb-2 block">Emergency Override Contacts</label>
-          <textarea 
-            rows={5} 
+          <textarea
+            rows={5}
             className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Dr. Smith: 555-0199\nSarah Cell: 555-0188"}
           ></textarea>

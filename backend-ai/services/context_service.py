@@ -22,6 +22,7 @@ def build_context_string(user_data: dict) -> str:
     Assemble a max-300-token system prompt from user data.
 
     Priority order (highest first):
+    0. Glossary rules (hardcoded semantic terms — deterministic)
     1. Correction history (last 10)
     2. Context answers (last 15)
     3. Known preferences + communication notes
@@ -36,6 +37,19 @@ def build_context_string(user_data: dict) -> str:
     prefs = user_data.get("preferences") or {}
     corrections = (user_data.get("correction_history") or [])[-10:]
     context_answers = (user_data.get("context_answers") or [])[-15:]
+    glossary_rules = user_data.get("glossary_rules") or []
+
+    # 0. Glossary rules — highest priority (deterministic semantic mappings)
+    active_rules = [r for r in glossary_rules if r.get("active", True)]
+    if active_rules:
+        mappings = " | ".join(
+            [f'"{r["trigger_word"]}" = {r["enforced_meaning"]}' for r in active_rules]
+        )
+        glossary_text = f"Strict Terms: {mappings}"
+        cost = _count_tokens(glossary_text)
+        if cost <= budget:
+            sections.append(glossary_text)
+            budget -= cost
 
     # 1. Corrections — highest priority
     if corrections:

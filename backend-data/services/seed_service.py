@@ -74,7 +74,7 @@ async def seed():
     # Profile Data
     alex = {
         "_id": user_id,
-        "profile": {"name": "Yuki", "diagnosis_date": "2024-04-12", "caregiver_name": "Maya"},
+        "profile": {"name": "Kishan", "diagnosis_date": "2024-04-12", "caregiver_name": "Yuki"},
         "medical": {"medications": ["Aspirin 100mg", "Lisinopril 10mg"], "allergies": ["Penicillin"], "conditions": ["Hypertension"]},
         "preferences": {
             "communication_notes": "Alex gets frustrated when misunderstood. Give him time.", 
@@ -91,6 +91,11 @@ async def seed():
             "needs→medicine": 11,
             "custom→custom_alex_call_maria": 5
         },
+        "glossary_rules": [
+            {"id": "gr_001", "trigger_word": "Bobby", "enforced_meaning": "Kishan's Golden Retriever dog", "active": True, "created_at": (now - timedelta(days=30)).isoformat()},
+            {"id": "gr_002", "trigger_word": "Blue Pill", "enforced_meaning": "Aspirin (taken at 8am)", "active": True, "created_at": (now - timedelta(days=28)).isoformat()},
+            {"id": "gr_003", "trigger_word": "The Lake", "enforced_meaning": "Lake Tahoe summer cabin", "active": False, "created_at": (now - timedelta(days=25)).isoformat()},
+        ],
         "correction_history": [
             {"path": "food→dessert→tiramisu", "original_sentence": "I want a dessert.", "corrected_sentence": "I want tiramisu, it's my favorite.", "timestamp": (now - timedelta(days=20)).isoformat()},
         ],

@@ -47,6 +47,8 @@ app.include_router(aggregations_router)
 app.include_router(conversations_router)
 from routes.demo import router as demo_router
 app.include_router(demo_router)
+from routes.glossary import router as glossary_router
+app.include_router(glossary_router)
 
 
 @app.get("/")

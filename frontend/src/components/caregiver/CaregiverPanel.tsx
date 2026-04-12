@@ -293,7 +293,7 @@ export default function CaregiverPanel() {
               </div>
             </div>
             <div>
-              <h4 className="font-headline font-bold text-lg text-on-surface">Alex&apos;s Profile</h4>
+              <h4 className="font-headline font-bold text-lg text-on-surface">Kishan&apos;s Profile</h4>
               <p className="text-on-surface-variant text-sm">Deep learning accuracy</p>
             </div>
           </div>

@@ -58,6 +58,7 @@ from routes.digest import router as digest_router
 from routes.voice import router as voice_router
 from routes.demo import router as demo_router
 from routes.live import router as live_router
+from routes.tree_ai import router as tree_ai_router
 
 app.include_router(intent_router)
 app.include_router(confirm_router)
@@ -68,6 +69,7 @@ app.include_router(digest_router)
 app.include_router(voice_router)
 app.include_router(demo_router)
 app.include_router(live_router)
+app.include_router(tree_ai_router)
 
 
 @app.get("/")
