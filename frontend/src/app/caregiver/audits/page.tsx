@@ -35,95 +35,97 @@ export default function SessionAuditor() {
 
   return (
     <PageTransition>
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-screen bg-[#050505] text-white p-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Session Auditor</h1>
-          <p className="text-on-surface-variant text-lg">A complete, exportable ledger of all generative communication sequences.</p>
+          <h1 className="text-4xl md:text-5xl font-headline font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight mb-2">Session Auditor</h1>
+          <p className="text-white/60 text-lg">A complete, exportable ledger of all generative communication sequences.</p>
         </div>
-        <button className="flex items-center gap-2 bg-surface-container-highest text-on-surface border border-outline-variant/30 px-6 py-3 rounded-xl font-bold hover:bg-outline-variant/20 transition-colors">
-          <DownloadSimple size={20} weight="bold" /> Export Report for Doctor
+        <button className="flex items-center gap-3 bg-[#14F1D9] text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(20,241,217,0.3)] hover:bg-[#14F1D9]/90 transition-all hover:-translate-y-1">
+          <DownloadSimple size={20} weight="bold" /> Export Report
         </button>
       </div>
 
-      <div className="bg-surface-container rounded-3xl border border-outline-variant/20 shadow-sm overflow-hidden flex flex-col h-[600px]">
+      <div className="bg-[#050505]/60 rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-[650px] relative liquid-glass-card">
         {/* Toolbar */}
-        <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low flex gap-4">
+        <div className="p-6 border-b border-white/10 bg-white/5 flex flex-col md:flex-row gap-4 z-10 relative">
           <div className="flex-1 relative">
-            <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant z-10" />
+            <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 z-10" />
             <GlassInput
               type="text"
               placeholder="Search sentences or pathways..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="pl-12"
+              className="pl-12 !bg-white/5 !border-white/10 focus:!border-[#14F1D9] !text-white"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-surface rounded-xl border border-outline-variant/30 text-sm font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors">
-            <CalendarBlank size={18} /> Date Range
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-surface rounded-xl border border-outline-variant/30 text-sm font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors">
-            <Funnel size={18} /> Filters
-          </button>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 px-5 py-3 bg-white/5 rounded-xl border border-white/10 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all">
+              <CalendarBlank size={18} /> Range
+            </button>
+            <button className="flex items-center gap-2 px-5 py-3 bg-white/5 rounded-xl border border-white/10 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all">
+              <Funnel size={18} /> Filters
+            </button>
+          </div>
         </div>
 
         {/* Table wrapper */}
-        <div className="flex-1 overflow-auto bg-surface-container-lowest">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead className="sticky top-0 bg-surface-container-high shadow-sm z-10">
+        <div className="flex-1 overflow-auto no-scrollbar z-10 relative">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-[#050505] shadow-xl z-20">
               <tr>
-                <th className="p-4 font-bold text-xs uppercase tracking-wider text-on-surface-variant">Timestamp</th>
-                <th className="p-4 font-bold text-xs uppercase tracking-wider text-on-surface-variant">Generation Path</th>
-                <th className="p-4 font-bold text-xs uppercase tracking-wider text-on-surface-variant">Final Output Sentence</th>
-                <th className="p-4 font-bold text-xs uppercase tracking-wider text-on-surface-variant text-center">Confidence</th>
-                <th className="p-4 font-bold text-xs uppercase tracking-wider text-on-surface-variant text-center">Flagged</th>
+                <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40">Timestamp</th>
+                <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40">Generation Path</th>
+                <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40">Final Output Sentence</th>
+                <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 text-center">Confidence</th>
+                <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 text-center">Flagged</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant/10">
+            <tbody className="divide-y divide-white/5">
               {filteredSessions.map((session) => (
-                <tr key={session.id} className="hover:bg-surface-container-low transition-colors group">
-                  <td className="p-4 text-on-surface-variant whitespace-nowrap">
+                <tr key={session.id} className="hover:bg-white/5 transition-all group">
+                  <td className="p-6 text-white/40 text-xs font-medium whitespace-nowrap">
                     {new Date(session.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
                   </td>
-                  <td className="p-4">
-                    <div className="flex gap-1 items-center flex-wrap">
+                  <td className="p-6">
+                    <div className="flex gap-1.5 items-center flex-wrap">
                       {session.path.map((p: string, i: number) => (
                         <React.Fragment key={i}>
-                          <span className="px-2 py-0.5 bg-surface-variant/30 rounded text-xs font-medium text-on-surface-variant">{p}</span>
-                          {i < session.path.length - 1 && <span className="text-outline-variant/50 text-[10px]">▶</span>}
+                          <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-white/60">{p}</span>
+                          {i < session.path.length - 1 && <span className="text-white/20 text-[10px]">▶</span>}
                         </React.Fragment>
                       ))}
                     </div>
                   </td>
-                  <td className="p-4 font-bold text-on-surface text-base">"{session.sentence}"</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${session.confidence >= 90 ? 'bg-green-500/15 text-green-500' : session.confidence >= 70 ? 'bg-amber-500/15 text-amber-500' : 'bg-red-500/15 text-red-500'}`}>
+                  <td className="p-6 font-bold text-white text-lg tracking-tight">"{session.sentence}"</td>
+                  <td className="p-6 text-center">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${session.confidence >= 90 ? 'bg-[#14F1D9]/10 text-[#14F1D9] border-[#14F1D9]/30' : session.confidence >= 70 ? 'bg-[#6C5CE7]/10 text-[#6C5CE7] border-[#6C5CE7]/30' : 'bg-[#FF2E63]/10 text-[#FF2E63] border-[#FF2E63]/30'}`}>
                       {session.confidence}%
                     </span>
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="p-6 text-center">
                     {session.flagged ? (
-                      <span className="inline-block w-3 h-3 rounded-full bg-error ring-4 ring-error/20" title="Distress Flagged"></span>
+                      <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#FF2E63] shadow-[0_0_15px_#FF2E63] animate-pulse" title="Distress Flagged"></span>
                     ) : (
-                      <span className="inline-block w-2 h-2 rounded-full bg-outline-variant/30"></span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-white/10"></span>
                     )}
                   </td>
                 </tr>
               ))}
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-16 text-center bg-surface-container-lowest">
-                    <div className="flex flex-col items-center justify-center gap-4 animate-in zoom-in duration-500">
-                      <div className="p-6 bg-surface-container rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]">
-                         <MagnifyingGlass size={48} className="text-outline-variant" weight="duotone" />
+                  <td colSpan={5} className="p-20 text-center">
+                    <div className="flex flex-col items-center justify-center gap-6 animate-in zoom-in duration-500">
+                      <div className="p-8 bg-white/5 rounded-full border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]">
+                         <MagnifyingGlass size={64} className="text-white/10" weight="duotone" />
                       </div>
                       <div>
-                        <p className="font-headline font-black text-xl text-on-surface mb-1">No Sessions Found</p>
-                        <p className="text-on-surface-variant text-sm font-medium">Try adjusting your search criteria or removing filters.</p>
+                        <p className="font-headline font-black text-2xl text-white mb-2 tracking-tight">No Sessions Found</p>
+                        <p className="text-white/30 text-sm font-medium uppercase tracking-widest">Adjust search criteria or remove filters</p>
                       </div>
                       <button 
                         onClick={() => setSearchTerm('')}
-                        className="mt-2 px-6 py-2 bg-primary/10 text-primary font-bold rounded-full hover:bg-primary/20 transition-colors"
+                        className="mt-2 px-8 py-3 bg-white/5 text-[#14F1D9] font-black uppercase tracking-widest text-[10px] border border-[#14F1D9]/30 rounded-xl hover:bg-[#14F1D9]/10 transition-all"
                       >
                         Clear Search
                       </button>
@@ -135,7 +137,7 @@ export default function SessionAuditor() {
           </table>
         </div>
         
-        <div className="p-4 border-t border-outline-variant/20 bg-surface-container-highest text-xs text-on-surface-variant text-center font-bold">
+        <div className="p-6 border-t border-white/10 bg-white/5 text-[10px] text-white/30 text-center font-black uppercase tracking-[0.2em] z-10 relative">
           Showing {filteredSessions.length} out of 1,204 total tracked sequences.
         </div>
       </div>

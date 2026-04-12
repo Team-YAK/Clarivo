@@ -50,71 +50,71 @@ export default function PatientContextManager() {
 
   return (
     <PageTransition>
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl">
-      <div className="flex items-start justify-between gap-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl min-h-screen bg-[#050505] text-white p-4">
+      <div className="flex flex-col md:flex-row items-start justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Patient Context Manager</h1>
-          <p className="text-on-surface-variant text-lg">Define Kishan&apos;s routines and emotional baselines to grant the AI deeper predictive awareness.</p>
+          <h1 className="text-4xl md:text-5xl font-headline font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight mb-2">Patient Context</h1>
+          <p className="text-white/60 text-lg">Define Kishan&apos;s routines and emotional baselines to grant the AI deeper predictive awareness.</p>
         </div>
 
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="flex flex-col items-end gap-2 shrink-0">
           <button
             onClick={handleSync}
             disabled={syncState === 'syncing'}
-            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold font-headline shadow-lg transition-all text-base min-w-[180px] justify-center
-              ${syncState === 'done' ? 'bg-emerald-500 text-white shadow-emerald-200' :
-                syncState === 'error' ? 'bg-error text-on-error' :
-                syncState === 'syncing' ? 'bg-primary/80 text-on-primary cursor-wait' :
-                'bg-primary text-on-primary hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-xl'}`}
+            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all min-w-[180px] justify-center
+              ${syncState === 'done' ? 'bg-[#14F1D9] text-black shadow-[0_0_20px_rgba(20,241,217,0.4)]' :
+                syncState === 'error' ? 'bg-[#FF2E63] text-white' :
+                syncState === 'syncing' ? 'bg-white/10 text-white/40 cursor-wait' :
+                'bg-[#6C5CE7] text-white hover:bg-[#6C5CE7]/90 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(108,92,231,0.4)]'}`}
           >
             <ArrowsClockwise
-              size={22}
+              size={20}
               weight="bold"
               className={syncState === 'syncing' ? 'animate-spin' : ''}
             />
             {syncState === 'syncing' ? 'Syncing...' :
              syncState === 'done' ? 'Synced ✓' :
-             syncState === 'error' ? 'Retry Sync' :
+             syncState === 'error' ? 'Retry' :
              'Sync AI'}
           </button>
-          <p className="text-xs text-on-surface-variant text-right max-w-[180px] leading-snug">
-            Clears prediction cache — next generations use fresh context
+          <p className="text-[10px] text-white/30 text-right max-w-[180px] font-bold uppercase tracking-tighter">
+            Updates neural prediction cache
           </p>
         </div>
       </div>
 
-      <div className="bg-surface-container rounded-3xl p-8 border border-outline-variant/20 shadow-sm relative overflow-hidden">
-        <h2 className="text-2xl font-bold font-headline text-on-surface mb-6 flex items-center gap-2">
-          <UserList className="text-primary" /> Daily Parameters
+      <div className="bg-[#050505]/60 rounded-3xl p-8 border border-white/10 shadow-2xl relative overflow-hidden liquid-glass-card">
+        <h2 className="text-2xl font-bold font-headline text-white mb-8 flex items-center gap-2 z-10 relative">
+          <UserList className="text-[#14F1D9]" /> Daily Parameters
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 z-10 relative">
           <button
             onClick={() => setActiveCategory('needs')}
-            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'needs' ? 'border-primary bg-primary/5' : 'border-outline-variant/20 hover:border-outline-variant'}`}
+            className={`p-5 rounded-2xl text-left border transition-all ${activeCategory === 'needs' ? 'border-[#14F1D9] bg-[#14F1D9]/10 shadow-[0_0_20px_rgba(20,241,217,0.1)]' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
           >
-            <h3 className="font-bold mb-1 w-full flex justify-between">Baselines / Needs {activeCategory === 'needs' && <Check className="text-primary"/>}</h3>
-            <p className="text-xs text-on-surface-variant">General preferences and emotional triggers.</p>
+            <h3 className="font-bold text-sm mb-2 w-full flex justify-between uppercase tracking-widest">Baselines {activeCategory === 'needs' && <Check className="text-[#14F1D9]"/>}</h3>
+            <p className="text-xs text-white/40 leading-relaxed">General preferences and emotional triggers.</p>
           </button>
           <button
             onClick={() => setActiveCategory('meals')}
-            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meals' ? 'border-tertiary bg-tertiary/5' : 'border-outline-variant/20 hover:border-outline-variant'}`}
+            className={`p-5 rounded-2xl text-left border transition-all ${activeCategory === 'meals' ? 'border-[#6C5CE7] bg-[#6C5CE7]/10 shadow-[0_0_20px_rgba(108,92,231,0.1)]' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
           >
-            <h3 className="font-bold mb-1 w-full flex justify-between">Meal Schedule {activeCategory === 'meals' && <Check className="text-tertiary"/>}</h3>
-            <p className="text-xs text-on-surface-variant">Expected dietary hours and favorite foods.</p>
+            <h3 className="font-bold text-sm mb-2 w-full flex justify-between uppercase tracking-widest">Meal Schedule {activeCategory === 'meals' && <Check className="text-[#6C5CE7]"/>}</h3>
+            <p className="text-xs text-white/40 leading-relaxed">Expected dietary hours and favorite foods.</p>
           </button>
           <button
             onClick={() => setActiveCategory('meds')}
-            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meds' ? 'border-rose-400 bg-rose-500/10' : 'border-outline-variant/20 hover:border-outline-variant'}`}
+            className={`p-5 rounded-2xl text-left border transition-all ${activeCategory === 'meds' ? 'border-[#FF2E63] bg-[#FF2E63]/10 shadow-[0_0_20px_rgba(255,46,99,0.1)]' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
           >
-            <h3 className="font-bold mb-1 w-full flex justify-between">Medications {activeCategory === 'meds' && <Check className="text-rose-500"/>}</h3>
-            <p className="text-xs text-on-surface-variant">Prescriptions to cross-reference against requests.</p>
+            <h3 className="font-bold text-sm mb-2 w-full flex justify-between uppercase tracking-widest">Medications {activeCategory === 'meds' && <Check className="text-[#FF2E63]"/>}</h3>
+            <p className="text-xs text-white/40 leading-relaxed">Prescriptions to cross-reference against requests.</p>
           </button>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6">
-          <label className="text-sm font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-2 pb-4 mb-4 border-b border-outline-variant/20">
-            <Tag />
+        <div className="bg-black/40 border border-white/5 rounded-2xl p-8 z-10 relative">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2 pb-4 mb-6 border-b border-white/5">
+            <Tag weight="bold" />
             Add new {activeCategory} tag
           </label>
           <GlassInput
@@ -123,9 +123,10 @@ export default function PatientContextManager() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={addTag}
             placeholder={`Type a rule and press Enter...`}
+            className="!bg-white/5 !border-white/10 focus:!border-[#14F1D9] !text-white !py-4"
           />
 
-          <div className="mt-6 flex flex-wrap gap-2 min-h-[100px]">
+          <div className="mt-8 flex flex-wrap gap-3 min-h-[120px]">
             <AnimatePresence>
               {(activeCategory === 'needs' ? needs : activeCategory === 'meals' ? meals : meds).map((tag, idx) => (
                 <motion.div
@@ -135,23 +136,24 @@ export default function PatientContextManager() {
                   key={`${tag}-${idx}`}
                   onClick={() => removeTag(activeCategory, idx)}
                   className={`
-                    px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 group cursor-pointer shadow-sm border transition-all
-                    ${activeCategory === 'needs' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' : ''}
-                    ${activeCategory === 'meals' ? 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20' : ''}
-                    ${activeCategory === 'meds' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' : ''}
+                    px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-3 group cursor-pointer shadow-lg border transition-all
+                    ${activeCategory === 'needs' ? 'bg-[#14F1D9]/10 text-[#14F1D9] border-[#14F1D9]/20 hover:bg-[#14F1D9]/20' : ''}
+                    ${activeCategory === 'meals' ? 'bg-[#6C5CE7]/10 text-[#6C5CE7] border-[#6C5CE7]/20 hover:bg-[#6C5CE7]/20' : ''}
+                    ${activeCategory === 'meds' ? 'bg-[#FF2E63]/10 text-[#FF2E63] border-[#FF2E63]/20 hover:bg-[#FF2E63]/20' : ''}
                   `}
                 >
-                  {activeCategory === 'needs' && <Sparkle size={14} weight="fill" className="shrink-0" />}
-                  {activeCategory === 'meals' && <ForkKnife size={14} weight="fill" className="shrink-0" />}
-                  {activeCategory === 'meds' && <Pill size={14} weight="fill" className="shrink-0" />}
-                  {tag}
-                  <span className="opacity-0 group-hover:opacity-100 font-bold transition-opacity text-current">×</span>
+                  {activeCategory === 'needs' && <Sparkle size={16} weight="fill" className="shrink-0" />}
+                  {activeCategory === 'meals' && <ForkKnife size={16} weight="fill" className="shrink-0" />}
+                  {activeCategory === 'meds' && <Pill size={16} weight="fill" className="shrink-0" />}
+                  <span className="tracking-tight">{tag}</span>
+                  <span className="opacity-40 group-hover:opacity-100 font-black transition-opacity text-lg ml-1 leading-none">×</span>
                 </motion.div>
               ))}
             </AnimatePresence>
             {(activeCategory === 'needs' ? needs : activeCategory === 'meals' ? meals : meds).length === 0 && (
-              <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-sm italic py-4">
-                No active rules in this category.
+              <div className="w-full h-full flex flex-col items-center justify-center text-white/20 text-sm py-8 gap-2">
+                <div className="w-12 h-12 rounded-full border-2 border-dashed border-white/10" />
+                <span className="font-bold uppercase tracking-widest text-[10px]">No active rules</span>
               </div>
             )}
           </div>
@@ -159,19 +161,21 @@ export default function PatientContextManager() {
       </div>
 
       {/* Extraneous Form Fields */}
-      <div className="grid grid-cols-2 gap-8">
-        <div>
-          <label className="font-bold text-on-surface mb-2 block">Caregiver Relationship Mapping</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-[#050505]/60 p-6 rounded-3xl border border-white/10 shadow-xl liquid-glass-card">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 block z-10 relative">Caregiver Relationship Mapping</label>
           <GlassTextarea
             rows={5}
             defaultValue={"Wife: Sarah\nSon: Tommy\nDog: Bobby"}
+            className="!bg-black/40 !border-white/5 !text-white/80 z-10 relative"
           />
         </div>
-        <div>
-          <label className="font-bold text-on-surface mb-2 block">Emergency Override Contacts</label>
+        <div className="bg-[#050505]/60 p-6 rounded-3xl border border-white/10 shadow-xl liquid-glass-card">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 block z-10 relative">Emergency Override Contacts</label>
           <GlassTextarea
             rows={5}
             defaultValue={"Dr. Smith: 555-0199\nSarah Cell: 555-0188"}
+            className="!bg-black/40 !border-white/5 !text-white/80 z-10 relative"
           />
         </div>
       </div>

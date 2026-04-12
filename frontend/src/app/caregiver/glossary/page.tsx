@@ -50,111 +50,115 @@ export default function GlossaryManager() {
 
   return (
     <PageTransition>
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-5xl">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-5xl min-h-screen bg-[#050505] text-white p-4">
       <div>
-        <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Glossary & Strict Rules</h1>
-        <p className="text-on-surface-variant text-lg">Hardcode semantic meaning to specific words or phrases to guarantee AI comprehension.</p>
+        <h1 className="text-4xl md:text-5xl font-headline font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight mb-2">Glossary & Strict Rules</h1>
+        <p className="text-white/60 text-lg">Hardcode semantic meaning to specific words or phrases to guarantee AI comprehension.</p>
       </div>
 
       {/* LLM Integration Banner */}
-      <div className="flex items-start gap-4 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-500">
-        <CheckCircle size={22} weight="fill" className="text-emerald-500 shrink-0 mt-0.5" />
-        <div>
-          <p className="font-bold text-sm mb-0.5">Active rules are injected into every AI generation</p>
-          <p className="text-sm text-emerald-500/80 opacity-90">
+      <div className="flex items-start gap-4 p-6 bg-[#14F1D9]/10 border border-[#14F1D9]/20 rounded-3xl text-white shadow-2xl relative overflow-hidden liquid-glass-card">
+        <CheckCircle size={28} weight="fill" className="text-[#14F1D9] shrink-0 mt-0.5" />
+        <div className="z-10 relative">
+          <p className="font-black uppercase tracking-widest text-xs text-[#14F1D9] mb-1">Neural Injection Pipeline</p>
+          <p className="text-sm text-white/80 leading-relaxed">
             When Kishan selects a path containing a trigger word, the AI is guaranteed to use your enforced meaning — not its best guess. Inactive rules are ignored.
           </p>
         </div>
       </div>
 
-      <div className="bg-surface-container rounded-3xl p-8 border border-outline-variant/20 shadow-sm relative overflow-hidden">
-        <h2 className="text-2xl font-bold font-headline text-on-surface mb-6 flex items-center gap-2">
-          <BookBookmark className="text-secondary" /> Add New Translation Rule
+      <div className="bg-[#050505]/60 rounded-3xl p-8 border border-white/10 shadow-2xl relative overflow-hidden liquid-glass-card">
+        <h2 className="text-2xl font-bold font-headline text-white mb-8 flex items-center gap-2 z-10 relative">
+          <BookBookmark className="text-[#6C5CE7]" /> Add New Translation Rule
         </h2>
 
-        <form onSubmit={addRule} className="flex gap-4 items-end bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30">
-          <div className="flex-1">
-            <label className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2"><TextAa /> When Patient Selects / Says:</label>
+        <form onSubmit={addRule} className="flex flex-col md:flex-row gap-6 items-end bg-black/40 p-8 rounded-2xl border border-white/5 z-10 relative">
+          <div className="flex-1 w-full">
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><TextAa weight="bold" /> When Patient Selects / Says:</label>
             <GlassInput
               value={newNoun}
               onChange={e => setNewNoun(e.target.value)}
               placeholder='e.g., "Mimi"'
+              className="!bg-white/5 !border-white/10 focus:!border-[#14F1D9]"
             />
           </div>
-          <div className="flex-1">
-            <label className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2"><Quotes /> AI Must Understand As:</label>
+          <div className="flex-1 w-full">
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><Quotes weight="bold" /> AI Must Understand As:</label>
             <GlassInput
               value={newDef}
               onChange={e => setNewDef(e.target.value)}
               placeholder='e.g., "Grandmother Mary"'
+              className="!bg-white/5 !border-white/10 focus:!border-[#14F1D9]"
             />
           </div>
           <button
             type="submit"
             disabled={!newNoun.trim() || !newDef.trim() || adding}
-            className="bg-secondary text-on-secondary h-12 w-12 rounded-xl flex items-center justify-center font-bold hover:bg-secondary/90 disabled:opacity-50 transition-colors shrink-0"
+            className="bg-[#14F1D9] text-black h-14 w-14 rounded-2xl flex items-center justify-center font-bold hover:bg-[#14F1D9]/90 disabled:opacity-50 transition-all shadow-[0_0_20px_rgba(20,241,217,0.3)] hover:-translate-y-1 shrink-0"
           >
             {adding ? (
-              <span className="w-4 h-4 border-2 border-on-secondary/40 border-t-on-secondary rounded-full animate-spin" />
+              <span className="w-5 h-5 border-3 border-black/20 border-t-black rounded-full animate-spin" />
             ) : (
-              <Plus size={24} weight="bold" />
+              <Plus size={28} weight="bold" />
             )}
           </button>
         </form>
       </div>
 
-      <div className="bg-surface-container rounded-3xl border border-outline-variant/20 shadow-sm overflow-hidden">
+      <div className="bg-[#050505]/60 rounded-3xl border border-white/10 shadow-2xl overflow-hidden liquid-glass-card">
         {loading ? (
-          <div className="p-16 flex justify-center">
-            <span className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="p-20 flex justify-center">
+            <span className="w-10 h-10 border-4 border-white/10 border-t-[#14F1D9] rounded-full animate-spin" />
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-highest border-b border-outline-variant/30">
-                <th className="p-4 font-bold text-sm uppercase tracking-wider text-on-surface-variant w-1/4">Trigger Word</th>
-                <th className="p-4 font-bold text-sm uppercase tracking-wider text-on-surface-variant w-1/2">Enforced Meaning</th>
-                <th className="p-4 font-bold text-sm uppercase tracking-wider text-on-surface-variant text-center w-24">Status</th>
-                <th className="p-4 font-bold text-sm uppercase tracking-wider text-on-surface-variant text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map((rule) => (
-                <tr key={rule.id} className={`border-b border-outline-variant/10 transition-colors hover:bg-surface-container-high ${!rule.active ? 'opacity-50' : ''}`}>
-                  <td className="p-4 font-bold font-headline text-on-surface">&quot;{rule.trigger_word}&quot;</td>
-                  <td className="p-4 text-on-surface-variant">{rule.enforced_meaning}</td>
-                  <td className="p-4 text-center">
-                    <button
-                      onClick={() => toggleRule(rule.id)}
-                      className={`px-3 py-1 text-xs font-bold rounded-full w-20 transition-colors ${rule.active ? 'bg-secondary/20 text-secondary hover:bg-secondary/30' : 'bg-surface-variant text-on-surface-variant hover:bg-surface-container-high'}`}
-                    >
-                      {rule.active ? 'ACTIVE' : 'OFF'}
-                    </button>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => deleteRule(rule.id)} className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg transition-colors">
-                      <Trash size={20} weight="fill" />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse z-10 relative">
+              <thead>
+                <tr className="bg-white/5 border-b border-white/10">
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 w-1/4">Trigger Word</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 w-1/2">Enforced Meaning</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 text-center w-32">Status</th>
+                  <th className="p-6 font-black text-[10px] uppercase tracking-[0.2em] text-white/40 text-right">Actions</th>
                 </tr>
-              ))}
-              {rules.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-16 text-center bg-surface-container-lowest">
-                    <div className="flex flex-col items-center justify-center gap-4 animate-in zoom-in duration-500">
-                      <div className="p-6 bg-surface-container rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)]">
-                        <BookBookmark size={48} className="text-outline-variant" weight="duotone" />
+              </thead>
+              <tbody>
+                {rules.map((rule) => (
+                  <tr key={rule.id} className={`border-b border-white/5 transition-all hover:bg-white/5 ${!rule.active ? 'opacity-40' : ''}`}>
+                    <td className="p-6 font-bold font-headline text-white text-lg">&quot;{rule.trigger_word}&quot;</td>
+                    <td className="p-6 text-white/70 font-medium">{rule.enforced_meaning}</td>
+                    <td className="p-6 text-center">
+                      <button
+                        onClick={() => toggleRule(rule.id)}
+                        className={`px-4 py-1.5 text-[10px] font-black tracking-widest rounded-full w-24 transition-all border ${rule.active ? 'bg-[#14F1D9]/10 text-[#14F1D9] border-[#14F1D9]/30 hover:bg-[#14F1D9]/20 shadow-[0_0_15px_rgba(20,241,217,0.1)]' : 'bg-white/5 text-white/30 border-white/10 hover:bg-white/10'}`}
+                      >
+                        {rule.active ? 'ACTIVE' : 'OFF'}
+                      </button>
+                    </td>
+                    <td className="p-6 text-right">
+                      <button onClick={() => deleteRule(rule.id)} className="p-3 text-white/30 hover:text-[#FF2E63] hover:bg-[#FF2E63]/10 rounded-xl transition-all">
+                        <Trash size={24} weight="fill" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {rules.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-20 text-center">
+                      <div className="flex flex-col items-center justify-center gap-6 animate-in zoom-in duration-500">
+                        <div className="p-8 bg-white/5 rounded-full border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]">
+                          <BookBookmark size={64} className="text-white/10" weight="duotone" />
+                        </div>
+                        <div>
+                          <p className="font-headline font-black text-2xl text-white mb-2 tracking-tight">Glossary is Empty</p>
+                          <p className="text-white/30 text-sm font-medium uppercase tracking-widest">Add semantic rules to bridge comprehension gaps</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-headline font-black text-xl text-on-surface mb-1">Glossary is Empty</p>
-                        <p className="text-on-surface-variant text-sm font-medium">Add semantic rules using the panel above to enforce AI comprehension.</p>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

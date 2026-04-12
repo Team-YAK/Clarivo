@@ -3,7 +3,7 @@ import React, { useEffect, useRef, ReactNode } from 'react';
 interface GlowCardProps {
   children: ReactNode;
   className?: string;
-  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange';
+  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange' | 'teal';
   size?: 'sm' | 'md' | 'lg';
   width?: string | number;
   height?: string | number;
@@ -11,11 +11,12 @@ interface GlowCardProps {
 }
 
 const glowColorMap = {
-  blue: { base: 220, spread: 200 },
-  purple: { base: 280, spread: 300 },
-  green: { base: 120, spread: 200 },
-  red: { base: 0, spread: 200 },
-  orange: { base: 30, spread: 200 }
+  blue: { h: 200, s: 100, l: 70 },      // Sky Blue
+  purple: { h: 250, s: 75, l: 65 },    // Deep Purple (#6C5CE7-ish)
+  green: { h: 175, s: 90, l: 50 },     // Neon Teal (#14F1D9-ish)
+  red: { h: 345, s: 100, l: 60 },      // Pulsing Red (#FF2E63-ish)
+  orange: { h: 30, s: 100, l: 60 },     // Orange
+  teal: { h: 175, s: 90, l: 50 }       // Neon Teal (#14F1D9)
 };
 
 const sizeMap = {
@@ -52,7 +53,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
     return () => document.removeEventListener('pointermove', syncPointer);
   }, []);
 
-  const { base, spread } = glowColorMap[glowColor];
+  const { h, s, l } = glowColorMap[glowColor];
 
   const getSizeClasses = () => {
     if (customSize) {
@@ -63,17 +64,17 @@ const GlowCard: React.FC<GlowCardProps> = ({
 
   const getInlineStyles = (): Record<string, any> => {
     const baseStyles: Record<string, any> = {
-      '--base': base,
-      '--spread': spread,
+      '--hue': h,
+      '--saturation': s,
+      '--lightness': l,
       '--radius': '14',
       '--border': '3',
-      '--backdrop': 'hsl(0 0% 60% / 0.12)',
-      '--backup-border': 'var(--backdrop)',
+      '--backdrop': 'rgba(255, 255, 255, 0.03)',
+      '--backup-border': 'rgba(255, 255, 255, 0.06)',
       '--size': '200',
       '--outer': '1',
       '--border-size': 'calc(var(--border, 2) * 1px)',
       '--spotlight-size': 'calc(var(--size, 150) * 1px)',
-      '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
       backgroundImage: `radial-gradient(
         var(--spotlight-size) var(--spotlight-size) at
         calc(var(--x, 0) * 1px)

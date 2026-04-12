@@ -70,62 +70,62 @@
   }
 
   .dark {
-    /* Full complete dark token override — blue-tinted visionOS base */
-    --color-surface: #0a0f14;
-    --color-surface-bright: #1a2433;
-    --color-surface-dim: #060a0e;
-    --color-surface-variant: #1e2d3d;
-    --color-surface-container: #0f1822;
-    --color-surface-container-low: #0c1319;
-    --color-surface-container-lowest: #060a0e;
-    --color-surface-container-high: #172030;
-    --color-surface-container-highest: #1e2d3d;
+    /* Full complete dark token override — ultra-dark #050505 base */
+    --color-surface: #050505;
+    --color-surface-bright: #0a0a0a;
+    --color-surface-dim: #020202;
+    --color-surface-variant: #0c0c0c;
+    --color-surface-container: #080808;
+    --color-surface-container-low: #060606;
+    --color-surface-container-lowest: #020202;
+    --color-surface-container-high: #0a0a0a;
+    --color-surface-container-highest: #0c0c0c;
     --color-inverse-surface: #dde3eb;
     --color-inverse-on-surface: #0f1822;
-    --color-on-surface: #d8e2f0;
-    --color-on-surface-variant: #8fa3bb;
-    --color-on-background: #d8e2f0;
-    --color-background: #0a0f14;
-    --color-primary: #86d4d2;
+    --color-on-surface: #ffffff;
+    --color-on-surface-variant: #a0a0a0;
+    --color-on-background: #ffffff;
+    --color-background: #050505;
+    --color-primary: #14F1D9; /* Neon Teal */
     --color-on-primary: #003736;
     --color-primary-container: #004f4e;
     --color-on-primary-container: #a2f0ee;
-    --color-primary-fixed: #a2f0ee;
-    --color-primary-fixed-dim: #86d4d2;
+    --color-primary-fixed: #14F1D9;
+    --color-primary-fixed-dim: #00d4bd;
     --color-on-primary-fixed: #00201f;
     --color-on-primary-fixed-variant: #00504f;
-    --color-secondary: #a0bdd0;
-    --color-on-secondary: #0d2435;
+    --color-secondary: #6C5CE7; /* Deep Purple */
+    --color-on-secondary: #ffffff;
     --color-secondary-container: #1e3347;
     --color-on-secondary-container: #cde5f5;
-    --color-secondary-fixed: #cfe6f2;
-    --color-secondary-fixed-dim: #b4cad6;
+    --color-secondary-fixed: #6C5CE7;
+    --color-secondary-fixed-dim: #5a4cc7;
     --color-on-secondary-fixed: #071e27;
     --color-on-secondary-fixed-variant: #354a53;
-    --color-tertiary: #e0789a;
-    --color-on-tertiary: #470024;
+    --color-tertiary: #FF2E63; /* Pulsing Red */
+    --color-on-tertiary: #ffffff;
     --color-tertiary-container: #68003b;
     --color-on-tertiary-container: #ffc6d1;
-    --color-tertiary-fixed: #ffd9df;
-    --color-tertiary-fixed-dim: #ffb1c2;
+    --color-tertiary-fixed: #FF2E63;
+    --color-tertiary-fixed-dim: #d11e4c;
     --color-on-tertiary-fixed: #3f0018;
     --color-on-tertiary-fixed-variant: #8f003f;
-    --color-error: #ffb4ab;
-    --color-on-error: #690005;
+    --color-error: #FF2E63;
+    --color-on-error: #ffffff;
     --color-error-container: #93000a;
     --color-on-error-container: #ffdad6;
-    --color-outline: #4a6278;
-    --color-outline-variant: #243648;
-    --color-surface-tint: #86d4d2;
+    --color-outline: #333333;
+    --color-outline-variant: #222222;
+    --color-surface-tint: #14F1D9;
     --color-inverse-primary: #004d4c;
 
     --background: var(--color-surface);
     --foreground: var(--color-on-surface);
     /* Glass design tokens — dark mode */
-    --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255,255,255,0.06);
-    --glass-blur: 20px;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.60), inset 0 1px 0 rgba(255,255,255,0.04);
+    --glass-blur: 24px;
   }
 }
 

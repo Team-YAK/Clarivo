@@ -303,7 +303,7 @@ export default function CaregiverPanel() {
   };
 
   return (
-    <aside className="w-full h-full bg-surface-container-low border-l border-outline-variant/20 flex flex-col overflow-y-auto no-scrollbar ring-2 ring-error/10 ring-inset">
+    <aside className="w-full h-full bg-[#050505] border-l border-white/10 flex flex-col overflow-y-auto no-scrollbar relative liquid-glass-card">
       
       {/* Urgency Alert */}
       <AnimatePresence>
@@ -312,11 +312,11 @@ export default function CaregiverPanel() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-error text-on-error p-4 flex items-center gap-4 shadow-lg animate-pulse"
+            className="bg-[#FF2E63] text-white p-4 flex items-center gap-4 shadow-2xl animate-pulse z-20 relative"
           >
             <Warning size={24} weight="bold" />
-            <span className="font-headline font-extrabold text-sm tracking-wider uppercase">
-              Patient logged high distress level.
+            <span className="font-black text-[10px] tracking-[0.2em] uppercase">
+              CRITICAL: High Distress Detected
             </span>
           </motion.div>
         )}
@@ -326,41 +326,41 @@ export default function CaregiverPanel() {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="p-6 space-y-8 flex-1 overflow-y-auto no-scrollbar"
+        className="p-6 space-y-8 flex-1 overflow-y-auto no-scrollbar z-10 relative"
       >
         {/* Transcription Sidebar (Replaces Live Activity) */}
         <motion.section variants={itemVariants}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-              <ChatTeardropText size={16} weight="bold" />
-              Live Transcript
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+              <ChatTeardropText size={16} weight="bold" className="text-[#14F1D9]" />
+              Live Stream
             </h3>
             <button 
               onClick={toggleConversation}
-              className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-tight transition-all flex items-center gap-2 shadow-md ${
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-xl border ${
                 activeConv 
-                ? 'bg-error text-on-error hover:bg-error/90' 
-                : 'bg-primary text-on-primary hover:bg-primary/90'
+                ? 'bg-[#FF2E63]/10 text-[#FF2E63] border-[#FF2E63]/30 hover:bg-[#FF2E63]/20' 
+                : 'bg-[#14F1D9]/10 text-[#14F1D9] border-[#14F1D9]/30 hover:bg-[#14F1D9]/20'
               }`}
             >
-              {activeConv ? <MicrophoneSlash size={16} weight="bold" /> : <Microphone size={16} weight="bold" />}
-              {activeConv ? 'End Conversation' : 'Start Conversation'}
+              {activeConv ? <MicrophoneSlash size={14} weight="bold" /> : <Microphone size={14} weight="bold" />}
+              {activeConv ? 'End Session' : 'Begin Live'}
             </button>
           </div>
           
-          <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant/10 shadow-xl h-[400px] flex flex-col">
-            <div ref={transcriptContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+          <div className="bg-black/40 rounded-2xl overflow-hidden border border-white/5 shadow-2xl h-[400px] flex flex-col relative">
+            <div ref={transcriptContainerRef} className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar">
               {activeConv && activeConv.utterances && activeConv.utterances.length > 0 ? (
                 <>
                   {activeConv.utterances.map((u: any, i: number) => (
                     <div key={i} className={`flex flex-col ${u.speaker === 'Patient' ? 'items-start' : 'items-end'}`}>
-                      <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${u.speaker === 'Patient' ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      <span className={`text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${u.speaker === 'Patient' ? 'text-[#14F1D9]' : 'text-white/30'}`}>
                         {u.speaker}
                       </span>
-                      <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm leading-relaxed ${
+                      <div className={`max-w-[90%] px-4 py-3 rounded-2xl text-sm font-medium shadow-2xl leading-relaxed ${
                         u.speaker === 'Patient' 
-                        ? 'bg-primary-container text-on-primary-container rounded-tl-none' 
-                        : 'bg-surface-container-highest text-on-surface rounded-tr-none border border-outline-variant/10'
+                        ? 'bg-[#14F1D9]/10 text-white border border-[#14F1D9]/20 rounded-tl-none' 
+                        : 'bg-white/5 text-white/80 rounded-tr-none border border-white/5'
                       }`}>
                         {u.text}
                       </div>
@@ -369,48 +369,50 @@ export default function CaregiverPanel() {
                   {/* Show interim text being transcribed */}
                   {interimText && (
                     <div className="flex flex-col items-end animate-pulse">
-                      <span className="text-[10px] font-black uppercase tracking-widest mb-1 text-on-surface-variant/50">
-                        Visitor (hearing...)
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 text-white/20">
+                        Neural Capture...
                       </span>
-                      <div className="max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed bg-surface-container text-on-surface/50 rounded-tr-none border border-dashed border-outline-variant/20">
+                      <div className="max-w-[90%] px-4 py-3 rounded-2xl text-sm font-medium leading-relaxed bg-white/5 text-white/30 rounded-tr-none border border-dashed border-white/10">
                         {interimText}
                       </div>
                     </div>
                   )}
                 </>
               ) : activeConv ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
                   {interimText ? (
                     <>
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <Microphone size={24} weight="fill" />
+                      <div className="w-14 h-14 rounded-2xl bg-[#14F1D9]/5 flex items-center justify-center text-[#14F1D9] border border-[#14F1D9]/10 shadow-[0_0_20px_rgba(20,241,217,0.1)]">
+                        <Microphone size={28} weight="fill" />
                       </div>
-                      <div className="bg-surface-container px-4 py-2.5 rounded-2xl text-sm font-medium text-on-surface/60 border border-dashed border-outline-variant/20 animate-pulse">
+                      <div className="bg-white/5 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#14F1D9] border border-dashed border-[#14F1D9]/20 animate-pulse">
                         {interimText}
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">
-                        <Microphone size={24} weight="fill" />
+                      <div className="w-14 h-14 rounded-2xl bg-[#14F1D9]/5 flex items-center justify-center text-[#14F1D9] border border-[#14F1D9]/10 animate-pulse shadow-[0_0_20px_rgba(20,241,217,0.1)]">
+                        <Microphone size={28} weight="fill" />
                       </div>
-                      <p className="text-on-surface-variant text-xs font-bold uppercase tracking-widest animate-pulse">Listening for dialogue...</p>
+                      <p className="text-white/20 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Listening for pulse...</p>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 opacity-50">
-                  <ChatTeardropText size={40} weight="thin" className="text-on-surface-variant" />
-                  <p className="text-on-surface-variant text-sm font-medium">Start a conversation to see the transcript here.</p>
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-30">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
+                    <ChatTeardropText size={32} weight="thin" className="text-white" />
+                  </div>
+                  <p className="text-white text-[10px] font-black uppercase tracking-[0.2em] max-w-[180px]">Session history will populate here.</p>
                 </div>
               )}
             </div>
             
             {activeConv && (
-              <div className="p-3 bg-primary/5 border-t border-primary/10">
+              <div className="p-4 bg-[#14F1D9]/5 border-t border-white/5">
                 <div className="flex items-center gap-2 justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest">Active Transcription Enabled</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#14F1D9] shadow-[0_0_8px_#14F1D9] animate-ping" />
+                  <span className="text-[9px] font-black text-[#14F1D9] uppercase tracking-[0.2em]">Neural Pipeline Online</span>
                 </div>
               </div>
             )}
@@ -418,44 +420,51 @@ export default function CaregiverPanel() {
         </motion.section>
 
         {/* Knowledge Score */}
-        <motion.section variants={itemVariants} className="bg-surface-container-highest/30 p-6 rounded-xl shadow-sm">
-          <div className="flex items-center gap-6 mb-6">
+        <motion.section variants={itemVariants} className="bg-white/5 border border-white/5 p-6 rounded-3xl shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#14F1D9]/5 to-transparent pointer-events-none" />
+          <div className="flex items-center gap-6 mb-8 z-10 relative">
             <div className="relative w-24 h-24">
               <svg className="w-full h-full transform -rotate-90">
-                <circle className="text-surface-container-high" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" strokeWidth="8"></circle>
+                <circle className="text-white/5" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" strokeWidth="6"></circle>
                 <circle 
-                  className="text-primary-container" 
+                  className="text-[#14F1D9] drop-shadow-[0_0_10px_rgba(20,241,217,0.5)]" 
                   cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" 
                   strokeDasharray="251.2" 
                   strokeDashoffset={panelData ? 251.2 - (251.2 * panelData.knowledge_score) / 100 : 251.2} 
-                  strokeWidth="8"
-                  style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
                 ></circle>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="font-headline font-extrabold text-2xl text-primary">
-                  {panelData ? `${panelData.knowledge_score}%` : '...'}
+                <span className="font-headline font-black text-2xl text-white tracking-tighter">
+                  {panelData ? `${panelData.knowledge_score}` : '...'}
                 </span>
               </div>
             </div>
             <div>
-              <h4 className="font-headline font-bold text-lg text-on-surface">Kishan&apos;s Profile</h4>
-              <p className="text-on-surface-variant text-sm">Deep learning accuracy</p>
+              <h4 className="font-headline font-black text-sm text-white uppercase tracking-widest">Neural Accuracy</h4>
+              <p className="text-white/40 text-[10px] font-bold uppercase mt-1 tracking-tighter">System Calibration Index</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5 z-10 relative">
             {[
               { label: 'Profile', val: panelData?.knowledge_breakdown?.profile || 0 },
               { label: 'Medical', val: panelData?.knowledge_breakdown?.medical || 0 },
               { label: 'Prefs', val: panelData?.knowledge_breakdown?.preferences || 0 },
               { label: 'Conv.', val: panelData?.knowledge_breakdown?.conversation || 0 }
             ].map(item => (
-              <div key={item.label} className="space-y-1.5">
-                <div className="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase">
+              <div key={item.label} className="space-y-2">
+                <div className="flex justify-between text-[9px] font-black text-white/30 uppercase tracking-[0.15em]">
                   <span>{item.label}</span><span>{item.val}%</span>
                 </div>
-                <div className="h-1 bg-surface-container-high rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${item.val}%`, transition: 'width 1s ease' }}></div>
+                <div className="h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-[#14F1D9] to-[#6C5CE7]" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.val}%` }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                  />
                 </div>
               </div>
             ))}
@@ -466,26 +475,31 @@ export default function CaregiverPanel() {
         <AnimatePresence>
           {panelData?.pending_question && (
             <motion.section 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bg-primary-container text-on-primary-container p-6 rounded-xl shadow-md border-b-4 border-primary"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-[#6C5CE7]/10 text-white p-6 rounded-3xl shadow-2xl border border-[#6C5CE7]/30 relative overflow-hidden"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <Brain size={24} weight="fill" className="text-primary-fixed" />
-                <h4 className="font-headline font-bold">Insight Needed</h4>
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Brain size={80} weight="fill" className="text-[#6C5CE7]" />
               </div>
-              <p className="mb-4 text-sm leading-relaxed opacity-90">{panelData.pending_question.question}</p>
-              <form onSubmit={handleContextSubmit} className="flex gap-2">
+              <div className="flex items-center gap-3 mb-4 z-10 relative">
+                <div className="p-2 bg-[#6C5CE7]/20 rounded-lg">
+                  <Brain size={20} weight="fill" className="text-[#6C5CE7]" />
+                </div>
+                <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-[#6C5CE7]">Insight Needed</h4>
+              </div>
+              <p className="mb-6 text-sm leading-relaxed font-medium text-white/90 z-10 relative">{panelData.pending_question.question}</p>
+              <form onSubmit={handleContextSubmit} className="flex gap-2 z-10 relative">
                 <input 
                   value={contextAnswer}
                   onChange={(e) => setContextAnswer(e.target.value)}
-                  className="w-full bg-white/10 border-none rounded-lg p-3 text-sm placeholder:text-white/40 focus:ring-2 focus:ring-primary-fixed outline-none transition-shadow" 
-                  placeholder="Type answer here..." 
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm placeholder:text-white/20 focus:border-[#6C5CE7] outline-none transition-all" 
+                  placeholder="Feed AI context..." 
                   type="text" 
                   disabled={submittingContext}
                 />
-                <button type="submit" disabled={submittingContext} className="bg-primary text-on-primary px-4 rounded-lg font-bold">
+                <button type="submit" disabled={submittingContext} className="bg-[#6C5CE7] text-white px-5 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#6C5CE7]/90 transition-all shadow-[0_0_15px_rgba(108,92,231,0.3)]">
                   {submittingContext ? '...' : 'Send'}
                 </button>
               </form>
@@ -495,35 +509,38 @@ export default function CaregiverPanel() {
 
         {/* Session History */}
         <motion.section variants={itemVariants}>
-          <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest mb-4">Session History</h3>
-          <motion.div variants={containerVariants} className="space-y-3">
+          <h3 className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+            <ChatTeardropText size={16} weight="bold" />
+            Archive
+          </h3>
+          <motion.div variants={containerVariants} className="space-y-4">
             {history.length > 0 ? history.map((session, index) => {
-              const confidenceColor = session.flagged ? "bg-red-500" : (index % 2 === 0 ? "bg-teal-500" : "bg-amber-500");
+              const confidenceColor = session.flagged ? "bg-[#FF2E63] shadow-[0_0_10px_#FF2E63]" : (index % 2 === 0 ? "bg-[#14F1D9] shadow-[0_0_10px_#14F1D9]" : "bg-[#6C5CE7] shadow-[0_0_10px_#6C5CE7]");
               const isEditing = editingSessionId === session.id;
               
               return (
-                <motion.div variants={itemVariants} key={session.id} className="bg-surface-container-lowest p-4 rounded-xl flex flex-col group shadow-sm transition-colors border border-transparent hover:border-outline-variant/30">
-                  <div className="flex items-start justify-between">
+                <motion.div variants={itemVariants} key={session.id} className="bg-white/5 p-5 rounded-2xl flex flex-col group shadow-xl transition-all border border-transparent hover:border-white/10 relative overflow-hidden">
+                  <div className="flex items-start justify-between z-10 relative">
                     <div className="flex gap-4">
-                      <div className={`w-2 h-2 rounded-full ${confidenceColor} mt-2`}></div>
+                      <div className={`w-2 h-2 rounded-full ${confidenceColor} mt-2.5 shrink-0`}></div>
                       <div>
-                        <p className="text-xs text-on-surface-variant font-medium">{session.timestamp}</p>
-                        <p className="text-on-surface font-semibold text-sm">&quot;{session.sentence}&quot;</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-1">{session.timestamp}</p>
+                        <p className="text-white font-bold text-sm tracking-tight leading-relaxed">&quot;{session.sentence}&quot;</p>
                       </div>
                     </div>
                     {/* Replay button */}
-                    <button className="text-on-surface-variant hover:text-primary transition-colors p-1">
-                      <ArrowCounterClockwise size={20} weight="bold" />
+                    <button className="text-white/20 hover:text-[#14F1D9] transition-all p-1">
+                      <ArrowCounterClockwise size={18} weight="bold" />
                     </button>
                   </div>
                   
                   {/* Feedback Controls */}
-                  <div className="mt-3 pt-3 border-t border-outline-variant/10 flex items-center justify-end gap-2">
-                    <button onClick={() => handleFeedback(session.id, true)} className="px-3 py-1 text-xs font-bold bg-surface-container hover:bg-teal-100 hover:text-teal-800 text-on-surface-variant rounded-full flex gap-1 items-center transition-colors">
-                      <ThumbsUp size={14} weight="fill" /> Correct
+                  <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-end gap-2 z-10 relative">
+                    <button onClick={() => handleFeedback(session.id, true)} className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest bg-white/5 hover:bg-[#14F1D9]/10 hover:text-[#14F1D9] text-white/40 rounded-full flex gap-1.5 items-center transition-all border border-transparent hover:border-[#14F1D9]/20">
+                      <ThumbsUp size={12} weight="fill" /> Correct
                     </button>
-                    <button onClick={() => handleFeedback(session.id, false)} className={`px-3 py-1 text-xs font-bold rounded-full flex gap-1 items-center transition-colors ${isEditing ? 'bg-red-100 text-red-800' : 'bg-surface-container hover:bg-red-100 hover:text-red-800 text-on-surface-variant'}`}>
-                      <ThumbsDown size={14} weight="fill" /> Needs Fix
+                    <button onClick={() => handleFeedback(session.id, false)} className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full flex gap-1.5 items-center transition-all border ${isEditing ? 'bg-[#FF2E63]/10 text-[#FF2E63] border-[#FF2E63]/30' : 'bg-white/5 hover:bg-[#FF2E63]/10 hover:text-[#FF2E63] text-white/40 border-transparent hover:border-[#FF2E63]/20'}`}>
+                      <ThumbsDown size={12} weight="fill" /> Needs Fix
                     </button>
                   </div>
 
@@ -534,17 +551,17 @@ export default function CaregiverPanel() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-3"
+                        className="mt-4 z-10 relative"
                       >
                         <div className="flex gap-2">
                           <input 
                             value={correctionText}
                             onChange={(e) => setCorrectionText(e.target.value)}
-                            placeholder="Type how it should have sounded..."
-                            className="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-2 text-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Correction matrix..."
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#6C5CE7] transition-all"
                           />
-                          <button onClick={() => handleCorrectionSubmit(session.id)} className="bg-primary text-on-primary px-3 rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
-                            <Check size={16} weight="bold" />
+                          <button onClick={() => handleCorrectionSubmit(session.id)} className="bg-[#6C5CE7] text-white px-4 rounded-xl flex items-center justify-center hover:bg-[#6C5CE7]/90 transition-all shadow-[0_0_15px_rgba(108,92,231,0.2)]">
+                            <Check size={18} weight="bold" />
                           </button>
                         </div>
                       </motion.div>
@@ -554,7 +571,11 @@ export default function CaregiverPanel() {
                 </motion.div>
               )
             }) : (
-              <div className="animate-pulse h-32 bg-surface-variant rounded-xl"></div>
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse h-24 bg-white/5 rounded-2xl border border-white/5"></div>
+                ))}
+              </div>
             )}
           </motion.div>
         </motion.section>
