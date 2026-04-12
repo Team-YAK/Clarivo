@@ -51,8 +51,14 @@ export default function PatientScreen() {
   }, [isResizing, onMouseMove, stopResizing]);
 
   // ── Stack state ──
-  const [stackItems, setStackItems] = useState<StackItem[]>([]);
-  const [undoHistory, setUndoHistory] = useState<StackItem[]>([]);
+  const [stackState, setStackState] = useState<{
+    items: StackItem[];
+    redoStack: StackItem[];
+  }>({
+    items: [],
+    redoStack: [],
+  });
+
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [drawingMode, setDrawingMode] = useState(false);
   // Increments whenever partner input is translated — signals ButtonGrid to re-fetch
@@ -74,53 +80,60 @@ export default function PatientScreen() {
       label: event.label,
       icon: event.icon,
     };
-    setStackItems((prev) => [...prev, newItem]);
-    setUndoHistory([]); // Clear redo history on new action
+    setStackState((prev) => ({
+      items: [...prev.items, newItem],
+      redoStack: [], // New action clears redo history
+    }));
   }, []);
 
   const handleRemoveItem = useCallback((id: string) => {
-    setStackItems((prev) => {
-      const idx = prev.findIndex((item) => item.id === id);
+    setStackState((prev) => {
+      const idx = prev.items.findIndex((item) => item.id === id);
       if (idx === -1) return prev;
-      const removed = prev[idx];
-      setUndoHistory((undo) => [...undo, removed]);
-      return prev.filter((item) => item.id !== id);
+      
+      const removed = prev.items[idx];
+      return {
+        items: prev.items.filter((item) => item.id !== id),
+        redoStack: [...prev.redoStack, removed],
+      };
     });
   }, []);
 
   const handleUndo = useCallback(() => {
-    setStackItems((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      setUndoHistory((undo) => [...undo, last]);
-      return prev.slice(0, -1);
+    setStackState((prev) => {
+      if (prev.items.length === 0) return prev;
+      const last = prev.items[prev.items.length - 1];
+      return {
+        items: prev.items.slice(0, -1),
+        redoStack: [...prev.redoStack, last],
+      };
     });
   }, []);
 
   const handleRedo = useCallback(() => {
-    setUndoHistory((undo) => {
-      if (undo.length === 0) return undo;
-      const last = undo[undo.length - 1];
-      setStackItems((prev) => [...prev, last]);
-      return undo.slice(0, -1);
+    setStackState((prev) => {
+      if (prev.redoStack.length === 0) return prev;
+      const last = prev.redoStack[prev.redoStack.length - 1];
+      return {
+        items: [...prev.items, last],
+        redoStack: prev.redoStack.slice(0, -1),
+      };
     });
   }, []);
 
   const handleClear = useCallback(() => {
-    setStackItems([]);
-    setUndoHistory([]);
+    setStackState({ items: [], redoStack: [] });
   }, []);
 
   const handleSubmit = useCallback(() => {
-    if (stackItems.length > 0) {
+    if (stackState.items.length > 0) {
       setIsSynthesizing(true);
     }
-  }, [stackItems]);
+  }, [stackState.items]);
 
   const handleSynthesisClose = useCallback(() => {
     setIsSynthesizing(false);
-    setStackItems([]);
-    setUndoHistory([]);
+    setStackState({ items: [], redoStack: [] });
   }, []);
 
   return (
@@ -204,15 +217,15 @@ export default function PatientScreen() {
         {/* Bottom Panel Area: Fixed Height */}
         <div className="h-56 shrink-0 bg-surface/30 backdrop-blur-xl relative border-t border-white/10">
           <WordStack
-            items={stackItems}
-            onReorder={setStackItems}
+            items={stackState.items}
+            onReorder={(newItems) => setStackState(prev => ({ ...prev, items: newItems }))}
             onRemoveItem={handleRemoveItem}
             onUndo={handleUndo}
             onRedo={handleRedo}
             onClear={handleClear}
             onSubmit={handleSubmit}
-            canUndo={stackItems.length > 0}
-            canRedo={undoHistory.length > 0}
+            canUndo={stackState.items.length > 0}
+            canRedo={stackState.redoStack.length > 0}
             onAddToStack={handleAddToStack}
           />
         </div>
@@ -222,7 +235,7 @@ export default function PatientScreen() {
       <AnimatePresence>
         {isSynthesizing && (
           <SentenceOutput
-            path={stackItems.map((item) => item.key)}
+            path={stackState.items.map((item) => item.key)}
             onClose={handleSynthesisClose}
             onSpeak={() => console.log("Playing synthesized audio...")}
           />

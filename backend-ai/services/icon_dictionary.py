@@ -38,6 +38,9 @@ ICON_DICTIONARY: dict[str, str] = _load_json_dict(
         "smiley": "😊",
         "user": "🧍",
         "more": "➕",
+        "dessert": "🍰",
+        "back": "🔙",
+        "good": "👍",
     }
 )
 
