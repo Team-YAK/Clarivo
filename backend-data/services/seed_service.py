@@ -26,9 +26,9 @@ async def seed():
 
     # Pre-cache sentences
     paths = [
-        {"k": "food→dessert→tiramisu", "s": "I want tiramisu — it's my favorite."},
-        {"k": "needs→medicine", "s": "I need my Lisinopril please."},
-        {"k": "feelings→tired", "s": "I am feeling very tired."},
+        {"k": "food→drink→water", "s": "I would like some water."},
+        {"k": "needs→rest", "s": "I need to rest for a while."},
+        {"k": "feelings→happy", "s": "I am feeling happy today."},
     ]
     
     sentences = []
@@ -38,59 +38,33 @@ async def seed():
             "user_id": user_id,
             "path_key": p['k'],
             "sentence": p['s'],
-            "audio_url": "/mock-audio/tiramisu.mp3",
-            "confidence": 0.95,
+            "audio_url": "",
+            "confidence": 1.0,
             "personalized": True,
             "input_mode": "tree",
             "last_updated": now.isoformat()
         })
 
     # 2. Profile Data
-    kishan = {
+    user_doc = {
         "_id": user_id,
-        "profile": {"name": "Kishan", "diagnosis_date": "2023-10-15", "caregiver_name": "Yuki"},
-        "medical": {"medications": ["Atorvastatin 20mg", "Lisinopril 5mg"], "allergies": ["Latex"], "conditions": ["Aphasia", "Hypertension"]},
+        "profile": {"name": "User", "diagnosis_date": "2024-01-01", "caregiver_name": "Caregiver"},
+        "medical": {"medications": [], "allergies": [], "conditions": []},
         "preferences": {
-            "communication_notes": "Kishan is a former architect. They respond well to visual sketches and structural metaphors. Yuki is their partner and primary caregiver.", 
-            "known_preferences": "Loves Earl Grey tea (no sugar). Enjoys Debussy and Bach. Spends mornings in the Japanese rock garden.",
-            "always_know": "Yuki works as a digital artist in the home studio. Hachi is their 5-year-old Shiba Inu."
+            "communication_notes": "", 
+            "known_preferences": "",
+            "always_know": ""
         },
-        "routine": {"meals": {"breakfast": "07:30", "lunch": "13:00", "dinner": "19:00"}},
-        "voice_id": "",  # Empty so E2 cascades to KISHAN_VOICE_ID env var
+        "routine": {"meals": {"breakfast": "08:00", "lunch": "13:00", "dinner": "19:00"}},
+        "voice_id": "",
         "interface_settings": {"simplified_view": False, "show_subtitles": True, "shortcut_threshold": 5},
-        "knowledge_score": 85,
-        "knowledge_breakdown": {"profile": 30, "medical": 25, "preferences": 20, "conversation": 10},
-        "path_frequencies": {
-            "food→drink→tea": 18,
-            "food→drink→water": 12,
-            "music→classical→debussy": 9,
-            "activities→garden": 15,
-            "people→hachi": 14,
-            "needs→sketchbook": 8,
-            "activities→woodworking": 4,
-            "needs→medicine": 11,
-            "needs→rest": 6,
-            "feelings→happy": 8,
-            "feelings→tired": 4,
-        },
-        "glossary_rules": [
-            {"id": "gr_001", "trigger_word": "Hachi", "enforced_meaning": "Kishan and Yuki's Shiba Inu dog", "active": True, "created_at": (now - timedelta(days=30)).isoformat()},
-            {"id": "gr_002", "trigger_word": "The Studio", "enforced_meaning": "Yuki's workspace where they create digital art", "active": True, "created_at": (now - timedelta(days=28)).isoformat()},
-            {"id": "gr_003", "trigger_word": "The Grid", "enforced_meaning": "Kishan's architectural drafting table", "active": True, "created_at": (now - timedelta(days=25)).isoformat()},
-            {"id": "gr_004", "trigger_word": "The Drafting Pen", "enforced_meaning": "Kishan's specialized fountain pen for architectural sketching", "active": True, "created_at": (now - timedelta(days=20)).isoformat()},
-            {"id": "gr_005", "trigger_word": "Earl Grey", "enforced_meaning": "Kishan's favorite tea, served hot with no sugar", "active": True, "created_at": (now - timedelta(days=15)).isoformat()},
-            {"id": "gr_006", "trigger_word": "The Terrace", "enforced_meaning": "The overlook at the Japanese rock garden where Kishan spends his mornings", "active": True, "created_at": (now - timedelta(days=10)).isoformat()},
-        ],
-        "correction_history": [
-            {"path": "food→drink→tea", "original_sentence": "I want drink.", "corrected_sentence": "I'd love some Earl Grey tea, Yuki.", "timestamp": (now - timedelta(days=5)).isoformat()},
-        ],
-        "context_answers": [
-            {"question_id": "q1", "question": "What is his favorite morning drink?", "answer": "Earl Grey tea (no sugar)", "timestamp": (now - timedelta(days=22)).isoformat()},
-            {"question_id": "q2", "question": "What was his former profession?", "answer": "Architect", "timestamp": (now - timedelta(days=18)).isoformat()},
-        ],
-        "mood_log": [
-            {"date": (now - timedelta(days=i)).strftime("%Y-%m-%d"), "score": random.randint(6, 10), "notes": "Stable", "timestamp": (now - timedelta(days=i)).isoformat()} for i in range(14)
-        ],
+        "knowledge_score": 0,
+        "knowledge_breakdown": {"profile": 0, "medical": 0, "preferences": 0, "conversation": 0},
+        "path_frequencies": {},
+        "glossary_rules": [],
+        "correction_history": [],
+        "context_answers": [],
+        "mood_log": [],
         "alert_settings": {
             "threshold": 3,
             "timeframe": 2,
@@ -105,21 +79,7 @@ async def seed():
     
     # 3. Session Data
     sessions = []
-    # Add distress sessions for urgency (Last 2 hours)
-    urgency_paths = [["needs", "pain"], ["needs", "help"], ["health", "headache"]]
-    for i in range(3):
-        sessions.append({
-            "_id": f"s_{uuid.uuid4().hex[:8]}",
-            "user_id": user_id,
-            "path": urgency_paths[i],
-            "path_key": path_to_key(urgency_paths[i], "tree"),
-            "input_mode": "tree",
-            "sentence": "I need help",
-            "confidence": 0.9,
-            "status": "confirmed",
-            "timestamp": (now - timedelta(minutes=10 * (i+1))).isoformat()
-        })
-
+    
     # 4. Default Prompts
     default_prompts = [
         {
@@ -147,9 +107,10 @@ async def seed():
 
     await db.icons.insert_many(icon_list)
     await db.sentences.insert_many(sentences)
-    await db.sessions.insert_many(sessions)
+    if sessions:
+        await db.sessions.insert_many(sessions)
     await db.prompts.insert_many(default_prompts)
-    await db.users.insert_one(kishan)
+    await db.users.insert_one(user_doc)
     
-    print("✓ Async Seeded successfully")
+    print("✓ Async Seeded successfully with generic data")
     return True
