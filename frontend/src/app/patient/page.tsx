@@ -12,8 +12,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
 
-let idCounter = 0;
-const nextId = () => `stack-${++idCounter}`;
+const nextId = () => `stack-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
 export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
