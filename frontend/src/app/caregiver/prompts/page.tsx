@@ -264,7 +264,3 @@ export default function PromptArchitect() {
     </PageTransition>
   );
 }
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}
