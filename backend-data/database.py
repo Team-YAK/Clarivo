@@ -1,6 +1,10 @@
 import os
-from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+
+try:
+    from motor.motor_asyncio import AsyncIOMotorClient
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    AsyncIOMotorClient = None
 
 load_dotenv()
 
@@ -17,24 +21,25 @@ class Database:
     sentences = None
     context_log = None
     anchors = None
-    tree_nodes = None
     icons = None
     conversations = None
 
 db = Database()
 
 async def connect_to_mongo():
-    if USE_MOCK:
+    if USE_MOCK or AsyncIOMotorClient is None:
         import mock_db
         db.users = mock_db.MockCollection("users")
         db.sessions = mock_db.MockCollection("sessions")
         db.sentences = mock_db.MockCollection("sentences")
         db.context_log = mock_db.MockCollection("context_log")
         db.anchors = mock_db.MockCollection("anchors")
-        db.tree_nodes = mock_db.MockCollection("tree_nodes")
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
-        print("Using In-Memory MOCK Database (Missing MongoDB Daemon)")
+        if AsyncIOMotorClient is None:
+            print("MongoDB driver unavailable. Using In-Memory MOCK Database.")
+        else:
+            print("Using In-Memory MOCK Database (Missing MongoDB Daemon)")
         return
 
     try:
@@ -50,7 +55,6 @@ async def connect_to_mongo():
         db.sentences = db.db.sentences
         db.context_log = db.db.context_log
         db.anchors = db.db.anchors
-        db.tree_nodes = db.db.tree_nodes
         db.icons = db.db.icons
         db.conversations = db.db.conversations
         # Pinging to check if reachable
@@ -63,7 +67,6 @@ async def connect_to_mongo():
         db.sentences = mock_db.MockCollection("sentences")
         db.context_log = mock_db.MockCollection("context_log")
         db.anchors = mock_db.MockCollection("anchors")
-        db.tree_nodes = mock_db.MockCollection("tree_nodes")
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
 

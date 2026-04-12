@@ -10,6 +10,8 @@ import json
 import time
 import httpx
 
+__test__ = False
+
 BASE = "http://localhost:8001"
 
 # Latency targets (seconds)

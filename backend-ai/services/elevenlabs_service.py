@@ -7,8 +7,13 @@ import os
 import uuid
 import logging
 from pathlib import Path
-from elevenlabs.client import ElevenLabs
-from elevenlabs import VoiceSettings
+
+try:
+    from elevenlabs.client import ElevenLabs
+    from elevenlabs import VoiceSettings
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    ElevenLabs = None
+    VoiceSettings = None
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,8 @@ def get_client() -> ElevenLabs:
     """
     global _client
     if _client is None:
+        if ElevenLabs is None:
+            raise RuntimeError("elevenlabs package is not installed")
         api_key = os.getenv("ELEVENLABS_API_KEY")
         if not api_key:
             logger.error(

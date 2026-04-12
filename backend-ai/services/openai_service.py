@@ -7,8 +7,13 @@ import os
 import json
 import logging
 from typing import AsyncGenerator
-import openai
-from openai import AsyncOpenAI
+
+try:
+    import openai
+    from openai import AsyncOpenAI
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    openai = None
+    AsyncOpenAI = None
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +23,8 @@ _client = None
 def get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
+        if AsyncOpenAI is None:
+            raise RuntimeError("openai package is not installed")
         _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
@@ -80,22 +87,12 @@ async def stream_intent(path: list[str], context: str, input_mode: str = "tree")
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-    except openai.RateLimitError as e:
-        logger.warning(f"OpenAI RateLimitError: {e}")
-        yield "I want... Please try again later. "
-    except openai.APITimeoutError as e:
-        logger.warning(f"OpenAI APITimeoutError: {e}")
-        yield "I want... Connection timed out. "
-    except openai.APIConnectionError as e:
-        logger.warning(f"OpenAI APIConnectionError: {e}")
-        yield "I want... Bad connection. "
     except Exception as e:
+        if openai is not None and isinstance(e, (openai.RateLimitError, openai.APITimeoutError, openai.APIConnectionError)):
+            logger.warning(f"Intent streaming failed: {e}")
+            raise RuntimeError("intent generation failed") from e
         logger.warning(f"Intent streaming failed: {e}")
-        import asyncio
-        mock_sentence = f"I want {path[-1]} please."
-        for word in mock_sentence.split():
-            yield word + " "
-            await asyncio.sleep(0.05)
+        raise RuntimeError("intent generation failed") from e
 
 
 async def compute_confidence(sentence: str, path: list[str], context: str) -> float:
@@ -120,7 +117,7 @@ async def compute_confidence(sentence: str, path: list[str], context: str) -> fl
         return 0.75
 
 
-async def generate_clarification_options(path: list[str], context: str, input_mode: str = "tree") -> list[dict]:
+async def generate_clarification_options(path: list[str], context: str, input_mode: str = "tree") -> list[dict] | None:
     if input_mode == "composer":
         path_str = " + ".join([p.title() for p in path])
         user_prompt = f"Ambiguous Composer Icon Sequence: {path_str}\nProvide 3 potential interpretations what they mean."
@@ -151,17 +148,14 @@ async def generate_clarification_options(path: list[str], context: str, input_mo
         if not isinstance(data, list):
             data = [data]
         if len(data) < 2:
-            data.append({"label": "Tell me more", "icon": "💬", "path": path + ["more"]})
+            return None
         if len(data) > 3:
             data = data[:3]
             
         return data
     except Exception as e:
         logger.warning(f"Clarification generation failed: {e}")
-        return [
-            {"label": "Tell me more", "icon": "💬", "path": path + ["more"]},
-            {"label": "Something else", "icon": "🔄", "path": path + ["other"]},
-        ]
+        return None
 
 
 async def generate_post_session_question(session_data: dict, context: str):
@@ -270,4 +264,3 @@ async def refine_sentence_with_correction(original: str, correction: str, path: 
     except Exception as e:
         logger.warning(f"Sentence refinement failed: {e}")
         return correction  # Fallback to the raw correction
-

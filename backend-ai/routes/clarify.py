@@ -22,8 +22,11 @@ async def clarify(req: ClarifyRequest):
     user_data = await get_user(req.user_id)
     context = build_context_string(user_data)
     options = await generate_clarification_options(req.path, context, input_mode=req.input_mode)
-    
+
+    if options is None:
+        return {"options": []}
+
     for opt in options:
         opt["input_mode"] = req.input_mode
-        
+
     return {"options": options}

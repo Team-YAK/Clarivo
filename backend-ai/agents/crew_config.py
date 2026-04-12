@@ -18,7 +18,10 @@ import re
 import time
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+try:
+    from openai import AsyncOpenAI
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    AsyncOpenAI = None
 
 from services.icon_dictionary import ICON_DICTIONARY, ICON_NAMES
 
@@ -28,10 +31,12 @@ if os.getenv("OPENAI_API_KEY"):
 
 logger = logging.getLogger(__name__)
 
-_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY")) if AsyncOpenAI else None
 
 
 async def _chat_once(system: str, user: str, max_tokens: int, temperature: float) -> str:
+    if _openai_client is None:
+        raise RuntimeError("openai package is not installed")
     resp = await _openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[

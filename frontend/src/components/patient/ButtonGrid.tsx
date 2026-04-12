@@ -6,11 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
 import {
   expandTreeAI,
-  selectTreeAI,
-  AiExpandResult,
 } from "@/utils/patientApi";
 import { getIconComponent } from "@/utils/icon-map";
 import { LiquidButton } from "@/components/ui/liquid-glass-button";
+import {
+  DisplayOption,
+  extendBreadcrumbs,
+  normalizeAiExpandResult,
+} from "@/utils/tree-navigation";
 
 export interface StackAddEvent {
   key: string;
@@ -21,17 +24,10 @@ interface ButtonGridProps {
   onAddToStack: (item: StackAddEvent) => void;
 }
 
-// ── Unified display option ─────────────────────────────────────
-interface DisplayOption {
-  key: string;
-  label: string;
-  icon: string;
-}
-
 // ── Navigation frame ───────────────────────────────────────────
 interface NavFrame {
   path: string[];
-  pathLabels: string[];
+  breadcrumbs: DisplayOption[];
   options: DisplayOption[];
   quickOption: DisplayOption | null;
 }
@@ -43,29 +39,6 @@ const DEPTH_COLORS = [
 
 function getIconColor(option: DisplayOption, index: number): string {
   return DEPTH_COLORS[index % DEPTH_COLORS.length];
-}
-
-// Convert AI result into DisplayOption[]
-function aiResultToDisplayOptions(result: AiExpandResult): {
-  options: DisplayOption[];
-  quickOption: DisplayOption | null;
-} {
-  const options: DisplayOption[] = result.options.map((o) => ({
-    key: o.key || o.label.toLowerCase().replace(/\s+/g, "-"),
-    label: o.label,
-    icon: o.icon || o.label.toLowerCase().replace(/\s+/g, "-"),
-  }));
-
-  const qo = result.quick_option;
-  const quickOption: DisplayOption | null = qo
-    ? {
-        key: qo.key || qo.label.toLowerCase().replace(/\s+/g, "-"),
-        label: qo.label,
-        icon: qo.icon || qo.label.toLowerCase().replace(/\s+/g, "-"),
-      }
-    : null;
-
-  return { options, quickOption };
 }
 
 // ── Skeleton card ──────────────────────────────────────────────
@@ -86,11 +59,13 @@ function OptionCard({
   onSelect,
   onExpand,
   index = 0,
+  featured = false,
 }: {
   option: DisplayOption;
   onSelect: (opt: DisplayOption) => void;
   onExpand: (opt: DisplayOption) => void;
   index?: number;
+  featured?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -132,12 +107,22 @@ function OptionCard({
           <LiquidButton
             size="xxl"
             onClick={() => onSelect(option)}
-            className="!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg border border-white/5"
+            className={[
+              "!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg border",
+              featured
+                ? "border-primary/40 ring-2 ring-primary/20"
+                : "border-white/5",
+            ].join(" ")}
             style={{
               background: `linear-gradient(135deg, ${color}10, ${color}05)`,
             }}
           >
             <div className="flex flex-col items-center justify-center w-full h-full p-2 gap-1">
+              {featured && (
+                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">
+                  Likely
+                </span>
+              )}
               {/* Icon: 65-70% of card height */}
               <div className="flex-1 flex items-center justify-center min-h-0">
                 <Icon
@@ -181,7 +166,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   const [navStack, setNavStack] = useState<NavFrame[]>([]);
   const [currentFrame, setCurrentFrame] = useState<NavFrame>({
     path: [],
-    pathLabels: [],
+    breadcrumbs: [],
     options: [],
     quickOption: null,
   });
@@ -195,12 +180,12 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
         setLoading(false);
         return;
       }
-      const { options, quickOption } = aiResultToDisplayOptions(result);
+      const normalized = normalizeAiExpandResult(result);
       setCurrentFrame({
         path: [],
-        pathLabels: [],
-        options,
-        quickOption,
+        breadcrumbs: [],
+        options: normalized.options,
+        quickOption: normalized.quickOption,
       });
       setLoading(false);
     }).catch(err => {
@@ -213,9 +198,8 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   const handleSelect = useCallback(
     (opt: DisplayOption) => {
       onAddToStack({ key: opt.key, label: opt.label });
-      selectTreeAI(opt.key, currentFrame.path).catch(() => {});
     },
-    [onAddToStack, currentFrame.path]
+    [onAddToStack]
   );
 
   // EXPAND
@@ -233,13 +217,13 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
           setGridKey((k) => k + 1);
           return;
         }
-        const { options, quickOption } = aiResultToDisplayOptions(result);
+        const normalized = normalizeAiExpandResult(result);
 
         const newFrame: NavFrame = {
           path: newPath,
-          pathLabels: [...currentFrame.pathLabels, opt.label],
-          options,
-          quickOption,
+          breadcrumbs: extendBreadcrumbs(currentFrame.breadcrumbs, opt),
+          options: normalized.options,
+          quickOption: normalized.quickOption,
         };
 
         setNavStack((prev) => [...prev, currentFrame]);
@@ -285,12 +269,11 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
 
         {/* Breadcrumb icons only (no text) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {currentFrame.pathLabels.map((label, i) => {
-            const pathKey = currentFrame.path[i];
-            const BreadcrumbIcon = getIconComponent(pathKey);
-            const isLast = i === currentFrame.pathLabels.length - 1;
+          {currentFrame.breadcrumbs.map((crumb, i) => {
+            const BreadcrumbIcon = getIconComponent(crumb.icon);
+            const isLast = i === currentFrame.breadcrumbs.length - 1;
             return (
-              <React.Fragment key={`${label}-${i}`}>
+              <React.Fragment key={`${crumb.key}-${i}`}>
                 {i > 0 && <span className="text-on-surface-variant/20 text-sm">/</span>}
                 <div
                   className={[
@@ -318,7 +301,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
                       isLast ? "text-primary" : "text-on-surface-variant/40",
                     ].join(" ")}
                   >
-                    {label}
+                    {crumb.label}
                   </span>
                 </div>
               </React.Fragment>
@@ -361,17 +344,28 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               transition={{ duration: 0.2 }}
               className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
             >
+              {currentFrame.quickOption && (
+                <OptionCard
+                  key={`quick-${currentFrame.quickOption.key}`}
+                  option={currentFrame.quickOption}
+                  onSelect={handleSelect}
+                  onExpand={handleExpand}
+                  index={0}
+                  featured
+                />
+              )}
+
               {currentFrame.options.map((opt, i) => (
                 <OptionCard
                   key={`${opt.key}-${i}`}
                   option={opt}
                   onSelect={handleSelect}
                   onExpand={handleExpand}
-                  index={i}
+                  index={currentFrame.quickOption ? i + 1 : i}
                 />
               ))}
 
-              {currentFrame.options.length === 0 && (
+              {currentFrame.options.length === 0 && !currentFrame.quickOption && (
                 <div className="col-span-full flex flex-col items-center justify-center p-16 gap-4">
                   {/* Icon-based empty state (no text) */}
                   {(() => {

@@ -4,17 +4,22 @@ Context assembly — builds a dense system prompt from user data.
 Max 300 tokens, priority-ordered.
 """
 
-import tiktoken
+try:
+    import tiktoken
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    tiktoken = None
 
 # 300 Token Limit Rationale: 
 # The context string is passed into the streaming API during Intent Generation.
 # A larger context window directly slows down the TTFT (Time to First Token).
 # Keeping the budget strictly at 300 ensures we meet the 500ms constraint.
-ENCODER = tiktoken.encoding_for_model("gpt-4o-mini")
+ENCODER = tiktoken.encoding_for_model("gpt-4o-mini") if tiktoken else None
 MAX_TOKENS = 300
 
 
 def _count_tokens(text: str) -> int:
+    if ENCODER is None:
+        return len(text.split())
     return len(ENCODER.encode(text))
 
 

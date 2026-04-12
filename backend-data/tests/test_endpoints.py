@@ -1,5 +1,7 @@
 import httpx
 
+__test__ = False
+
 BASE = "http://localhost:8002"
 
 def test_profile():
@@ -23,14 +25,15 @@ def test_knowledge_score():
     assert r.json()["knowledge_score"] > 71
     print("✓ knowledge score increases on answer")
 
-def test_shortcuts():
-    r = httpx.get(f"{BASE}/api/shortcuts", params={"user_id": "yuki_demo"})
+def test_tree_skim():
+    r = httpx.get(f"{BASE}/api/context/tree_skim", params={"user_id": "yuki_demo"})
     if r.status_code != 200:
-        print(f"FAILED shortcuts: {r.status_code} - {r.text}")
+        print(f"FAILED tree_skim: {r.status_code} - {r.text}")
         return
     data = r.json()
-    assert len(data.get("shortcuts", [])) > 0
-    print("✓ shortcuts return data")
+    assert "recent_paths" in data
+    assert "top_paths" in data
+    print("✓ tree context skim returns personalization data")
 
 def test_panel():
     r = httpx.get(f"{BASE}/api/caregiver/panel", params={"user_id": "yuki_demo"})
@@ -59,7 +62,7 @@ if __name__ == "__main__":
     try:
         test_profile()
         test_knowledge_score()
-        test_shortcuts()
+        test_tree_skim()
         test_panel()
         test_insights()
         print("Done!")

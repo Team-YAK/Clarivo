@@ -1,18 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { generateIntentStream, synthesizeVoice } from "@/utils/patientApi";
+import { streamAndConfirmIntent } from "@/utils/patientApi";
 import { addUtterance, fetchActiveConversation } from "@/utils/caregiverApi";
 import { SpeakerHigh, X, Waveform, MicrophoneStage } from "@phosphor-icons/react";
 
 interface SentenceOutputProps {
-  labels: string[];
   path: string[];
   onClose: () => void;
   onSpeak: () => void;
 }
 
 export default function SentenceOutput({
-  labels,
   path,
   onClose,
   onSpeak,
@@ -21,56 +19,39 @@ export default function SentenceOutput({
   const [isDone, setIsDone] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [voiceSource, setVoiceSource] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const sentenceRef = useRef("");
+  const playbackStartedRef = useRef(false);
 
-  // Stream the sentence word-by-word via backend /api/intent SSE
+  // Stream the sentence and finalize it via backend /api/confirm.
   useEffect(() => {
     let active = true;
     const runStream = async () => {
-      let builtSentence = "";
-      // Pass path keys (for backend AI) + labels (for fallback display)
-      const generator = generateIntentStream(path, labels);
-      for await (const word of generator) {
-        if (!active) break;
-        builtSentence += word;
-        sentenceRef.current = builtSentence;
-        setSentence(builtSentence);
-      }
-      if (active) {
-        setIsDone(true);
-      }
-    };
-    runStream();
-    return () => {
-      active = false;
-    };
-  }, [labels, path]);
+      setIsFinalizing(true);
 
-  // When streaming is done, synthesize voice via ElevenLabs
-  useEffect(() => {
-    if (!isDone || isSynthesizing || audioUrl) return;
-    const finalSentence = sentenceRef.current.trim();
-    if (!finalSentence) return;
+      const result = await streamAndConfirmIntent({
+        path,
+        onToken: (token) => {
+          if (!active) return;
+          sentenceRef.current += token;
+          setSentence(sentenceRef.current);
+        },
+      });
 
-    setIsSynthesizing(true);
+      if (!active) return;
 
-    (async () => {
-      try {
-        const res = await synthesizeVoice(finalSentence);
-        if (res?.audio_url) {
-          setAudioUrl(res.audio_url);
-          // Track which voice was used (cloned, env_override, or preset)
-          if (res.voice_source) {
-            setVoiceSource(res.voice_source);
-          }
-        } else {
-          fallbackSpeech(finalSentence);
-          setVoiceSource("browser");
-        }
+      const finalSentence = result.sentence.trim();
+      sentenceRef.current = finalSentence;
+      setSentence(finalSentence);
+      setAudioUrl(result.audioUrl);
+      setVoiceSource(result.voiceSource);
+      setErrorMessage(result.error);
+      setIsFinalizing(false);
+      setIsDone(true);
 
-        // Log patient utterance to any active conversation
+      if (finalSentence) {
         try {
           const activeConv = await fetchActiveConversation();
           if (activeConv?.id) {
@@ -79,21 +60,31 @@ export default function SentenceOutput({
         } catch {
           // conversation logging is best-effort
         }
-      } catch (e) {
-        console.error("ElevenLabs synthesis failed:", e);
-        fallbackSpeech(finalSentence);
-      } finally {
-        setIsSynthesizing(false);
       }
-    })();
-  }, [isDone]);
+    };
+    runStream();
+    return () => {
+      active = false;
+    };
+  }, [path]);
 
   // Auto-play when audio URL arrives
   useEffect(() => {
-    if (audioUrl && !isPlaying) {
+    if (!isDone || playbackStartedRef.current) return;
+
+    const finalSentence = sentenceRef.current.trim();
+    if (!finalSentence) return;
+
+    playbackStartedRef.current = true;
+
+    if (audioUrl) {
       playAudio();
+      return;
     }
-  }, [audioUrl]);
+
+    setVoiceSource("browser");
+    fallbackSpeech(finalSentence);
+  }, [audioUrl, isDone]);
 
   const fallbackSpeech = (text: string) => {
     if ("speechSynthesis" in window) {
@@ -148,15 +139,20 @@ export default function SentenceOutput({
         <div className="flex-1">
           <p className="text-sm font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            AI Intent Synthesizer
+            AI Intent Flow
           </p>
           <div className="min-h-[60px]">
             <p className="text-3xl font-headline font-black text-on-surface leading-tight">
-              &quot;{sentence}&quot;
+              {sentence ? `\"${sentence}\"` : "…"}
               {!isDone && (
                 <span className="animate-pulse ml-2 text-primary">|</span>
               )}
             </p>
+            {errorMessage && (
+              <p className="mt-3 text-sm font-medium text-amber-600">
+                {errorMessage}
+              </p>
+            )}
           </div>
         </div>
         <button
@@ -196,10 +192,10 @@ export default function SentenceOutput({
             </motion.div>
           )}
           <button
-            disabled={isPlaying || isSynthesizing}
+            disabled={isPlaying || isFinalizing || !sentenceRef.current.trim()}
             onClick={playAudio}
             className={`flex items-center justify-center gap-4 px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg ${
-              isPlaying || isSynthesizing
+              isPlaying || isFinalizing || !sentenceRef.current.trim()
                 ? "bg-primary-container text-primary opacity-50 translate-y-1 shadow-none"
                 : "bg-primary hover:bg-primary/90 text-on-primary hover:-translate-y-1"
             }`}
@@ -209,8 +205,8 @@ export default function SentenceOutput({
               weight={isPlaying ? "fill" : "bold"}
               className={isPlaying ? "animate-pulse" : ""}
             />
-            {isSynthesizing
-              ? "Generating Voice..."
+            {isFinalizing
+              ? "Finalizing..."
               : isPlaying
                 ? "Playing Audio..."
                 : "Speak Sentence"}

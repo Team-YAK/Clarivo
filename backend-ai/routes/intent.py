@@ -8,7 +8,14 @@ import logging
 from typing import List, Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Request, HTTPException
-from sse_starlette.sse import EventSourceResponse
+
+try:
+    from sse_starlette.sse import EventSourceResponse
+except ImportError:  # pragma: no cover - exercised in envs without optional deps
+    class EventSourceResponse:  # type: ignore[override]
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("sse_starlette is not installed")
+
 from services.data_service import get_user
 from services.context_service import build_context_string
 from services.openai_service import stream_intent, compute_confidence

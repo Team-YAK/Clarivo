@@ -1,17 +1,15 @@
 """
 POST /api/tree/expand  — AI-powered next option generation
-POST /api/tree/select  — Update in-memory path (lightweight)
-POST /api/tree/confirm — Persist path to MongoDB via E3
 """
 
 import logging
 import json
 import time
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Request
 
-from agents.orchestrator import expand, select, confirm
+from agents.orchestrator import expand
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -22,18 +20,6 @@ router = APIRouter()
 class ExpandRequest(BaseModel):
     user_id: str = "alex_demo"
     current_path: List[str] = []
-
-
-class SelectRequest(BaseModel):
-    user_id: str = "alex_demo"
-    selected_key: str
-    current_path: List[str] = []
-
-
-class ConfirmRequest(BaseModel):
-    user_id: str = "alex_demo"
-    path: List[str]
-    confidence: float = 0.9
 
 
 # ── Endpoints ────────────────────────────────────────────────
@@ -87,31 +73,3 @@ async def tree_expand(req: ExpandRequest, request: Request):
         logger.error(f"tree_expand failed: {e}")
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail="Options generation failed")
-
-
-@router.post("/api/tree/select")
-async def tree_select(req: SelectRequest):
-    """
-    Add a button to the current path queue (lightweight, no LLM).
-    
-    Input: { user_id, selected_key: "water", current_path: [...] }
-    Output: { path: [..., "water"], ok: true }
-    """
-    result = select(req.user_id, req.selected_key, req.current_path)
-    return result
-
-
-@router.post("/api/tree/confirm")
-async def tree_confirm(req: ConfirmRequest):
-    """
-    Persist the completed path to MongoDB and increment frequency counters.
-    
-    Input: { user_id, path: ["food", "drink", "water"], confidence: 0.9 }
-    Output: { ok: true, session_id: "...", path_key: "..." }
-    """
-    try:
-        result = await confirm(req.user_id, req.path, req.confidence)
-        return result
-    except Exception as e:
-        logger.error(f"tree_confirm failed: {e}")
-        return {"ok": False, "error": str(e)}

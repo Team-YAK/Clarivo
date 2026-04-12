@@ -5,21 +5,6 @@
  * DO NOT import backend-specific logic here — types only.
  */
 
-// ─── Tree / Navigation ───────────────────────────────────────────────────────
-
-export interface TreeNode {
-  id: string;
-  key: string;
-  label: string;
-  icon: string;
-  subtitle?: string;
-  parent_key?: string | null;
-  is_leaf: boolean;
-  category: string;
-  is_custom: boolean;
-  user_id?: string | null;
-}
-
 // ─── Icons (Composer mode) ───────────────────────────────────────────────────
 
 export interface IconDef {
@@ -81,6 +66,9 @@ export interface ConfirmRequest {
 export interface ConfirmResponse {
   audio_url: string;
   sentence: string;
+  session_id: string;
+  voice_source?: string | null;
+  post_session_question?: PostSessionQuestion | null;
 }
 
 // ─── Feedback (E2 /api/feedback) ────────────────────────────────────────────
@@ -167,16 +155,6 @@ export interface MoodEntry {
   score: number; // 1–10
   notes?: string;
   timestamp: string;
-}
-
-// ─── Predictions / Shortcuts (E3) ────────────────────────────────────────────
-
-export interface PredictedPath {
-  path: string[];
-  path_key: string;
-  label: string;
-  icon: string;
-  input_mode: "tree" | "composer";
 }
 
 // ─── Digest (E2 /api/digest) ─────────────────────────────────────────────────
