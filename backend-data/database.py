@@ -23,6 +23,7 @@ class Database:
     anchors = None
     icons = None
     conversations = None
+    prompts = None
 
 db = Database()
 
@@ -36,6 +37,7 @@ async def connect_to_mongo():
         db.anchors = mock_db.MockCollection("anchors")
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
+        db.prompts = mock_db.MockCollection("prompts")
         if AsyncIOMotorClient is None:
             print("MongoDB driver unavailable. Using In-Memory MOCK Database.")
         else:
@@ -57,6 +59,7 @@ async def connect_to_mongo():
         db.anchors = db.db.anchors
         db.icons = db.db.icons
         db.conversations = db.db.conversations
+        db.prompts = db.db.prompts
         # Pinging to check if reachable
         await db.db.command("ping")
     except Exception as e:
@@ -69,6 +72,7 @@ async def connect_to_mongo():
         db.anchors = mock_db.MockCollection("anchors")
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
+        db.prompts = mock_db.MockCollection("prompts")
 
 async def close_mongo_connection():
     if db.client:

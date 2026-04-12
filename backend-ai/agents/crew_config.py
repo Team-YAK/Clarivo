@@ -18,6 +18,7 @@ import re
 import time
 import unicodedata
 from pathlib import Path
+from services.data_service import get_prompt
 
 from dotenv import load_dotenv
 try:
@@ -113,8 +114,12 @@ async def personalization_agent(context_data: dict) -> dict:
     }
 
 
-async def generation_agent(context_slice: dict, personalization_slice: dict) -> tuple[dict, float]:
-    sys_msg = (
+async def generation_agent(context_slice: dict, personalization_slice: dict, user_id: str = "alex_demo") -> tuple[dict, float]:
+    # Try dynamic prompts first
+    sys_prompt = await get_prompt("generation_sys", user_id)
+    hu_prompt = await get_prompt("generation_hu", user_id)
+
+    sys_msg = sys_prompt["content"] if sys_prompt else (
         "You generate the next semantic navigation options for Clarivo, an aphasia communication system. "
         "Output JSON only with schema: "
         "{\"quick_option\":{\"label\":\"...\",\"concept\":\"...\",\"key\":\"...\"},"
@@ -126,7 +131,8 @@ async def generation_agent(context_slice: dict, personalization_slice: dict) -> 
         "Treat the current path as an evolving meaning sequence, not a tree hierarchy. "
         "Return 4-10 options that continue the current meaning."
     )
-    hu_msg = (
+    
+    hu_base = hu_prompt["content"] if hu_prompt else (
         "Use only these signals, in this priority order:\n"
         "1) Current conversation utterances\n"
         "2) Current navigation path\n"
@@ -135,7 +141,11 @@ async def generation_agent(context_slice: dict, personalization_slice: dict) -> 
         "- Every option must feel like a semantic continuation of the current path.\n"
         "- Do not emit generic resets or hidden default menus.\n"
         "- The quick option should be the single most probable next concept.\n"
-        "- Any concept can lead to any other concept if semantically relevant.\n\n"
+        "- Any concept can lead to any other concept if semantically relevant."
+    )
+
+    hu_msg = (
+        f"{hu_base}\n\n"
         f"Current path: {json.dumps(context_slice.get('current_path', []))}\n"
         f"Conversation: {json.dumps(context_slice.get('conversation_utterances', []))}\n"
         f"Past paths: {json.dumps(personalization_slice.get('recent_paths', []))}\n"
@@ -231,7 +241,11 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
         concepts_formatted = "\n".join(f"- id: {it['id']}, concept: {it['concept']}" for it in items)
         ref_formatted = "\n".join(f"- {k}: {v}" for k, v in reference_emojis.items())
         
-        sys_msg = (
+        # Try dynamic prompt
+        user_id = generated.get("_user_id", "alex_demo")
+        sys_prompt = await get_prompt("icon_sys", user_id)
+        
+        sys_msg = sys_prompt["content"] if sys_prompt else (
             "You are an expert Emoji Communicator for an aphasia communication app. "
             "Your critical goal is to convey the exact meaning of each concept to patients using ONLY emojis. "
             "Because patients with aphasia rely heavily on visual cues, your emoji combinations must be highly expressive, clear, and unmistakable.\n"
@@ -244,10 +258,10 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
             "5. Number 1 priority is conveying the message clearly through emojis.\n"
             "6. ACCURACY: Use the Core Emoji Reference below as your source of truth for base concepts. "
             "For example, if the concept is 'drink', ALWAYS include a beverage-related emoji from the reference or common knowledge. "
-            "NEVER use unrelated food (like cakes/desserts) for drinks.\n\n"
-            f"CORE EMOJI REFERENCE (Authoritative):\n{ref_formatted}\n\n"
-            "Return ONLY a flat JSON object: {\"id\": \"emoji_combo\"}. No markdown, no explanation."
+            "NEVER use unrelated food (like cakes/desserts) for drinks."
         )
+
+        sys_msg += f"\n\nCORE EMOJI REFERENCE (Authoritative):\n{ref_formatted}\n\nReturn ONLY a flat JSON object: {{\"id\": \"emoji_combo\"}}. No markdown, no explanation."
         hu_msg = f"Concepts to assign unique emoji combinations to:\n{concepts_formatted}"
         try:
             raw = await _chat_once(sys_msg, hu_msg, max_tokens=180, temperature=0.0)
@@ -265,9 +279,7 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
         # Strip any accidental ASCII text/spaces
         raw_emoji = emoji_map.get(it["id"], "").strip()
         emoji = "".join(c for c in raw_emoji if ord(c) > 127)
-        # Limit to first 3 "components" roughly, using grapheme could be too restrictive or slow here,
-        # but since we filtered non-emoji characters, sticking to the raw characters (up to 6 chars 
-        # to allow complex 3-emoji combos with ZWJ) is safe enough.
+        # Limit to first 3 "components" roughly
         emoji = emoji[:8]
 
         if not _is_emoji(emoji) or emoji in used:
@@ -344,7 +356,9 @@ async def run_crew_pipeline(current_path: list[str], context_data: dict) -> dict
         _timed(personalization_agent(context_data)),
     )
 
-    generated, generation_ttft_ms = await generation_agent(context_slice, personalization_slice)
+    user_id = context_data.get("user_id", "alex_demo")
+    generated, generation_ttft_ms = await generation_agent(context_slice, personalization_slice, user_id=user_id)
+    generated["_user_id"] = user_id  # Pass along for icon agent
     resolved, icon_resolve_ms = await icon_agent(generated)
 
     manager_start = time.perf_counter()

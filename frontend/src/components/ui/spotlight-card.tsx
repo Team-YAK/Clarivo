@@ -125,57 +125,25 @@ const GlowCard: React.FC<GlowCardProps> = ({
         calc(var(--y, 0) * 1px),
         hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 1)), transparent 100%
       );
-      filter: brightness(2);
     }
-    
+
     [data-glow]::after {
       background-image: radial-gradient(
         calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
-        hsl(0 100% 100% / var(--border-light-opacity, 1)), transparent 100%
+        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 0.5)), transparent 100%
       );
-    }
-    
-    [data-glow] [data-glow] {
-      position: absolute;
-      inset: 0;
-      will-change: filter;
-      opacity: var(--outer, 1);
-      border-radius: calc(var(--radius) * 1px);
-      border-width: calc(var(--border-size) * 20);
-      filter: blur(calc(var(--border-size) * 10));
-      background: none;
-      pointer-events: none;
-      border: none;
-    }
-    
-    [data-glow] > [data-glow]::before {
-      inset: -10px;
-      border-width: 10px;
     }
   `;
 
   return (
     <>
-      {/* <style dangerouslySetInnerHTML={{ __html: beforeAfterStyles }} /> */}
-      <div
-        ref={cardRef}
-        data-glow
-        style={getInlineStyles()}
-        className={`
-          ${getSizeClasses()}
-          ${!customSize ? 'aspect-[3/4]' : ''}
-          rounded-2xl 
-          relative 
-          grid 
-          grid-rows-[1fr_auto] 
-          shadow-[0_1rem_2rem_-1rem_black] 
-          p-4 
-          gap-4 
-          backdrop-blur-[5px]
-          ${className}
-        `}
+      <style dangerouslySetInnerHTML={{ __html: beforeAfterStyles }} />
+      <div 
+        ref={cardRef} 
+        style={getInlineStyles()} 
+        className={`relative overflow-hidden rounded-[calc(var(--radius)*1px)] ${getSizeClasses()} ${className}`}
       >
         <div ref={innerRef} data-glow></div>
         {children}

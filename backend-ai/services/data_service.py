@@ -145,3 +145,32 @@ async def save_voice_id(user_id: str, voice_id: str) -> dict:
     except Exception as e:
         logger.warning(f"E3 unavailable — voice_id not saved: {e}")
         return {"success": True}
+
+
+async def get_prompt(prompt_id: str, user_id: str) -> dict | None:
+    if USE_MOCK:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(f"{E3_BASE}/api/prompts/{prompt_id}", params={"user_id": user_id})
+            if resp.status_code == 200:
+                return resp.json().get("prompt")
+            return None
+    except Exception as e:
+        logger.warning(f"Could not fetch prompt {prompt_id}: {e}")
+        return None
+
+
+async def update_prompt(user_id: str, prompt_id: str, content: str, description: str = None) -> bool:
+    if USE_MOCK:
+        return True
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            resp = await client.post(
+                f"{E3_BASE}/api/prompts",
+                json={"user_id": user_id, "prompt_id": prompt_id, "content": content, "description": description}
+            )
+            return resp.status_code == 200
+    except Exception as e:
+        logger.warning(f"Could not update prompt {prompt_id}: {e}")
+        return False

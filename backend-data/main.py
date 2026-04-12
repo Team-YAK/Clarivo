@@ -47,6 +47,8 @@ from routes.demo import router as demo_router
 app.include_router(demo_router)
 from routes.glossary import router as glossary_router
 app.include_router(glossary_router)
+from routes.prompts import router as prompts_router
+app.include_router(prompts_router)
 
 
 @app.get("/")

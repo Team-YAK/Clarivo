@@ -87,17 +87,9 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
     if (Icon) return Icon;
   }
 
-  // 4. Inline SVG string
+  // 4. Inline SVG string (Disabled as a precaution against "script tag" error)
   if (key && key.trim().startsWith("<svg")) {
-    const InlineSvgIcon = (props: { className?: string; style?: React.CSSProperties }) => (
-      <span
-        className={props.className}
-        style={{ display: "inline-flex", ...props.style }}
-        /* dangerouslySetInnerHTML={{ __html: key }} */
-      />
-    );
-    InlineSvgIcon.displayName = "InlineSvgIcon";
-    return InlineSvgIcon as any;
+    return () => <span className="select-none text-[10px] opacity-30">[SVG]</span>;
   }
 
   // 5. Fallback

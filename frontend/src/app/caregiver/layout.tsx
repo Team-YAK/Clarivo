@@ -13,7 +13,8 @@ import {
   SquaresFour,
   SignOut,
   FlowerLotus,
-  ArrowLeft
+  ArrowLeft,
+  MagicWand
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -27,6 +28,7 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
     { href: '/caregiver/context', label: 'Patient Context', icon: <UserList size={24} /> },
     { href: '/caregiver/glossary', label: 'AI Glossary Rules', icon: <BookBookmark size={24} /> },
     { href: '/caregiver/alerts', label: 'Alert Console', icon: <BellRinging size={24} /> },
+    { href: '/caregiver/prompts', label: 'Prompt Architect', icon: <MagicWand size={24} /> },
     { href: '/caregiver/audits', label: 'Session Auditor', icon: <FileText size={24} /> },
     { href: '/caregiver/voice', label: 'Voice Studio', icon: <Microphone size={24} /> },
   ];
