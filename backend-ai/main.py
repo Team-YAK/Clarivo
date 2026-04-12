@@ -62,6 +62,7 @@ from routes.demo import router as demo_router
 from routes.live import router as live_router
 from routes.tree_ai import router as tree_ai_router
 from routes.reverse import router as reverse_router
+from routes.vision import router as vision_router
 
 app.include_router(intent_router)
 app.include_router(confirm_router)
@@ -74,6 +75,7 @@ app.include_router(demo_router)
 app.include_router(live_router)
 app.include_router(tree_ai_router)
 app.include_router(reverse_router)
+app.include_router(vision_router)
 
 
 @app.on_event("startup")

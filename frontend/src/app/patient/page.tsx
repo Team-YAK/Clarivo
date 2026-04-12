@@ -5,7 +5,8 @@ import ButtonGrid, { StackAddEvent } from "@/components/patient/ButtonGrid";
 import WordStack, { StackItem } from "@/components/patient/WordStack";
 import SentenceOutput from "@/components/patient/SentenceOutput";
 import PartnerPanel from "@/components/patient/PartnerPanel";
-import { Desktop, FlowerLotus } from "@phosphor-icons/react";
+import DrawingCanvas from "@/components/patient/DrawingCanvas";
+import { Desktop, FlowerLotus, Pencil, SquaresFour } from "@phosphor-icons/react";
 import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -54,6 +55,7 @@ export default function PatientScreen() {
   const [stackItems, setStackItems] = useState<StackItem[]>([]);
   const [undoHistory, setUndoHistory] = useState<StackItem[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [drawingMode, setDrawingMode] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -151,8 +153,39 @@ export default function PatientScreen() {
         <div className="flex-1 flex overflow-hidden">
           {/* Patient Area (Left 50%) */}
           <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6 border-r border-white/5">
-            <div className="h-full flex flex-col">
-              <ButtonGrid onAddToStack={handleAddToStack} />
+            <div className="flex justify-center mb-4 shrink-0">
+              <div className="bg-surface/50 p-1 rounded-full border border-white/5 flex gap-1">
+                <button
+                  onClick={() => setDrawingMode(false)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${!drawingMode ? 'bg-primary text-white shadow-lg' : 'text-outline hover:text-white'}`}
+                >
+                  <SquaresFour size={16} weight="bold" /> Standard
+                </button>
+                <button
+                  onClick={() => setDrawingMode(true)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${drawingMode ? 'bg-[#14F1D9] text-[#1E1E24] shadow-lg shadow-[#14F1D9]/20' : 'text-outline hover:text-white'}`}
+                >
+                  <Pencil size={16} weight="bold" /> Draw (AI)
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {drawingMode ? (
+                <DrawingCanvas onComplete={(data) => {
+                  handleAddToStack({
+                    key: data.label.toLowerCase(),
+                    label: data.label,
+                    icon: data.iconKey || "✏️"
+                  });
+                  // Trigger TTS immediately for this inferred concept
+                  setTimeout(() => {
+                    setIsSynthesizing(true);
+                  }, 100);
+                }} />
+              ) : (
+                <ButtonGrid onAddToStack={handleAddToStack} />
+              )}
             </div>
           </div>
 
