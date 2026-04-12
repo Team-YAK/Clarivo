@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { generateIntentStream } from "@/utils/patientApi";
+import { generateIntentStream, synthesizeVoice } from "@/utils/patientApi";
+import { addUtterance, fetchActiveConversation } from "@/utils/caregiverApi";
 import { SpeakerHigh, X } from "@phosphor-icons/react";
 
 interface SentenceOutputProps {
@@ -17,16 +18,25 @@ export default function SentenceOutput({
   const [sentence, setSentence] = useState("");
   const [isDone, setIsDone] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const sentenceRef = useRef("");
 
+  // Stream the sentence word-by-word
   useEffect(() => {
     let active = true;
     const runStream = async () => {
+      let builtSentence = "";
       const generator = generateIntentStream(labels);
       for await (const word of generator) {
         if (!active) break;
-        setSentence((prev) => prev + word);
+        builtSentence += word;
+        sentenceRef.current = builtSentence;
+        setSentence(builtSentence);
       }
-      if (active) setIsDone(true);
+      if (active) {
+        setIsDone(true);
+      }
     };
     runStream();
     return () => {
@@ -34,15 +44,65 @@ export default function SentenceOutput({
     };
   }, [labels]);
 
-  const handleSpeak = () => {
-    setIsPlaying(true);
-    onSpeak();
+  // When streaming is done, synthesize voice via ElevenLabs
+  useEffect(() => {
+    if (!isDone || isSynthesizing || audioUrl) return;
+    const finalSentence = sentenceRef.current.trim();
+    if (!finalSentence) return;
 
-    // Simulate audio playback length
-    setTimeout(() => {
+    setIsSynthesizing(true);
+
+    (async () => {
+      try {
+        const res = await synthesizeVoice(finalSentence);
+        if (res?.audio_url) {
+          setAudioUrl(res.audio_url);
+        }
+
+        // Log patient utterance to any active conversation
+        try {
+          const activeConv = await fetchActiveConversation();
+          if (activeConv?.id) {
+            await addUtterance(activeConv.id, "Patient", finalSentence);
+          }
+        } catch {
+          // conversation logging is best-effort
+        }
+      } catch (e) {
+        console.error("ElevenLabs synthesis failed:", e);
+      } finally {
+        setIsSynthesizing(false);
+      }
+    })();
+  }, [isDone]);
+
+  // Auto-play when audio URL arrives
+  useEffect(() => {
+    if (audioUrl && !isPlaying) {
+      playAudio();
+    }
+  }, [audioUrl]);
+
+  const playAudio = () => {
+    if (!audioUrl) return;
+    setIsPlaying(true);
+
+    const AI_URL = process.env.NEXT_PUBLIC_AI_URL || "http://localhost:8001";
+    const audio = new Audio(`${AI_URL}${audioUrl}`);
+    audio.play().catch((err) => {
+      console.error("Audio playback failed:", err);
       setIsPlaying(false);
-      onClose(); // Automatically dismiss after speaking
-    }, 2500);
+    });
+    audio.onended = () => {
+      setIsPlaying(false);
+      setTimeout(onClose, 1000);
+    };
+    audio.onerror = () => {
+      console.error("Audio load error");
+      setIsPlaying(false);
+    };
+
+    onSpeak();
   };
 
   return (
@@ -82,10 +142,10 @@ export default function SentenceOutput({
           className="flex justify-end gap-4 border-t border-outline-variant/20 pt-6"
         >
           <button
-            disabled={isPlaying}
-            onClick={handleSpeak}
+            disabled={isPlaying || isSynthesizing}
+            onClick={playAudio}
             className={`flex items-center justify-center gap-4 px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg ${
-              isPlaying
+              isPlaying || isSynthesizing
                 ? "bg-primary-container text-primary opacity-50 translate-y-1 shadow-none"
                 : "bg-primary hover:bg-primary/90 text-on-primary hover:-translate-y-1"
             }`}
@@ -95,7 +155,11 @@ export default function SentenceOutput({
               weight={isPlaying ? "fill" : "bold"}
               className={isPlaying ? "animate-pulse" : ""}
             />
-            {isPlaying ? "Playing Audio..." : "Speak Sentence"}
+            {isSynthesizing
+              ? "Generating Voice..."
+              : isPlaying
+                ? "Playing Audio..."
+                : "Speak Sentence"}
           </button>
         </motion.div>
       )}

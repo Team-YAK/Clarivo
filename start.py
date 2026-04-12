@@ -13,7 +13,7 @@ root_dir = os.path.dirname(__file__)
 SERVERS = [
     {
         "name": "backend-data",
-        "cmd": [sys.executable, "main.py"],
+        "cmd": [os.path.join(root_dir, "backend-data/venv/bin/python3"), "main.py"],
         "cwd": os.path.join(root_dir, "backend-data"),
         "port": 8002,
         "health_url": "http://localhost:8002/health",
@@ -21,7 +21,7 @@ SERVERS = [
     },
     {
         "name": "backend-ai",
-        "cmd": [sys.executable, "main.py"],
+        "cmd": [os.path.join(root_dir, "backend-ai/venv/bin/python3"), "main.py"],
         "cwd": os.path.join(root_dir, "backend-ai"),
         "port": 8001,
         "health_url": "http://localhost:8001/health",

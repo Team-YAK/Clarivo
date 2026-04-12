@@ -17,7 +17,7 @@ def path_to_key(path_list: list[str], mode: str = "tree") -> str:
     return path_str
 
 def seed():
-    client = pymongo.MongoClient(MONGODB_URI)
+    client = pymongo.MongoClient(MONGODB_URI, tlsAllowInvalidCertificates=True)
     db = client[DB_NAME]
     
     db.users.delete_many({})

@@ -7,7 +7,7 @@ import os
 import uuid
 import logging
 from pathlib import Path
-from elevenlabs.client import AsyncElevenLabs
+from elevenlabs.client import ElevenLabs
 from elevenlabs import VoiceSettings
 
 logger = logging.getLogger(__name__)
@@ -21,10 +21,14 @@ CAREGIVER_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs "Rachel" preset
 _client = None
 
 
-def get_client() -> AsyncElevenLabs:
+def get_client() -> ElevenLabs:
     global _client
     if _client is None:
-        _client = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+        api_key = os.getenv("ELEVENLABS_API_KEY")
+        if not api_key:
+            raise RuntimeError("ELEVENLABS_API_KEY environment variable is not set")
+        logger.info(f"Initializing ElevenLabs client with key ending in ...{api_key[-6:]}")
+        _client = ElevenLabs(api_key=api_key)
     return _client
 
 
@@ -37,7 +41,10 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
     filepath = AUDIO_DIR / filename
 
     try:
-        audio = await get_client().text_to_speech.convert(
+        logger.info(f"Calling ElevenLabs TTS: voice_id={voice_id}, text='{text[:40]}...'")
+        
+        # Use synchronous client — elevenlabs SDK v2.x convert() returns a generator
+        audio_generator = get_client().text_to_speech.convert(
             voice_id=voice_id,
             text=text,
             model_id="eleven_multilingual_v2",
@@ -50,13 +57,15 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
         )
 
         with open(filepath, "wb") as f:
-            async for chunk in audio:
+            for chunk in audio_generator:
                 f.write(chunk)
 
-        if os.path.getsize(filepath) == 0:
+        file_size = os.path.getsize(filepath)
+        if file_size == 0:
             os.remove(filepath)
             raise Exception("ElevenLabs returned a 0-byte audio file")
 
+        logger.info(f"Audio file written: {filepath} ({file_size} bytes)")
         return f"/audio/{filename}"
     except Exception as e:
         logger.error(f"Patient voice synthesis failed: {e}")
@@ -73,7 +82,7 @@ async def synthesize_caregiver_voice(text: str) -> str:
     filepath = AUDIO_DIR / filename
 
     try:
-        audio = await get_client().text_to_speech.convert(
+        audio_generator = get_client().text_to_speech.convert(
             voice_id=CAREGIVER_VOICE_ID,
             text=text,
             model_id="eleven_turbo_v2",
@@ -86,7 +95,7 @@ async def synthesize_caregiver_voice(text: str) -> str:
         )
 
         with open(filepath, "wb") as f:
-            async for chunk in audio:
+            for chunk in audio_generator:
                 f.write(chunk)
 
         if os.path.getsize(filepath) == 0:
@@ -105,7 +114,7 @@ async def clone_voice(audio_data: bytes, name: str = "Yuki") -> str:
     Returns the new voice_id.
     """
     try:
-        voice = await get_client().clone(
+        voice = get_client().clone(
             name=name,
             files=[("audio.mp3", audio_data)],
             description="Cloned voice for AAC patient",

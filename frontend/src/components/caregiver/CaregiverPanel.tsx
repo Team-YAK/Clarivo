@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   fetchCaregiverPanel,
   fetchSessionHistory,
   submitContextAnswer,
   submitFeedback,
+  startConversation,
+  endConversation,
+  addUtterance,
+  fetchActiveConversation,
 } from '@/utils/caregiverApi';
 import { Session, CaregiverPanel as CaregiverPanelData } from '../../../../shared/api-contract';
-import { Warning, Brain, ArrowCounterClockwise, ThumbsUp, ThumbsDown, Check } from '@phosphor-icons/react';
+import { Warning, Brain, ArrowCounterClockwise, ThumbsUp, ThumbsDown, Check, Microphone, MicrophoneSlash, ChatTeardropText } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const containerVariants: any = {
@@ -31,23 +35,96 @@ export default function CaregiverPanel() {
   const [correctionText, setCorrectionText] = useState("");
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [submittingContext, setSubmittingContext] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [activeConv, setActiveConv] = useState<any>(null);
 
-  const fetchData = async () => {
+  // Use refs to avoid re-creating SpeechRecognition on every state change
+  const recognitionRef = useRef<any>(null);
+  const activeConvRef = useRef<any>(null);
+  const isRecordingRef = useRef(false);
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
+  useEffect(() => { isRecordingRef.current = isRecording; }, [isRecording]);
+
+  // Auto-scroll transcript to bottom
+  useEffect(() => {
+    if (transcriptContainerRef.current) {
+      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+    }
+  }, [activeConv?.utterances?.length]);
+
+  // Initialize SpeechRecognition once
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+
+    rec.onresult = async (event: any) => {
+      const last = event.results[event.results.length - 1];
+      if (!last.isFinal) return;
+      const transcript = last[0].transcript.trim();
+      const conv = activeConvRef.current;
+      if (conv?.id && transcript) {
+        console.log("Transcribed:", transcript);
+        try {
+          await addUtterance(conv.id, "Visitor", transcript);
+        } catch (e) {
+          console.error("Failed to save utterance:", e);
+        }
+      }
+    };
+
+    rec.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      // Don't stop recording on no-speech errors, just let it restart
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        setIsRecording(false);
+      }
+    };
+
+    rec.onend = () => {
+      // Auto-restart if we're still supposed to be recording
+      if (isRecordingRef.current) {
+        try { rec.start(); } catch { /* already started */ }
+      }
+    };
+
+    recognitionRef.current = rec;
+
+    return () => {
+      try { rec.stop(); } catch { /* not running */ }
+    };
+  }, []); // Empty deps — only initialize once
+
+  const fetchData = useCallback(async () => {
     try {
-      const pData = await fetchCaregiverPanel();
+      const [pData, hData, active] = await Promise.all([
+        fetchCaregiverPanel(),
+        fetchSessionHistory(),
+        fetchActiveConversation(),
+      ]);
       setPanelData(pData);
-      const hData = await fetchSessionHistory();
       setHistory(hData);
+      if (active?.id) {
+        setActiveConv(active);
+      }
     } catch (e) {
       console.error(e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 3000);
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const handleContextSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +150,35 @@ export default function CaregiverPanel() {
     await submitFeedback(sessionId, false, correctionText);
     setEditingSessionId(null);
     setCorrectionText("");
+    fetchData();
+  };
+
+  const toggleConversation = async () => {
+    if (activeConv) {
+      // End conversation
+      try {
+        await endConversation(activeConv.id);
+      } catch (e) { console.error(e); }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch { /* ok */ }
+      }
+      setIsRecording(false);
+      setActiveConv(null);
+    } else {
+      // Start conversation
+      try {
+        const res = await startConversation();
+        const convId = res.conversation_id || res.id;
+        const conv = { id: convId, utterances: [] };
+        setActiveConv(conv);
+        setIsRecording(true);
+        if (recognitionRef.current) {
+          try { recognitionRef.current.start(); } catch { /* already started */ }
+        }
+      } catch (e) {
+        console.error("Failed to start conversation:", e);
+      }
+    }
     fetchData();
   };
 
@@ -102,27 +208,65 @@ export default function CaregiverPanel() {
         animate="show"
         className="p-6 space-y-8 flex-1 overflow-y-auto no-scrollbar"
       >
-        {/* Live Activity */}
+        {/* Transcription Sidebar (Replaces Live Activity) */}
         <motion.section variants={itemVariants}>
-          <div className="bg-amber-100 text-amber-900 text-[10px] font-bold uppercase tracking-widest text-center py-1.5 rounded-t-xl mb-2 shadow-sm">
-            Caregiver view — Yuki sees icons only
-          </div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Live Activity</h3>
-            {panelData?.last_session && (
-              <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
-                Composer Mode Active
-              </span>
-            )}
+            <h3 className="text-on-surface-variant text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+              <ChatTeardropText size={16} weight="bold" />
+              Live Transcript
+            </h3>
+            <button 
+              onClick={toggleConversation}
+              className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-tight transition-all flex items-center gap-2 shadow-md ${
+                activeConv 
+                ? 'bg-error text-on-error hover:bg-error/90' 
+                : 'bg-primary text-on-primary hover:bg-primary/90'
+              }`}
+            >
+              {activeConv ? <MicrophoneSlash size={16} weight="bold" /> : <Microphone size={16} weight="bold" />}
+              {activeConv ? 'End Conversation' : 'Start Conversation'}
+            </button>
           </div>
-          <div className="bg-surface-container-lowest p-5 rounded-xl shadow-md border-l-4 border-primary transition-shadow">
-            {panelData?.last_session ? (
-              <>
-                <p className="text-on-surface-variant italic mb-1 text-sm">Synthesizing draft...</p>
-                <p className="text-primary font-headline font-bold text-xl">&quot;{panelData.last_session.sentence}&quot;</p>
-              </>
-            ) : (
-              <div className="animate-pulse h-16 bg-surface-variant rounded"></div>
+          
+          <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant/10 shadow-xl h-[400px] flex flex-col">
+            <div ref={transcriptContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+              {activeConv && activeConv.utterances && activeConv.utterances.length > 0 ? (
+                activeConv.utterances.map((u: any, i: number) => (
+                  <div key={i} className={`flex flex-col ${u.speaker === 'Patient' ? 'items-start' : 'items-end'}`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${u.speaker === 'Patient' ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      {u.speaker}
+                    </span>
+                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm leading-relaxed ${
+                      u.speaker === 'Patient' 
+                      ? 'bg-primary-container text-on-primary-container rounded-tl-none' 
+                      : 'bg-surface-container-highest text-on-surface rounded-tr-none border border-outline-variant/10'
+                    }`}>
+                      {u.text}
+                    </div>
+                  </div>
+                ))
+              ) : activeConv ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">
+                    <Microphone size={24} weight="fill" />
+                  </div>
+                  <p className="text-on-surface-variant text-xs font-bold uppercase tracking-widest animate-pulse">Listening for dialogue...</p>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 opacity-50">
+                  <ChatTeardropText size={40} weight="thin" className="text-on-surface-variant" />
+                  <p className="text-on-surface-variant text-sm font-medium">Start a conversation to see the transcript here.</p>
+                </div>
+              )}
+            </div>
+            
+            {activeConv && (
+              <div className="p-3 bg-primary/5 border-t border-primary/10">
+                <div className="flex items-center gap-2 justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-widest">Active Transcription Enabled</span>
+                </div>
+              </div>
             )}
           </div>
         </motion.section>

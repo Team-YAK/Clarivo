@@ -116,3 +116,25 @@ export const cloneVoice = async (file: File, userId: string = DEFAULT_USER_ID) =
     return { success: true, voice_id: 'mock_voice_123' };
   }
 };
+
+// --- Conversation API ---
+export const startConversation = async (userId: string = DEFAULT_USER_ID) => {
+  const res = await fetch(`${DATA_BASE_URL}/api/conversations/start?user_id=${userId}`, { method: 'POST' });
+  return await res.json();
+};
+
+export const addUtterance = async (conversationId: string, speaker: string, text: string) => {
+  const res = await fetch(`${DATA_BASE_URL}/api/conversations/add_sentence?conversation_id=${conversationId}&speaker=${speaker}&text=${encodeURIComponent(text)}`, { method: 'POST' });
+  return await res.json();
+};
+
+export const endConversation = async (conversationId: string) => {
+  const res = await fetch(`${DATA_BASE_URL}/api/conversations/end?conversation_id=${conversationId}`, { method: 'POST' });
+  return await res.json();
+};
+
+export const fetchActiveConversation = async (userId: string = DEFAULT_USER_ID) => {
+  const res = await fetch(`${DATA_BASE_URL}/api/conversations/active?user_id=${userId}`);
+  if (res.status === 204 || res.status === 404) return null;
+  return await res.json();
+};

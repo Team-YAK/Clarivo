@@ -11,6 +11,7 @@ from routes.shortcuts import router as shortcuts_router
 from routes.sessions import router as sessions_router
 from routes.profile import router as profile_router
 from routes.aggregations import router as aggregations_router
+from routes.conversations import router as conversations_router
 from contextlib import asynccontextmanager
 
 # Configure logging
@@ -43,6 +44,7 @@ app.include_router(shortcuts_router)
 app.include_router(sessions_router)
 app.include_router(profile_router)
 app.include_router(aggregations_router)
+app.include_router(conversations_router)
 from routes.demo import router as demo_router
 app.include_router(demo_router)
 

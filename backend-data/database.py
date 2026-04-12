@@ -19,6 +19,7 @@ class Database:
     anchors = None
     tree_nodes = None
     icons = None
+    conversations = None
 
 db = Database()
 
@@ -32,12 +33,17 @@ async def connect_to_mongo():
         db.anchors = mock_db.MockCollection("anchors")
         db.tree_nodes = mock_db.MockCollection("tree_nodes")
         db.icons = mock_db.MockCollection("icons")
+        db.conversations = mock_db.MockCollection("conversations")
         print("Using In-Memory MOCK Database (Missing MongoDB Daemon)")
         return
 
     try:
-        # Lower timeout to not hang server startup
-        db.client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=2000)
+        # tlsAllowInvalidCertificates=True bypasses SSL cert issues on macOS venvs
+        db.client = AsyncIOMotorClient(
+            MONGODB_URI,
+            serverSelectionTimeoutMS=5000,
+            tlsAllowInvalidCertificates=True,
+        )
         db.db = db.client[DB_NAME]
         db.users = db.db.users
         db.sessions = db.db.sessions
@@ -46,6 +52,7 @@ async def connect_to_mongo():
         db.anchors = db.db.anchors
         db.tree_nodes = db.db.tree_nodes
         db.icons = db.db.icons
+        db.conversations = db.db.conversations
         # Pinging to check if reachable
         await db.db.command("ping")
     except Exception as e:
@@ -58,6 +65,7 @@ async def connect_to_mongo():
         db.anchors = mock_db.MockCollection("anchors")
         db.tree_nodes = mock_db.MockCollection("tree_nodes")
         db.icons = mock_db.MockCollection("icons")
+        db.conversations = mock_db.MockCollection("conversations")
 
 async def close_mongo_connection():
     if db.client:

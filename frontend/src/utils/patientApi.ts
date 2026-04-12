@@ -308,3 +308,14 @@ export async function* generateIntentStream(labels: string[]): AsyncGenerator<st
     yield word + " ";
   }
 }
+
+export const synthesizeVoice = async (text: string, userId: string = "alex_demo") => {
+  const AI_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
+  const res = await fetch(`${AI_URL}/api/voice/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, user_id: userId })
+  });
+  if (!res.ok) throw new Error('Synthesis failed');
+  return await res.json(); // returns { audio_url: "..." }
+};
