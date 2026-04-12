@@ -1,13 +1,16 @@
 """POST /api/confirm — ElevenLabs synthesis + post-session question."""
 
 import os
+import asyncio
 import logging
+import httpx
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from services.data_service import get_user, create_session, save_context_question
 from services.context_service import build_context_string
 from services.elevenlabs_service import synthesize_patient_voice
 from services.openai_service import generate_post_session_question
+from config import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,7 +18,7 @@ router = APIRouter()
 
 class ConfirmRequest(BaseModel):
     session_id: str
-    user_id: str = "yuki_demo"
+    user_id: str = DEFAULT_USER_ID
 
 
 @router.post("/api/confirm")
@@ -24,6 +27,26 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
     from routes.intent import pending_sessions
 
     session = pending_sessions.get(req.session_id)
+    if not session:
+        # Fallback: try MongoDB live_sessions
+        try:
+            e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                resp = await client.get(f"{e3_url}/api/live", params={"user_id": req.user_id})
+                if resp.status_code == 200:
+                    live = resp.json()
+                    if live.get("session_id") == req.session_id:
+                        session = {
+                            "session_id": live["session_id"],
+                            "user_id": req.user_id,
+                            "path": live.get("breadcrumb", []),
+                            "path_key": "→".join(live.get("breadcrumb", [])),
+                            "sentence": live.get("streamingSentence", ""),
+                            "confidence": 0.85,
+                            "input_mode": live.get("mode", "tree").lower(),
+                        }
+        except Exception:
+            pass
     if not session:
         raise HTTPException(status_code=404, detail="Session not found or expired")
 
@@ -50,6 +73,19 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
         except Exception as e:
             logger.error(f"Synthesis failed in confirm: {e}")
             raise HTTPException(status_code=500, detail="Voice synthesis failed") from e
+
+    # Remove from MongoDB live_sessions (fire-and-forget)
+    async def _delete_live():
+        try:
+            e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+            async with httpx.AsyncClient(timeout=2.0) as c:
+                await c.delete(f"{e3_url}/api/live/{req.session_id}")
+        except Exception: pass
+    asyncio.create_task(_delete_live())
+
+    # Remove from local dict
+    from routes.intent import pending_sessions
+    pending_sessions.pop(req.session_id, None)
 
     # Persist session to E3
     await create_session(

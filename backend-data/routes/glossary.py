@@ -11,6 +11,7 @@ from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 from database import db
 from pydantic import BaseModel
+from routes.profile import compute_knowledge_score
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,6 +57,7 @@ async def add_glossary_rule(req: GlossaryRuleAdd):
             {"_id": req.user_id},
             {"$push": {"glossary_rules": {"$each": [rule], "$slice": -50}}}
         )
+        await compute_knowledge_score(req.user_id)
         return {"success": True, "rule": rule}
     except Exception as e:
         logger.error(f"Error adding glossary rule: {e}")
@@ -70,6 +72,7 @@ async def delete_glossary_rule(rule_id: str, user_id: str = Query(...)):
             {"_id": user_id},
             {"$pull": {"glossary_rules": {"id": rule_id}}}
         )
+        await compute_knowledge_score(user_id)
         return {"success": True}
     except Exception as e:
         logger.error(f"Error deleting glossary rule: {e}")
@@ -84,6 +87,7 @@ async def toggle_glossary_rule(rule_id: str, req: GlossaryRuleToggle):
             {"_id": req.user_id, "glossary_rules.id": rule_id},
             {"$set": {"glossary_rules.$.active": req.active}}
         )
+        await compute_knowledge_score(req.user_id)
         return {"success": True}
     except Exception as e:
         logger.error(f"Error toggling glossary rule: {e}")

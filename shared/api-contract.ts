@@ -226,3 +226,28 @@ export interface UserProfile {
   mood_log: MoodEntry[];
   alert_settings: AlertSettings;
 }
+
+// ─── Session Forensic View (E3 /api/sessions/forensic) ───────────────────────
+
+export interface ForensicView {
+  session_id: string;
+  intent_layer: {
+    path: string[];
+    path_key: string;
+    input_mode: "tree" | "composer" | "custom";
+    is_first_occurrence: boolean;
+    timestamp: string;
+  };
+  synthesis_layer: {
+    sentence: string;
+    confidence: number | null;
+    audio_url: string | null;
+    flagged: boolean;
+  };
+  correction_loop: {
+    feedback: "positive" | "correction" | null;
+    original_sentence: string;
+    corrected_sentence: string | null;
+    knowledge_score_after: number | null;
+  };
+}

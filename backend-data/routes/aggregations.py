@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Query, HTTPException
 from database import db
 from pydantic import BaseModel
+from config import DISTRESS_TERMS as DEFAULT_DISTRESS_TERMS
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,7 +38,9 @@ async def get_caregiver_panel(user_id: str = Query(...)):
         timeframe = alert_settings.get("timeframe", 2)
         
         two_hours_ago = (datetime.utcnow() - timedelta(hours=timeframe)).isoformat()
-        DISTRESS_TERMS = {"pain", "help", "emergency", "headache", "dizzy", "stomach_pain", "back_pain", "in_pain"}
+        # Merge default terms with any user-defined overrides
+        user_terms = set(user.get("distress_terms") or [])
+        DISTRESS_TERMS = DEFAULT_DISTRESS_TERMS | user_terms
 
         recent_cursor = db.sessions.find({
             "user_id": user_id,

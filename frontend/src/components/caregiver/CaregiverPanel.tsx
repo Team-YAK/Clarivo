@@ -40,10 +40,12 @@ export default function CaregiverPanel() {
   const [activeConv, setActiveConv] = useState<any>(null);
   const [interimText, setInterimText] = useState("");
 
-  // Refs for MediaRecorder-based transcription
+  // Refs for speech recognition
   const activeConvRef = useRef<any>(null);
   const isRecordingRef = useRef(false);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  // MediaRecorder fallback (for browsers without SpeechRecognition)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recordingIntervalRef = useRef<any>(null);
@@ -62,159 +64,138 @@ export default function CaregiverPanel() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        try { mediaRecorderRef.current.stop(); } catch { /* ok */ }
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(t => t.stop());
-      }
+      stopRecognition();
     };
   }, []);
 
+  const commitUtterance = (text: string) => {
+    const conv = activeConvRef.current;
+    if (!conv?.id) return;
+    const utterance = { speaker: "Visitor", text: text.trim(), timestamp: new Date().toISOString() };
+    setActiveConv((prev: any) => {
+      if (!prev) return prev;
+      const updated = { ...prev, utterances: [...(prev.utterances || []), utterance] };
+      activeConvRef.current = updated;
+      return updated;
+    });
+    addUtterance(conv.id, "Visitor", text.trim()).catch((e) =>
+      console.error("Failed to persist utterance:", e)
+    );
+  };
+
   /**
-   * Start the MediaRecorder cycle:
-   *  1. Request mic permission
-   *  2. Record for ~5 seconds
-   *  3. Stop → collect blob → send to /api/voice/transcribe
-   *  4. Restart recording
-   *  Repeat until isRecordingRef.current === false
+   * Primary: Web Speech API — built-in VAD, real-time interim results,
+   * auto-finalizes when the speaker naturally pauses.
+   */
+  const startWebSpeechRecognition = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return false; // Signal to fall back
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          const finalText = result[0].transcript.trim();
+          if (finalText) {
+            setInterimText("");
+            commitUtterance(finalText);
+          }
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      setInterimText(interim);
+    };
+
+    recognition.onerror = (e: any) => {
+      // "no-speech" is normal — browser paused listening, will restart via onend
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      console.error("[STT] SpeechRecognition error:", e.error);
+    };
+
+    recognition.onend = () => {
+      setInterimText("");
+      // Auto-restart as long as session is active
+      if (isRecordingRef.current) {
+        try { recognition.start(); } catch { /* already starting */ }
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    console.log("[STT] Web Speech API started");
+    return true;
+  };
+
+  /**
+   * Fallback: MediaRecorder chunked upload to ElevenLabs backend.
+   * Used only if SpeechRecognition API is unavailable (e.g. Firefox).
+   * Uses 8-second chunks (up from 5s) to reduce mid-sentence cuts.
    */
   const startMediaRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          channelCount: 1,
-          sampleRate: 16000,
-        }
+        audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1, sampleRate: 16000 },
       });
       mediaStreamRef.current = stream;
-      console.log("[STT] Microphone access granted");
 
-      const startRecordingCycle = () => {
+      const startCycle = () => {
         if (!isRecordingRef.current || !mediaStreamRef.current) return;
-
-        // Pick a supported MIME type
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/webm')
-            ? 'audio/webm'
-            : 'audio/mp4';
-
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
         const recorder = new MediaRecorder(stream, { mimeType });
         const chunks: Blob[] = [];
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data);
-        };
-
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
         recorder.onstop = async () => {
-          if (chunks.length === 0) {
-            // No data captured, restart
-            if (isRecordingRef.current) startRecordingCycle();
-            return;
-          }
-
+          if (!chunks.length || !isRecordingRef.current) return;
           const blob = new Blob(chunks, { type: mimeType });
-          console.log(`[STT] Audio chunk: ${(blob.size / 1024).toFixed(1)}KB`);
-
-          // Don't send tiny blobs (likely silence)
-          if (blob.size < 1000) {
-            setInterimText("");
-            if (isRecordingRef.current) startRecordingCycle();
-            return;
-          }
-
-          // Show "Processing..." while transcribing
-          if (!isTranscribingRef.current) {
-            setInterimText("Processing audio...");
-          }
-          isTranscribingRef.current = true;
-
+          if (blob.size < 1500) { if (isRecordingRef.current) startCycle(); return; }
+          setInterimText("Transcribing...");
           try {
             const text = await transcribeAudio(blob);
-            if (text && text.trim()) {
-              console.log("[STT] Transcribed:", text);
-              setInterimText("");
-              const conv = activeConvRef.current;
-              if (conv?.id) {
-                const utterance = {
-                  speaker: "Visitor",
-                  text: text.trim(),
-                  timestamp: new Date().toISOString(),
-                };
-                // Update local state IMMEDIATELY so it appears in UI
-                setActiveConv((prev: any) => {
-                  if (!prev) return prev;
-                  const updated = {
-                    ...prev,
-                    utterances: [...(prev.utterances || []), utterance],
-                  };
-                  activeConvRef.current = updated;
-                  return updated;
-                });
-                // Also persist to DB (fire and forget)
-                addUtterance(conv.id, "Visitor", text.trim()).catch((e) =>
-                  console.error("Failed to persist utterance:", e)
-                );
-              }
-            } else {
-              setInterimText("");
-            }
-          } catch (e) {
-            console.error("[STT] Transcription error:", e);
             setInterimText("");
-          }
-
-          isTranscribingRef.current = false;
-
-          // Start next cycle
-          if (isRecordingRef.current) startRecordingCycle();
+            if (text?.trim()) commitUtterance(text.trim());
+          } catch { setInterimText(""); }
+          if (isRecordingRef.current) startCycle();
         };
-
-        recorder.onerror = (e: any) => {
-          console.error("[STT] MediaRecorder error:", e);
-          if (isRecordingRef.current) {
-            setTimeout(startRecordingCycle, 1000);
-          }
-        };
-
         mediaRecorderRef.current = recorder;
         recorder.start();
-        console.log("[STT] Recording started");
-
-        // Stop after 5 seconds to send the chunk
         recordingIntervalRef.current = setTimeout(() => {
-          if (recorder.state === 'recording') {
-            recorder.stop();
-          }
-        }, 5000);
+          if (recorder.state === "recording") recorder.stop();
+        }, 8000);
       };
-
-      startRecordingCycle();
+      startCycle();
     } catch (e: any) {
       console.error("[STT] Mic access denied:", e);
       isRecordingRef.current = false;
       setIsRecording(false);
-      alert("Microphone access is required for transcription. Please allow microphone access and try again.");
+      alert("Microphone access is required. Please allow microphone access and try again.");
     }
   };
 
-  const stopMediaRecording = () => {
-    if (recordingIntervalRef.current) {
-      clearTimeout(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
+  const stopRecognition = () => {
+    // Stop Web Speech API
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ok */ }
+      recognitionRef.current = null;
     }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    // Stop MediaRecorder fallback
+    if (recordingIntervalRef.current) { clearTimeout(recordingIntervalRef.current); recordingIntervalRef.current = null; }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try { mediaRecorderRef.current.stop(); } catch { /* ok */ }
     }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(t => t.stop());
-      mediaStreamRef.current = null;
-    }
+    if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); mediaStreamRef.current = null; }
     mediaRecorderRef.current = null;
+    setInterimText("");
   };
 
   const fetchData = useCallback(async () => {
@@ -274,12 +255,8 @@ export default function CaregiverPanel() {
       // ── End conversation ──
       isRecordingRef.current = false;
       setIsRecording(false);
-      setInterimText("");
-      stopMediaRecording();
-
-      try {
-        await endConversation(activeConv.id);
-      } catch (e) { console.error(e); }
+      stopRecognition();
+      try { await endConversation(activeConv.id); } catch (e) { console.error(e); }
       setActiveConv(null);
     } else {
       // ── Start conversation ──
@@ -288,13 +265,16 @@ export default function CaregiverPanel() {
         const convId = res.conversation_id || res.id;
         const conv = { id: convId, utterances: [] };
         setActiveConv(conv);
-
         isRecordingRef.current = true;
         setIsRecording(true);
 
-        // Start mic recording + backend STT
-        await startMediaRecording();
-        console.log("[STT] MediaRecorder pipeline started for conversation:", convId);
+        // Try Web Speech API first (built-in VAD, no chunking artifacts)
+        // Fall back to MediaRecorder if unavailable (e.g. Firefox)
+        const usedWebSpeech = startWebSpeechRecognition();
+        if (!usedWebSpeech) {
+          console.log("[STT] Web Speech API unavailable, falling back to MediaRecorder");
+          await startMediaRecording();
+        }
       } catch (e) {
         console.error("Failed to start conversation:", e);
       }

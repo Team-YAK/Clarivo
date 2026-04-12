@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.openai_service import simplify_text
 from services.elevenlabs_service import synthesize_caregiver_voice
+from services.icon_dictionary import ICON_DICTIONARY
+from config import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -12,7 +14,7 @@ router = APIRouter()
 
 class SimplifyRequest(BaseModel):
     text: str
-    user_id: str = "yuki_demo"
+    user_id: str = DEFAULT_USER_ID
 
 
 @router.post("/api/caregiver/simplify")
@@ -29,28 +31,16 @@ async def simplify(req: SimplifyRequest):
     except Exception:
         audio_url = "/audio/mock_caregiver.mp3"
 
-    # Generate emoji tags from simplified text
-    emoji_map = {
-        "medicine": "💊",
-        "medication": "💊",
-        "food": "🍽️",
-        "eat": "🍽️",
-        "pain": "😣",
-        "hurt": "😣",
-        "happy": "😊",
-        "walk": "🚶",
-        "sleep": "😴",
-        "water": "💧",
-        "drink": "💧",
-        "doctor": "👨‍⚕️",
-        "family": "👨‍👩‍👧",
-        "love": "❤️",
-    }
+    # Generate emoji tags by matching words in simplified text against shared dictionary
     emoji_tags = []
     lower_text = combined_text.lower()
-    for word, emoji in emoji_map.items():
-        if word in lower_text and emoji not in emoji_tags:
+    seen_emojis: set[str] = set()
+    for keyword, emoji in ICON_DICTIONARY.items():
+        if keyword.lower() in lower_text and emoji not in seen_emojis:
             emoji_tags.append(emoji)
+            seen_emojis.add(emoji)
+            if len(emoji_tags) >= 6:
+                break
 
     return {
         "simplified": simplified,

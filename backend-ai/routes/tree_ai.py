@@ -10,6 +10,7 @@ from typing import List
 from fastapi import APIRouter, Request
 
 from agents.orchestrator import expand
+from config import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -18,7 +19,7 @@ router = APIRouter()
 # ── Request models ───────────────────────────────────────────
 
 class ExpandRequest(BaseModel):
-    user_id: str = "alex_demo"
+    user_id: str = DEFAULT_USER_ID
     current_path: List[str] = []
 
 

@@ -12,8 +12,7 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Unified default user ID for the demo
-DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "alex_demo")
+from config import DEFAULT_USER_ID
 
 
 @router.post("/api/voice/clone")
@@ -76,7 +75,7 @@ async def voice_clone(audio: UploadFile = File(...), user_id: str = Form(DEFAULT
 
 class SpeakRequest(BaseModel):
     text: str
-    user_id: str = "alex_demo"
+    user_id: str = DEFAULT_USER_ID
 
 
 @router.post("/api/voice/speak")

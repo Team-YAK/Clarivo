@@ -19,6 +19,7 @@ import time
 import unicodedata
 from pathlib import Path
 from services.data_service import get_prompt
+from config import DEFAULT_USER_ID
 
 from dotenv import load_dotenv
 try:
@@ -111,10 +112,12 @@ async def personalization_agent(context_data: dict) -> dict:
         "historical_concepts": context_data.get("historical_concepts", [])[:16],
         "preferences": context_data.get("preferences", ""),
         "always_know": context_data.get("always_know", ""),
+        "glossary_rules": context_data.get("glossary_rules", []),
+        "routine": context_data.get("routine", {}),
     }
 
 
-async def generation_agent(context_slice: dict, personalization_slice: dict, user_id: str = "alex_demo") -> tuple[dict, float]:
+async def generation_agent(context_slice: dict, personalization_slice: dict, user_id: str = DEFAULT_USER_ID) -> tuple[dict, float]:
     # Try dynamic prompts first
     sys_prompt = await get_prompt("generation_sys", user_id)
     hu_prompt = await get_prompt("generation_hu", user_id)
@@ -144,6 +147,21 @@ async def generation_agent(context_slice: dict, personalization_slice: dict, use
         "- Any concept can lead to any other concept if semantically relevant."
     )
 
+    # Build glossary section — only include if rules exist
+    glossary_rules = personalization_slice.get("glossary_rules", [])
+    glossary_section = ""
+    if glossary_rules:
+        lines = [f'  "{r["trigger"]}" means "{r["meaning"]}"' for r in glossary_rules[:10]]
+        glossary_section = f"Semantic overrides (MUST respect these):\n" + "\n".join(lines) + "\n"
+
+    # Build routine section — only include if meals exist
+    routine = personalization_slice.get("routine", {})
+    routine_section = ""
+    meals = (routine or {}).get("meals", {})
+    if meals:
+        meal_parts = [f'{name} at {time}' for name, time in meals.items()]
+        routine_section = f"Daily schedule: {', '.join(meal_parts)}\n"
+
     hu_msg = (
         f"{hu_base}\n\n"
         f"Current path: {json.dumps(context_slice.get('current_path', []))}\n"
@@ -154,6 +172,8 @@ async def generation_agent(context_slice: dict, personalization_slice: dict, use
         f"Historical concepts: {json.dumps(personalization_slice.get('historical_concepts', []))}\n"
         f"Preferences: {personalization_slice.get('preferences', '')}\n"
         f"Always know: {personalization_slice.get('always_know', '')}\n"
+        f"{glossary_section}"
+        f"{routine_section}"
     )
 
     start = time.perf_counter()

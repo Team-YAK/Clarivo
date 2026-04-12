@@ -42,61 +42,72 @@ class AlertSettingsUpdate(BaseModel):
 async def compute_knowledge_score(user_id: str):
     user = await db.users.find_one({"_id": user_id})
     if not user: return
-    
-    # 1. Profile (Max 25)
+
     prof = user.get("profile", {})
     prefs = user.get("preferences", {})
-    prof_score = 0
-    if prof.get("name"): prof_score += 5
-    if prof.get("diagnosis_date"): prof_score += 3
-    if prof.get("caregiver_name"): prof_score += 3
-    if prof.get("photo_url"): prof_score += 2 # Not strictly checked but safe
-    if len(prefs.get("communication_notes", "")) > 20: prof_score += 6
-    if len(prefs.get("known_preferences", "")) > 20: prof_score += 6
-    prof_score = min(25, prof_score)
-    prof_pct = int((prof_score / 25) * 100)
-    
-    # 2. Medical (Max 25)
     med = user.get("medical", {})
-    med_score = 0
-    if len(med.get("medications", [])) >= 1: med_score += 8
-    if len(med.get("allergies", [])) >= 1: med_score += 7
-    if len(med.get("conditions", [])) >= 1: med_score += 5
-    if med.get("doctor_name"): med_score += 5
-    med_score = min(25, med_score)
-    med_pct = int((med_score / 25) * 100)
-    
-    # 3. Preferences (Max 25, 2pts per answer)
     answers = user.get("context_answers", [])
-    pref_score = min(25, len(answers) * 2)
-    pref_pct = int((pref_score / 25) * 100)
-    
-    # 4. Conversation (Max 25)
+    glossary_rules = [r for r in (user.get("glossary_rules") or []) if r.get("active", True)]
+    correction_history = user.get("correction_history", [])
+
+    # 1. Medical Accuracy — 30% weight (max 30 pts)
+    med_score = 0
+    if len(med.get("medications", [])) >= 1: med_score += 10
+    if len(med.get("allergies", [])) >= 1: med_score += 8
+    if len(med.get("conditions", [])) >= 1: med_score += 7
+    if med.get("doctor_name"): med_score += 5
+    med_score = min(30, med_score)
+    med_pct = int((med_score / 30) * 100)
+
+    # 2. Preference Alignment — 30% weight (max 30 pts)
+    #    Context answers: up to 20 pts (2pts each, cap at 10 answers)
+    #    Active glossary rules: up to 10 pts (2pts each, cap at 5 rules)
+    pref_answers = min(20, len(answers) * 2)
+    pref_glossary = min(10, len(glossary_rules) * 2)
+    pref_score = min(30, pref_answers + pref_glossary)
+    pref_pct = int((pref_score / 30) * 100)
+
+    # 3. Conversation Success — 25% weight (max 25 pts)
+    #    Session volume: up to 15 pts (1pt each, cap at 15)
+    #    Positive feedback ratio: up to 10 pts
     sessions_count = await db.sessions.count_documents({"user_id": user_id, "status": "confirmed"})
-    corrections_count = len(user.get("correction_history", []))
-    
-    convo_sessions = min(15, sessions_count * 1)
-    convo_corrections = min(10, corrections_count * 2)
-    convo_score = min(25, convo_sessions + convo_corrections)
+    convo_volume = min(15, sessions_count)
+    if sessions_count > 0:
+        positive_count = await db.sessions.count_documents(
+            {"user_id": user_id, "status": "confirmed", "feedback": "positive"}
+        )
+        positive_ratio = positive_count / sessions_count
+        convo_feedback = int(positive_ratio * 10)
+    else:
+        convo_feedback = 0
+    convo_score = min(25, convo_volume + convo_feedback)
     convo_pct = int((convo_score / 25) * 100)
-    
-    # Total overall
-    total = prof_score + med_score + pref_score + convo_score
-    overall = int((total / 100) * 100)
-    
-    # Update DB
+
+    # 4. Profile Completeness — 15% weight (max 15 pts)
+    profile_score = 0
+    if prof.get("name"): profile_score += 4
+    if prof.get("diagnosis_date"): profile_score += 3
+    if prof.get("caregiver_name"): profile_score += 3
+    if len(prefs.get("communication_notes", "")) > 20: profile_score += 3
+    if len(prefs.get("known_preferences", "")) > 20: profile_score += 2
+    profile_score = min(15, profile_score)
+    profile_pct = int((profile_score / 15) * 100)
+
+    # Overall (sum of weighted pts, max 100)
+    overall = min(100, med_score + pref_score + convo_score + profile_score)
+
     breakdown = {
-        "profile": prof_pct,
         "medical": med_pct,
         "preferences": pref_pct,
-        "conversation": convo_pct
+        "conversation": convo_pct,
+        "profile": profile_pct,
     }
-    
+
     await db.users.update_one(
         {"_id": user_id},
         {"$set": {"knowledge_score": overall, "knowledge_breakdown": breakdown}}
     )
-    
+
     return overall, breakdown
 
 
@@ -121,6 +132,8 @@ async def get_tree_context_skim(user_id: str = Query(...)):
             "preferences.known_preferences": 1,
             "preferences.always_know": 1,
             "path_frequencies": 1,
+            "glossary_rules": 1,
+            "routine": 1,
         },
     )
     if not user:
@@ -154,6 +167,12 @@ async def get_tree_context_skim(user_id: str = Query(...)):
     top_paths = sorted(clean_freqs.items(), key=lambda x: x[1], reverse=True)[:15]
 
     prefs = user.get("preferences", {}) or {}
+    # Only send active glossary rules to the AI pipeline
+    active_glossary = [
+        {"trigger": r["trigger_word"], "meaning": r["enforced_meaning"]}
+        for r in (user.get("glossary_rules") or [])
+        if r.get("active", True)
+    ]
     return {
         "conversation_utterances": utterances,
         "recent_paths": recent_paths,
@@ -162,6 +181,8 @@ async def get_tree_context_skim(user_id: str = Query(...)):
             "known_preferences": prefs.get("known_preferences", ""),
             "always_know": prefs.get("always_know", ""),
         },
+        "glossary_rules": active_glossary,
+        "routine": user.get("routine", {}),
     }
 
 @router.post("/api/profile/update")

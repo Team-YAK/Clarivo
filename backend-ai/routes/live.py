@@ -1,40 +1,43 @@
-"""GET /api/live — Current patient session state for caregiver polling."""
+"""GET /api/live — Proxy to backend-data live_sessions collection.
 
+The caregiver frontend polls this every 2-3s. We proxy to backend-data
+so the caregiver sees MongoDB-persisted state (survives AI backend restarts).
+Falls back to the in-memory pending_sessions dict if backend-data is down.
+"""
+
+import os
 import logging
-from fastapi import APIRouter
+import httpx
+from fastapi import APIRouter, Query
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get("/api/live")
-async def get_live_state():
-    """
-    Returns the current in-progress state from the pending_sessions dict.
-    The caregiver panel polls this every 2-3s to show a live breadcrumb
-    and streaming sentence while the patient is navigating.
-    """
+async def get_live_state(user_id: str = Query(default="alex_demo")):
+    e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+
+    # Primary: read from MongoDB via backend-data
+    try:
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(f"{e3_url}/api/live", params={"user_id": user_id})
+            if resp.status_code == 200:
+                return resp.json()
+    except Exception as e:
+        logger.warning(f"[live] backend-data unavailable, falling back to in-memory: {e}")
+
+    # Fallback: local in-memory dict
     from routes.intent import pending_sessions
-
-    # Find the most recent non-confirmed session (last one written)
     if not pending_sessions:
-        return {
-            "mode": "Idle",
-            "breadcrumb": [],
-            "streamingSentence": "",
-            "session_id": None,
-        }
+        return {"mode": "Idle", "breadcrumb": [], "streamingSentence": "", "session_id": None}
 
-    # Sessions are keyed by session_id; pick the most recently added
-    # (dicts preserve insertion order in Python 3.7+)
     last_session_id = list(pending_sessions.keys())[-1]
     session = pending_sessions[last_session_id]
-
     path = session.get("path", [])
     input_mode = session.get("input_mode", "tree")
     sentence = session.get("sentence", "")
 
-    # Derive a display mode
     if input_mode == "composer":
         mode = "Composer"
     elif sentence:

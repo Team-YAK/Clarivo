@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from services.data_service import get_user
 from services.context_service import build_context_string
 from services.openai_service import reverse_intent
+from config import DEFAULT_USER_ID
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ router = APIRouter()
 
 class ReverseRequest(BaseModel):
     sentence: str
-    user_id: str = "yuki_demo"
+    user_id: str = DEFAULT_USER_ID
 
 @router.post("/api/reverse")
 async def reverse_translate(req: ReverseRequest):

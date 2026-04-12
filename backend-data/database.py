@@ -24,6 +24,7 @@ class Database:
     icons = None
     conversations = None
     prompts = None
+    live_sessions = None
 
 db = Database()
 
@@ -38,6 +39,7 @@ async def connect_to_mongo():
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
         db.prompts = mock_db.MockCollection("prompts")
+        db.live_sessions = mock_db.MockCollection("live_sessions")
         if AsyncIOMotorClient is None:
             print("MongoDB driver unavailable. Using In-Memory MOCK Database.")
         else:
@@ -60,8 +62,11 @@ async def connect_to_mongo():
         db.icons = db.db.icons
         db.conversations = db.db.conversations
         db.prompts = db.db.prompts
+        db.live_sessions = db.db.live_sessions
         # Pinging to check if reachable
         await db.db.command("ping")
+        # TTL index: auto-expire live sessions after expires_at
+        await db.live_sessions.create_index("expires_at", expireAfterSeconds=0)
     except Exception as e:
         print(f"MongoDB connection failed: {e}. Falling back to MOCK DB.")
         import mock_db
@@ -73,6 +78,7 @@ async def connect_to_mongo():
         db.icons = mock_db.MockCollection("icons")
         db.conversations = mock_db.MockCollection("conversations")
         db.prompts = mock_db.MockCollection("prompts")
+        db.live_sessions = mock_db.MockCollection("live_sessions")
 
 async def close_mongo_connection():
     if db.client:

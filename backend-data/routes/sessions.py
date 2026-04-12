@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query, HTTPException
 from database import db
 from pydantic import BaseModel
 from utils import path_to_key
+from routes.profile import compute_knowledge_score
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -103,9 +104,10 @@ async def submit_feedback(req: FeedbackRequest):
             
             # Invalidate sentence cache
             await db.sentences.delete_one({"_id": f"{req.user_id}_{session['path_key']}"})
-            
-            # TODO: Fire knowledge score Recalculation signal
-            
+
+            # Fire knowledge score recalculation
+            await compute_knowledge_score(req.user_id)
+
         return {"success": True}
     except Exception as e:
         logger.error(f"Error submitting feedback: {e}")
@@ -138,6 +140,50 @@ async def get_history(user_id: str = Query(...), limit: int = 20):
         return {"sessions": docs}
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
+        raise HTTPException(status_code=500, detail="Database query failed")
+
+
+@router.get("/api/sessions/forensic")
+async def get_forensic_view(session_id: str = Query(...)):
+    """AI Forensic View — structured breakdown of a single session."""
+    try:
+        session = await db.sessions.find_one({"_id": session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        # Fetch knowledge score at time of session (current user score as proxy)
+        user = await db.sessions.find_one({"_id": session_id})
+        user_doc = await db.users.find_one(
+            {"_id": session.get("user_id")}, {"knowledge_score": 1}
+        )
+        knowledge_score_after = (user_doc or {}).get("knowledge_score", None)
+
+        return {
+            "session_id": session_id,
+            "intent_layer": {
+                "path": session.get("path", []),
+                "path_key": session.get("path_key", ""),
+                "input_mode": session.get("input_mode", "tree"),
+                "is_first_occurrence": session.get("is_first_occurrence", False),
+                "timestamp": session.get("timestamp"),
+            },
+            "synthesis_layer": {
+                "sentence": session.get("sentence", ""),
+                "confidence": session.get("confidence"),
+                "audio_url": session.get("audio_url"),
+                "flagged": session.get("flagged", False),
+            },
+            "correction_loop": {
+                "feedback": session.get("feedback"),
+                "original_sentence": session.get("sentence", ""),
+                "corrected_sentence": session.get("correction"),
+                "knowledge_score_after": knowledge_score_after,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching forensic view: {e}")
         raise HTTPException(status_code=500, detail="Database query failed")
 
 

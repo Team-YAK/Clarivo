@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta
 from database import db
 from utils import path_to_key
+from config import DEFAULT_USER_ID
 
 async def seed():
     # Clear collections (assuming MockCollection and real Motor collections both support these)
@@ -11,8 +12,8 @@ async def seed():
     await db.sentences.delete_many({})
     await db.context_log.delete_many({})
     await db.icons.delete_many({})
-    
-    user_id = "alex_demo"
+
+    user_id = DEFAULT_USER_ID
     now = datetime.utcnow()
 
     # 1. Composer Icons
