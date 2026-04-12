@@ -167,7 +167,7 @@ export default function PatientScreen() {
         </div>
 
         {/* Bottom Panel Area: Fixed Height */}
-        <div className="h-48 shrink-0 bg-surface/30 backdrop-blur-xl relative border-t border-white/10">
+        <div className="h-56 shrink-0 bg-surface/30 backdrop-blur-xl relative border-t border-white/10">
           <WordStack
             items={stackItems}
             onReorder={setStackItems}
