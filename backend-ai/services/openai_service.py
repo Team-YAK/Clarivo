@@ -83,7 +83,7 @@ async def stream_intent(path: list[str], context: str, input_mode: str = "tree")
 
     try:
         stream = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {"role": "system", "content": f"{INTENT_SYSTEM}\n\nPatient context:\n{context}"},
                 {"role": "user", "content": user_prompt},
@@ -109,7 +109,7 @@ async def compute_confidence(sentence: str, path: list[str], context: str) -> fl
     path_str = " > ".join(path)
     try:
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {"role": "system", "content": CONFIDENCE_SYSTEM},
                 {
@@ -137,7 +137,7 @@ async def generate_clarification_options(path: list[str], context: str, input_mo
         
     try:
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {"role": "system", "content": f"{CLARIFY_SYSTEM}\n\nPatient context:\n{context}"},
                 {"role": "user", "content": user_prompt},
@@ -173,7 +173,7 @@ async def generate_post_session_question(session_data: dict, context: str):
         path_str = " > ".join(session_data.get("path", []))
         sentence = session_data.get("sentence", "")
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {
                     "role": "system",
@@ -206,7 +206,7 @@ async def generate_post_session_question(session_data: dict, context: str):
 async def simplify_text(text: str) -> list[str]:
     try:
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {"role": "system", "content": SIMPLIFY_SYSTEM},
                 {"role": "user", "content": text},
@@ -256,7 +256,7 @@ async def refine_sentence_with_correction(original: str, correction: str, path: 
     path_str = " > ".join(path)
     try:
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {
                     "role": "system",
@@ -279,7 +279,7 @@ async def refine_sentence_with_correction(original: str, correction: str, path: 
 async def reverse_intent(sentence: str, context: str) -> list[dict] | None:
     try:
         resp = await get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-mini",
             messages=[
                 {"role": "system", "content": f"{REVERSE_SYSTEM}\n\nPatient Context:\n{context}"},
                 {"role": "user", "content": f"Sentence: {sentence}"},
