@@ -35,13 +35,23 @@ const predictionAccuracyData = [
   { week: 'Week 6', accuracy: 89, stepsToExpress: 2.3 },
 ];
 
+// Seeded PRNG to avoid hydration mismatch (Math.random differs server vs client)
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
+}
+
 // Heatmap generator for past 52 weeks x 7 days
 const generateHeatmap = () => {
+  const rng = seededRandom(42);
   const weeks = [];
   for (let w = 0; w < 52; w++) {
     const days = [];
     for (let d = 0; d < 7; d++) {
-      days.push(Math.floor(Math.random() * 5)); // 0-4 intensity
+      days.push(Math.floor(rng() * 5)); // 0-4 intensity
     }
     weeks.push(days);
   }
