@@ -147,6 +147,11 @@ export default function PartnerPanel() {
             const recognition = new SR();
             recognition.continuous = true;
             recognition.interimResults = true;
+            recognition.onresult = (evt: any) => {
+              let text = "";
+              for (let i = evt.resultIndex; i < evt.results.length; ++i) {
+                text += evt.results[i][0].transcript;
+              }
               if (text.trim()) {
                 setLiveText(text.trim());
                 
@@ -163,6 +168,7 @@ export default function PartnerPanel() {
                   }
                 }, SILENCE_MS);
               }
+            };
             recognition.onend = () => {
               // Keep alive if still listening
               if (isListeningRef.current) {
