@@ -30,6 +30,15 @@ class SettingsUpdate(BaseModel):
     field: str
     value: Any
 
+class AlertSettings(BaseModel):
+    threshold: int
+    timeframe: int
+    routes: Dict[str, bool]
+
+class AlertSettingsUpdate(BaseModel):
+    user_id: str
+    settings: AlertSettings
+
 async def compute_knowledge_score(user_id: str):
     user = await db.users.find_one({"_id": user_id})
     if not user: return
@@ -252,3 +261,26 @@ async def get_knowledge_score(user_id: str = Query(...)):
         "overall_score": user.get("knowledge_score", 0),
         "breakdown": user.get("knowledge_breakdown", {})
     }
+
+@router.get("/api/settings/alerts")
+async def get_alert_settings(user_id: str = Query(...)):
+    user = await db.users.find_one({"_id": user_id}, {"alert_settings": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.get("alert_settings", {
+        "threshold": 3,
+        "timeframe": 2,
+        "routes": {"ui": True, "sms": False, "email": True, "call": False}
+    })
+
+@router.post("/api/settings/alerts")
+async def update_alert_settings(req: AlertSettingsUpdate):
+    try:
+        await db.users.update_one(
+            {"_id": req.user_id},
+            {"$set": {"alert_settings": req.settings.dict()}}
+        )
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating alert settings: {e}")
+        raise HTTPException(status_code=500, detail="Database failure")

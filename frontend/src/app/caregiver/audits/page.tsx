@@ -1,37 +1,44 @@
 "use client";
 
-import React, { useState } from 'react';
-import { fetchSessionHistory } from '@/utils/caregiverApi';
+import React, { useState, useEffect } from 'react';
+import { fetchSessionHistory, exportSessionHistory } from '@/utils/caregiverApi';
 import { Session } from '../../../../../shared/api-contract';
-import { FileText, DownloadSimple, Funnel, CalendarBlank, MagnifyingGlass } from '@phosphor-icons/react';
+import { FileText, DownloadSimple, Funnel, CalendarBlank, MagnifyingGlass, ArrowsClockwise } from '@phosphor-icons/react';
 import { PageTransition } from '@/components/ui/page-transition';
 import { GlassInput } from '@/components/ui/glass-input';
 
-// Mock expanded sessions
-const MOCK_AUDIT_SESSIONS = [
-  ...Array(15).fill(null).map((_, i) => ({
-    id: `session-${i}`,
-    user_id: 'alex_demo',
-    path: ['Needs', 'Medical', 'Pain'],
-    path_key: 'needs_medical_pain',
-    input_mode: 'tree' as const,
-    sentence: `I am experiencing pain in my ${i % 2 === 0 ? 'head' : 'stomach'}.`,
-    confidence: Math.floor(Math.random() * 40) + 60,
-    is_first_occurrence: false,
-    flagged: i % 4 === 0,
-    status: 'confirmed' as const,
-    timestamp: new Date(Date.now() - i * 3600000).toISOString()
-  }))
-];
-
 export default function SessionAuditor() {
-  const [sessions] = useState<Session[]>(MOCK_AUDIT_SESSIONS);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    fetchSessionHistory().then(data => {
+      setSessions(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    await exportSessionHistory();
+    setExporting(false);
+  };
 
   const filteredSessions = sessions.filter(s => 
-    s.sentence.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.path.join(' ').toLowerCase().includes(searchTerm.toLowerCase())
+    (s.sentence || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (s.path || []).join(' ').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white/40 font-black uppercase tracking-widest gap-4">
+        <ArrowsClockwise size={40} className="animate-spin text-[#14F1D9]" />
+        Auditing Encrypted Logs...
+      </div>
+    );
+  }
 
   return (
     <PageTransition>
@@ -41,8 +48,13 @@ export default function SessionAuditor() {
           <h1 className="text-4xl md:text-5xl font-headline font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight mb-2">Session Auditor</h1>
           <p className="text-white/60 text-lg">A complete, exportable ledger of all generative communication sequences.</p>
         </div>
-        <button className="flex items-center gap-3 bg-[#14F1D9] text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(20,241,217,0.3)] hover:bg-[#14F1D9]/90 transition-all hover:-translate-y-1">
-          <DownloadSimple size={20} weight="bold" /> Export Report
+        <button 
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-3 bg-[#14F1D9] text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(20,241,217,0.3)] hover:bg-[#14F1D9]/90 transition-all hover:-translate-y-1 disabled:opacity-50"
+        >
+          {exporting ? <ArrowsClockwise size={20} className="animate-spin" /> : <DownloadSimple size={20} weight="bold" />}
+          {exporting ? 'Processing...' : 'Export Report'}
         </button>
       </div>
 
@@ -89,10 +101,10 @@ export default function SessionAuditor() {
                   </td>
                   <td className="p-6">
                     <div className="flex gap-1.5 items-center flex-wrap">
-                      {session.path.map((p: string, i: number) => (
+                      {(session.path || []).map((p: string, i: number) => (
                         <React.Fragment key={i}>
                           <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-white/60">{p}</span>
-                          {i < session.path.length - 1 && <span className="text-white/20 text-[10px]">▶</span>}
+                          {i < (session.path || []).length - 1 && <span className="text-white/20 text-[10px]">▶</span>}
                         </React.Fragment>
                       ))}
                     </div>
@@ -138,7 +150,7 @@ export default function SessionAuditor() {
         </div>
         
         <div className="p-6 border-t border-white/10 bg-white/5 text-[10px] text-white/30 text-center font-black uppercase tracking-[0.2em] z-10 relative">
-          Showing {filteredSessions.length} out of 1,204 total tracked sequences.
+          Showing {filteredSessions.length} total tracked sequences.
         </div>
       </div>
     </div>

@@ -1,9 +1,9 @@
 import { MOCK_DATA } from './api';
-import { CaregiverPanel, Session, InsightsResponse, PostSessionQuestion } from '../../../shared/api-contract';
+import { CaregiverPanel, Session, InsightsResponse, PostSessionQuestion, AlertSettings } from '../../../shared/api-contract';
 
 const DATA_BASE_URL = process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:8002';
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
-const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || 'yuki_demo';
+const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || 'alex_demo';
 
 export const MOCK_CAREGIVER_PANEL: CaregiverPanel = {
   last_session: MOCK_DATA.sessionHistory[0] as unknown as Session,
@@ -18,7 +18,39 @@ export const MOCK_CAREGIVER_PANEL: CaregiverPanel = {
   urgent: false
 };
 
+const DEFAULT_ALERT_SETTINGS: AlertSettings = {
+  threshold: 3,
+  timeframe: 2,
+  routes: { ui: true, sms: false, email: true, call: false }
+};
+
 // --- API Functions ---
+export const fetchAlertSettings = async (userId: string = DEFAULT_USER_ID): Promise<AlertSettings> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/settings/alerts?user_id=${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch alert settings');
+    return await res.json();
+  } catch (error) {
+    console.warn('Backend unavailable — using default alert settings');
+    return DEFAULT_ALERT_SETTINGS;
+  }
+};
+
+export const updateAlertSettings = async (settings: AlertSettings, userId: string = DEFAULT_USER_ID) => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/settings/alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, settings })
+    });
+    if (!res.ok) throw new Error('Failed to update alert settings');
+    return await res.json();
+  } catch (error) {
+    console.warn('Mock updateAlertSettings', settings);
+    return { success: true };
+  }
+};
+
 export const fetchCaregiverPanel = async (userId: string = DEFAULT_USER_ID): Promise<CaregiverPanel> => {
   try {
     const res = await fetch(`${DATA_BASE_URL}/api/caregiver/panel?user_id=${userId}`);
@@ -99,6 +131,41 @@ export const fetchDigest = async (userId: string = DEFAULT_USER_ID): Promise<{ s
   }
 };
 
+export const fetchProfile = async (userId: string = DEFAULT_USER_ID): Promise<any> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/profile?user_id=${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch profile');
+    return await res.json();
+  } catch (error) {
+    console.warn('Backend unavailable — using mock data for Profile');
+    return {
+      profile: { name: "Kishan", diagnosis_date: "2024-04-12", caregiver_name: "Yuki" },
+      medical: { medications: ["Aspirin 100mg", "Lisinopril 10mg"], allergies: ["Penicillin"], conditions: ["Hypertension"] },
+      preferences: {
+        communication_notes: "Alex gets frustrated when misunderstood. Give him time.", 
+        known_preferences: "Loves Italian food, especially tiramisu. Watches football on Sundays.",
+        always_know: "His daughter Maria lives in Boston. He misses her."
+      },
+      routine: { meals: { breakfast: "08:00", lunch: "12:30", dinner: "18:00" } }
+    };
+  }
+};
+
+export const updateProfileField = async (field: string, value: any, userId: string = DEFAULT_USER_ID) => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/profile/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, field, value })
+    });
+    if (!res.ok) throw new Error('Failed to update profile field');
+    return await res.json();
+  } catch (error) {
+    console.warn('Mock updateProfileField', { field, value });
+    return { success: true };
+  }
+};
+
 // --- Sync AI ---
 export const syncAI = async (userId: string = DEFAULT_USER_ID): Promise<{ success: boolean }> => {
   try {
@@ -133,6 +200,7 @@ export const fetchGlossaryRules = async (userId: string = DEFAULT_USER_ID): Prom
     const data = await res.json();
     return data.rules || [];
   } catch {
+    console.warn('Backend unavailable — using mock data for Glossary');
     return FALLBACK_GLOSSARY;
   }
 };
@@ -240,20 +308,43 @@ export const fetchActiveConversation = async (userId: string = DEFAULT_USER_ID) 
   }
 };
 
-export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+export const exportSessionHistory = async (userId: string = DEFAULT_USER_ID) => {
   try {
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.webm');
+    const sessions = await fetchSessionHistory(userId);
+    const headers = ["Timestamp", "Path", "Sentence", "Confidence", "Flagged"];
+    const rows = sessions.map(s => [
+      s.timestamp,
+      s.path.join(' > '),
+      `"${s.sentence.replace(/"/g, '""')}"`,
+      s.confidence,
+      s.flagged ? "YES" : "NO"
+    ]);
+    
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `clarivo_audit_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Export failed:', error);
+  }
+};
 
-    const res = await fetch(`${AI_BASE_URL}/api/voice/transcribe`, {
+export const simplifyText = async (text: string, userId: string = DEFAULT_USER_ID): Promise<{ simplified: string }> => {
+  try {
+    const res = await fetch(`${AI_BASE_URL}/api/caregiver/simplify`, {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, user_id: userId })
     });
-    if (!res.ok) throw new Error('Transcription failed');
-    const data = await res.json();
-    return data.text || "";
-  } catch (err) {
-    console.warn("Transcription failed:", err);
-    return "";
+    if (!res.ok) throw new Error('Failed to simplify text');
+    return await res.json();
+  } catch (error) {
+    console.warn('Mock simplifyText', { text });
+    return { simplified: "Time for lunch 🍽️\nDoctor appointment later 👨‍⚕️" };
   }
 };

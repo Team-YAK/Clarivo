@@ -31,8 +31,12 @@ async def get_caregiver_panel(user_id: str = Query(...)):
             if not any(a.get("question_id") == q_id for a in answers):
                 pending_question = last_session["post_session_question"]
                 
-        # 3. Urgency Detection (3+ distress sessions in last 2 hours)
-        two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat()
+        # 3. Urgency Detection (Use alert_settings from profile, default to 3 sessions in 2 hours)
+        alert_settings = user.get("alert_settings", {})
+        threshold = alert_settings.get("threshold", 3)
+        timeframe = alert_settings.get("timeframe", 2)
+        
+        two_hours_ago = (datetime.utcnow() - timedelta(hours=timeframe)).isoformat()
         DISTRESS_TERMS = {"pain", "help", "emergency", "headache", "dizzy", "stomach_pain", "back_pain", "in_pain"}
 
         recent_cursor = db.sessions.find({
@@ -45,7 +49,7 @@ async def get_caregiver_panel(user_id: str = Query(...)):
             1 for s in recent_sessions
             if any(p in DISTRESS_TERMS for p in s.get("path", []))
         )
-        urgent = urgent_count >= 3
+        urgent = urgent_count >= threshold
         
         return {
             "last_session": last_session,

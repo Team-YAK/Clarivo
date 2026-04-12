@@ -102,7 +102,17 @@ async def seed():
         ],
         "mood_log": [
             {"date": (now - timedelta(days=i)).strftime("%Y-%m-%d"), "score": random.randint(4, 9), "notes": "Varied", "timestamp": (now - timedelta(days=i)).isoformat()} for i in range(14)
-        ]
+        ],
+        "alert_settings": {
+            "threshold": 3,
+            "timeframe": 2,
+            "routes": {
+                "ui": true,
+                "sms": false,
+                "email": true,
+                "call": false
+            }
+        }
     }
     
     # 3. Session Data

@@ -185,6 +185,17 @@ export interface VoiceCloneResponse {
 
 // ─── Profile (E3 /api/profile) ───────────────────────────────────────────────
 
+export interface AlertSettings {
+  threshold: number; // sessions
+  timeframe: number; // hours
+  routes: {
+    ui: boolean;
+    sms: boolean;
+    email: boolean;
+    call: boolean;
+  };
+}
+
 export interface UserProfile {
   _id: string;
   profile: {
@@ -213,4 +224,5 @@ export interface UserProfile {
   path_frequencies: Record<string, number>;
   context_answers: Array<{ question_id?: string; question: string; answer: string; timestamp: string }>;
   mood_log: MoodEntry[];
+  alert_settings: AlertSettings;
 }

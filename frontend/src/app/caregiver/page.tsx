@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { fetchCaregiverPanel, fetchInsights } from '@/utils/caregiverApi';
+import { fetchCaregiverPanel, fetchInsights, simplifyText } from '@/utils/caregiverApi';
 import { CaregiverPanel, InsightsResponse } from '../../../../shared/api-contract';
 import { WarningCircle, Brain, Target, TrendUp, User, Lightning, ChatTeardrop, Pill, Moon, Heartbeat, Waveform, Sparkle, ChatCenteredText, Play, HandWaving, MicrophoneStage, Database, Info } from '@phosphor-icons/react';
 import { GlowCard } from '@/components/ui/spotlight-card';
@@ -69,6 +69,7 @@ export default function CaregiverOverview() {
   const [panelData, setPanelData] = useState<CaregiverPanel | null>(null);
   const [timeOffset, setTimeOffset] = useState<number>(0); 
   const [partnerInput, setPartnerInput] = useState("");
+  const [simplifiedOutput, setSimplifiedOutput] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
@@ -89,14 +90,21 @@ export default function CaregiverOverview() {
   const velocityData = useMemo(() => {
     return Array.from({ length: 7 }).map((_, i) => ({
       day: `Day ${i + 1}`,
-      time: Math.max(2, 12 - i + (timeOffset * 2) + (Math.random() * 2)), // Sentences take longer in the past
+      time: Math.max(2, 12 - i + (timeOffset * 2) + ((i % 3) * 0.5)), // Sentences take longer in the past
     }));
   }, [timeOffset]);
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     if(!partnerInput) return;
     setIsTranslating(true);
-    setTimeout(() => setIsTranslating(false), 1200);
+    try {
+      const res = await simplifyText(partnerInput);
+      setSimplifiedOutput(res.simplified);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   return (
@@ -405,8 +413,16 @@ export default function CaregiverOverview() {
                      </div>
                    ) : (
                      <div className="w-full text-left bg-[#14F1D9]/10 border border-[#14F1D9]/30 rounded-xl p-4">
-                        <p className="text-white font-medium mb-3">Time for lunch 🍽️</p>
-                        <p className="text-white font-medium">Doctor appointment later 👨‍⚕️</p>
+                        {simplifiedOutput ? (
+                          <div className="whitespace-pre-wrap text-white font-medium">
+                            {simplifiedOutput}
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-white font-medium mb-3">Time for lunch 🍽️</p>
+                            <p className="text-white font-medium">Doctor appointment later 👨‍⚕️</p>
+                          </>
+                        )}
                      </div>
                    )}
                 </div>

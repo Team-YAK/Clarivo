@@ -1,34 +1,107 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserList, Check, Tag, CloudArrowUp, ArrowsClockwise, Pill, ForkKnife, Sparkle } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { syncAI } from '@/utils/caregiverApi';
+import { syncAI, fetchProfile, updateProfileField } from '@/utils/caregiverApi';
 import { PageTransition } from '@/components/ui/page-transition';
 import { GlassInput, GlassTextarea } from '@/components/ui/glass-input';
 
 export default function PatientContextManager() {
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
-  const [needs, setNeeds] = useState(['Prefers quiet environments', 'Needs water with pills']);
-  const [meals, setMeals] = useState(['Breakfast 8:00 AM', 'Lunch 12:30 PM']);
-  const [meds, setMeds] = useState(['Ibuprofen prn', 'Aspirin daily']);
+  const [needs, setNeeds] = useState<string[]>([]);
+  const [meals, setMeals] = useState<string[]>([]);
+  const [meds, setMeds] = useState<string[]>([]);
+  const [mapping, setMapping] = useState("");
+  const [emergency, setEmergency] = useState("");
   const [inputValue, setInputValue] = useState('');
   const [activeCategory, setActiveCategory] = useState<'needs' | 'meals' | 'meds'>('needs');
+  const [loading, setLoading] = useState(true);
 
-  const addTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
-      e.preventDefault();
-      if (activeCategory === 'needs') setNeeds([...needs, inputValue.trim()]);
-      if (activeCategory === 'meals') setMeals([...meals, inputValue.trim()]);
-      if (activeCategory === 'meds') setMeds([...meds, inputValue.trim()]);
-      setInputValue('');
+  useEffect(() => {
+    fetchProfile().then(data => {
+      // Baselines (Preferences)
+      if (data.preferences?.known_preferences) {
+        setNeeds(data.preferences.known_preferences.split('. ').filter((s: string) => s.length > 0));
+      }
+      
+      // Meals
+      if (data.routine?.meals) {
+        const mealStrings = Object.entries(data.routine.meals).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`);
+        setMeals(mealStrings);
+      }
+
+      // Meds
+      if (data.medical?.medications) {
+        setMeds(data.medical.medications);
+      }
+
+      // Mapping
+      setMapping(data.preferences?.always_know || "");
+      
+      // Emergency
+      const doctor = data.medical?.doctor_name || "Not set";
+      setEmergency(`Doctor: ${doctor}`);
+
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, []);
+
+  const saveCategory = async (category: string, newTags: string[]) => {
+    if (category === 'needs') {
+      await updateProfileField('preferences.known_preferences', newTags.join('. '));
+    } else if (category === 'meds') {
+      await updateProfileField('medical.medications', newTags);
+    } else if (category === 'meals') {
+      // Simplify: store as strings for now or parse back to object
+      const mealObj: any = {};
+      newTags.forEach(t => {
+        const [k, v] = t.split(': ');
+        if (k && v) mealObj[k.toLowerCase()] = v;
+      });
+      await updateProfileField('routine.meals', mealObj);
     }
   };
 
-  const removeTag = (category: string, index: number) => {
-    if (category === 'needs') setNeeds(needs.filter((_, i) => i !== index));
-    if (category === 'meals') setMeals(meals.filter((_, i) => i !== index));
-    if (category === 'meds') setMeds(meds.filter((_, i) => i !== index));
+  const addTag = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      e.preventDefault();
+      let updated: string[] = [];
+      if (activeCategory === 'needs') {
+        updated = [...needs, inputValue.trim()];
+        setNeeds(updated);
+      }
+      if (activeCategory === 'meals') {
+        updated = [...meals, inputValue.trim()];
+        setMeals(updated);
+      }
+      if (activeCategory === 'meds') {
+        updated = [...meds, inputValue.trim()];
+        setMeds(updated);
+      }
+      setInputValue('');
+      await saveCategory(activeCategory, updated);
+    }
+  };
+
+  const removeTag = async (category: string, index: number) => {
+    let updated: string[] = [];
+    if (category === 'needs') {
+      updated = needs.filter((_, i) => i !== index);
+      setNeeds(updated);
+    }
+    if (category === 'meals') {
+      updated = meals.filter((_, i) => i !== index);
+      setMeals(updated);
+    }
+    if (category === 'meds') {
+      updated = meds.filter((_, i) => i !== index);
+      setMeds(updated);
+    }
+    await saveCategory(category, updated);
   };
 
   const handleSync = async () => {
@@ -47,6 +120,21 @@ export default function PatientContextManager() {
       setTimeout(() => setSyncState('idle'), 2500);
     }
   };
+
+  const handleMappingChange = async (val: string) => {
+    setMapping(val);
+    // Debounce would be better, but direct update for hackathon simplicity
+    await updateProfileField('preferences.always_know', val);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white/40 font-black uppercase tracking-widest gap-4">
+        <ArrowsClockwise size={40} className="animate-spin text-[#14F1D9]" />
+        Initializing Neural Context...
+      </div>
+    );
+  }
 
   return (
     <PageTransition>
@@ -166,7 +254,8 @@ export default function PatientContextManager() {
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 block z-10 relative">Caregiver Relationship Mapping</label>
           <GlassTextarea
             rows={5}
-            defaultValue={"Wife: Sarah\nSon: Tommy\nDog: Bobby"}
+            value={mapping}
+            onChange={(e) => handleMappingChange(e.target.value)}
             className="!bg-black/40 !border-white/5 !text-white/80 z-10 relative"
           />
         </div>
@@ -174,7 +263,8 @@ export default function PatientContextManager() {
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-4 block z-10 relative">Emergency Override Contacts</label>
           <GlassTextarea
             rows={5}
-            defaultValue={"Dr. Smith: 555-0199\nSarah Cell: 555-0188"}
+            value={emergency}
+            onChange={(e) => setEmergency(e.target.value)}
             className="!bg-black/40 !border-white/5 !text-white/80 z-10 relative"
           />
         </div>
