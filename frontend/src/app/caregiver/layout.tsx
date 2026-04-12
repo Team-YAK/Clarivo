@@ -16,6 +16,7 @@ import {
   ArrowLeft
 } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function CaregiverLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,9 +32,9 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
   ];
 
   return (
-    <div className="flex h-screen bg-surface-container-lowest text-on-surface overflow-hidden font-sans">
+    <div className="flex h-screen bg-surface text-on-surface overflow-hidden font-sans">
       {/* Sidebar Navigation */}
-      <aside className="w-72 bg-surface backdrop-blur-xl flex flex-col border-r border-outline-variant/30 z-20 shrink-0">
+      <aside className="w-72 bg-surface-container/80 backdrop-blur-2xl flex flex-col border-r border-white/6 z-20 shrink-0 shadow-[1px_0_0_rgba(255,255,255,0.04)]">
         <div className="p-8 flex items-center gap-3">
           <div className="bg-gradient-to-br from-primary to-primary-container p-2 rounded-xl text-on-primary shadow-lg shadow-primary/20 ring-1 ring-white/10">
             <FlowerLotus size={28} weight="fill" />
@@ -62,7 +63,7 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
                 {isActive && (
                   <motion.div
                     layoutId="nav-pill"
-                    className="absolute inset-0 bg-primary/10 rounded-2xl border border-primary/20 shadow-[0_0_20px_rgba(134,212,210,0.15)]"
+                    className="absolute inset-0 bg-primary/8 rounded-2xl border border-primary/15 shadow-[0_0_20px_rgba(134,212,210,0.12)] backdrop-blur-sm"
                     initial={false}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
@@ -81,15 +82,18 @@ export default function CaregiverLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        <div className="p-4 border-t border-outline-variant/30 mt-auto">
-          <div className="bg-surface-container-highest rounded-2xl p-4 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-primary-container text-primary font-bold flex items-center justify-center font-headline shadow-inner">
-              YC
+        <div className="p-4 border-t border-white/5 mt-auto">
+          <div className="flex items-center justify-between mb-3">
+            <div className="glass-card rounded-2xl p-3 flex items-center gap-3 flex-1 mr-2">
+              <div className="w-8 h-8 rounded-full bg-primary-container text-primary font-bold flex items-center justify-center font-headline text-sm shadow-inner shrink-0">
+                YC
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm truncate text-on-surface">Yuki Caregiver</p>
+                <p className="text-xs text-on-surface-variant truncate">Caring for: Kishan</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm truncate text-on-surface">Yuki Caregiver</p>
-              <p className="text-xs text-on-surface-variant truncate">Caring for: Kishan</p>
-            </div>
+            <ThemeToggle />
           </div>
           <button className="w-full flex items-center justify-center gap-2 py-3 text-error hover:bg-error-container hover:text-on-error-container rounded-xl transition-colors font-bold text-sm">
             <SignOut size={20} weight="bold" /> Logout

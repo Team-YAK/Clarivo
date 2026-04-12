@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { fetchCaregiverPanel } from '@/utils/caregiverApi';
 import { CaregiverPanel } from '../../../../shared/api-contract';
 import { Pulse, Brain, WarningCircle, CheckCircle, UserList, BookBookmark, Microphone, ArrowRight } from '@phosphor-icons/react';
-import { GlowCard } from '@/components/ui/spotlight-card'; // used for stat cards
+import { GlowCard } from '@/components/ui/spotlight-card';
+import { PageTransition } from '@/components/ui/page-transition';
 
 export default function CaregiverOverview() {
   const [panelData, setPanelData] = useState<CaregiverPanel | null>(null);
@@ -15,6 +16,7 @@ export default function CaregiverOverview() {
   }, []);
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto py-8 px-4">
       <div>
         <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Welcome Back, Yuki</h1>
@@ -134,5 +136,6 @@ export default function CaregiverOverview() {
         </GlowCard>
       </div>
     </div>
+    </PageTransition>
   );
 }

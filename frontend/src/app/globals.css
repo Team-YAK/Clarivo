@@ -58,27 +58,74 @@
   :root {
     --background: var(--color-surface);
     --foreground: var(--color-on-surface);
+    /* Glass design tokens — light mode */
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.80);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    --glass-blur: 20px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
   }
 
   .dark {
-    --color-surface: #0f1414;
-    --color-surface-container: #151b1b;
-    --color-surface-container-low: #131818;
-    --color-surface-container-lowest: #0e1212;
-    --color-surface-container-high: #1c2323;
-    --color-surface-container-highest: #222b2b;
-    --color-on-surface: #e1e3e4;
-    --color-on-surface-variant: #bec9c8;
+    /* Full complete dark token override — blue-tinted visionOS base */
+    --color-surface: #0a0f14;
+    --color-surface-bright: #1a2433;
+    --color-surface-dim: #060a0e;
+    --color-surface-variant: #1e2d3d;
+    --color-surface-container: #0f1822;
+    --color-surface-container-low: #0c1319;
+    --color-surface-container-lowest: #060a0e;
+    --color-surface-container-high: #172030;
+    --color-surface-container-highest: #1e2d3d;
+    --color-inverse-surface: #dde3eb;
+    --color-inverse-on-surface: #0f1822;
+    --color-on-surface: #d8e2f0;
+    --color-on-surface-variant: #8fa3bb;
+    --color-on-background: #d8e2f0;
+    --color-background: #0a0f14;
     --color-primary: #86d4d2;
     --color-on-primary: #003736;
-    --color-primary-container: #00504f;
+    --color-primary-container: #004f4e;
     --color-on-primary-container: #a2f0ee;
-    --color-outline: #899392;
-    --color-outline-variant: #3e4948;
-    --color-surface-variant: #3e4948;
-    
+    --color-primary-fixed: #a2f0ee;
+    --color-primary-fixed-dim: #86d4d2;
+    --color-on-primary-fixed: #00201f;
+    --color-on-primary-fixed-variant: #00504f;
+    --color-secondary: #a0bdd0;
+    --color-on-secondary: #0d2435;
+    --color-secondary-container: #1e3347;
+    --color-on-secondary-container: #cde5f5;
+    --color-secondary-fixed: #cfe6f2;
+    --color-secondary-fixed-dim: #b4cad6;
+    --color-on-secondary-fixed: #071e27;
+    --color-on-secondary-fixed-variant: #354a53;
+    --color-tertiary: #e0789a;
+    --color-on-tertiary: #470024;
+    --color-tertiary-container: #68003b;
+    --color-on-tertiary-container: #ffc6d1;
+    --color-tertiary-fixed: #ffd9df;
+    --color-tertiary-fixed-dim: #ffb1c2;
+    --color-on-tertiary-fixed: #3f0018;
+    --color-on-tertiary-fixed-variant: #8f003f;
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+    --color-outline: #4a6278;
+    --color-outline-variant: #243648;
+    --color-surface-tint: #86d4d2;
+    --color-inverse-primary: #004d4c;
+
     --background: var(--color-surface);
     --foreground: var(--color-on-surface);
+    /* Glass design tokens — dark mode */
+    --glass-bg: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255,255,255,0.06);
+    --glass-blur: 20px;
   }
 }
 
@@ -90,6 +137,132 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Glass card utility ─────────────────────────────────────────── */
+@utility glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@utility shimmer-skeleton {
+  background: linear-gradient(90deg,
+    var(--color-surface-container-high) 25%,
+    var(--color-surface-container-highest) 50%,
+    var(--color-surface-container-high) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ── Liquid Glass Card — true visionOS liquid glass via SVG filter ──────────── */
+/* Uses ::before for the specular highlight layer, ::after for distorted frosted bg */
+@keyframes glass-shimmer {
+  0%   { background-position: -200% 0; opacity: 0.7; }
+  50%  { opacity: 1; }
+  100% { background-position: 200% 0; opacity: 0.7; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 28px 2px color-mix(in srgb, var(--depth-color, var(--color-primary)) 30%, transparent); }
+}
+
+@layer components {
+  .liquid-glass-card {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  /* Specular highlight layer:
+     - Top-left edge: bright inset highlight (simulates light source top-left)
+     - Bottom-right edge: subtle dark counter-shadow (physical glass refraction)
+     - Multi-layer float shadow for 3D lift */
+  .liquid-glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Edge border: top-left bright, bottom-right subtle */
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--glass-bg), var(--glass-bg)) padding-box,
+      linear-gradient(
+        135deg,
+        rgba(255,255,255,0.80) 0%,
+        rgba(255,255,255,0.25) 30%,
+        rgba(255,255,255,0.04) 60%,
+        rgba(0,0,0,0.06) 100%
+      ) border-box;
+    box-shadow:
+      /* Top-left specular inset */
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.92),
+      inset 1.5px 0 0 rgba(255, 255, 255, 0.45),
+      /* Bottom-right counter shadow */
+      inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+      inset -1px 0 0 rgba(0, 0, 0, 0.04),
+      /* Float shadows: contact, mid, far */
+      0 2px 4px rgba(0, 0, 0, 0.04),
+      0 8px 20px rgba(0, 0, 0, 0.07),
+      0 24px 56px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Liquid frosted background — sits behind content, distorted via SVG filter */
+  .liquid-glass-card::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    backdrop-filter: blur(20px) saturate(1.8) brightness(1.04);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8) brightness(1.04);
+    filter: url(#card-glass);
+    background: color-mix(in srgb, var(--depth-color, white) 7%, rgba(255, 255, 255, 0.60));
+    overflow: hidden;
+  }
+
+  /* Dark mode — Obsidian glass: subtle blue-steel highlights, much deeper shadows */
+  .dark .liquid-glass-card::before {
+    background:
+      linear-gradient(var(--glass-bg), var(--glass-bg)) padding-box,
+      linear-gradient(
+        135deg,
+        rgba(255,255,255,0.13) 0%,
+        rgba(255,255,255,0.05) 40%,
+        rgba(0,0,0,0.0) 70%,
+        rgba(0,0,0,0.20) 100%
+      ) border-box;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.13),
+      inset 1px 0 0 rgba(255, 255, 255, 0.06),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+      inset -1px 0 0 rgba(0, 0, 0, 0.20),
+      0 4px 6px rgba(0, 0, 0, 0.50),
+      0 12px 32px rgba(0, 0, 0, 0.42),
+      0 32px 64px rgba(0, 0, 0, 0.32);
+  }
+
+  .dark .liquid-glass-card::after {
+    backdrop-filter: blur(20px) saturate(1.6) brightness(1.12);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6) brightness(1.12);
+    /* Slight teal-blue depth tint for obsidian vibe */
+    background: color-mix(in srgb,
+      color-mix(in srgb, var(--depth-color, var(--color-primary)) 12%, #1e40af) 15%,
+      rgba(255, 255, 255, 0.04)
+    );
+  }
 }
 
 /* Hide scrollbars but keep scroll functionality */

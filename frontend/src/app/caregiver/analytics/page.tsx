@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { ChartLineUp, Brain, TrendUp, Info, Heartbeat, RocketLaunch } from '@phosphor-icons/react';
 import { GlowCard } from '@/components/ui/spotlight-card';
+import { PageTransition } from '@/components/ui/page-transition';
 
 const radarData = [
   { subject: 'Meals / Food', A: 80, fullMark: 100 },
@@ -71,6 +72,7 @@ export default function DeepAnalytics() {
   const [digest] = useState("Kishan's communication has stabilized significantly this week. There's a noticeable drop in distress during evening meal times, likely correlating with the new 'Favorites' context rule you added on Tuesday.");
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
         <div>
@@ -106,10 +108,10 @@ export default function DeepAnalytics() {
             <div className="flex-1 min-h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="60%" data={radarData}>
-                  <PolarGrid stroke="#d1d5db" />
+                  <PolarGrid stroke="var(--color-outline-variant)" />
                   <PolarAngleAxis
                     dataKey="subject"
-                    tick={{ fill: '#1f2937', fontSize: 15, fontWeight: 700 }}
+                    tick={{ fill: 'var(--color-on-surface-variant)', fontSize: 13, fontWeight: 700 }}
                   />
                   <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                   <Radar name="Distress Volume" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.35} strokeWidth={2} />
@@ -141,9 +143,9 @@ export default function DeepAnalytics() {
                       <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                  <XAxis dataKey="month" tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fill: '#6b7280', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-outline-variant)" opacity={0.4} />
+                  <XAxis dataKey="month" tick={{fill: 'var(--color-on-surface-variant)', fontSize: 12}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fill: 'var(--color-on-surface-variant)', fontSize: 12}} axisLine={false} tickLine={false} />
                   <RechartsTooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} />
                   <Area type="monotone" dataKey="verified" name="Verified Syntax" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVerified)" />
                   <Area type="monotone" dataKey="clarifications" name="Clarifications Required" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorClarif)" />
@@ -173,17 +175,17 @@ export default function DeepAnalytics() {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6 mt-4">
-              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
-                <p className="text-3xl font-headline font-black text-emerald-600">+53%</p>
-                <p className="text-xs text-emerald-700 font-bold mt-1 uppercase tracking-wide">Accuracy Gain</p>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center">
+                <p className="text-3xl font-headline font-black text-emerald-500">+53%</p>
+                <p className="text-xs text-emerald-500/80 font-bold mt-1 uppercase tracking-wide">Accuracy Gain</p>
               </div>
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
-                <p className="text-3xl font-headline font-black text-amber-600">−52%</p>
-                <p className="text-xs text-amber-700 font-bold mt-1 uppercase tracking-wide">Fewer Steps</p>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-center">
+                <p className="text-3xl font-headline font-black text-amber-500">−52%</p>
+                <p className="text-xs text-amber-500/80 font-bold mt-1 uppercase tracking-wide">Fewer Steps</p>
               </div>
-              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
-                <p className="text-3xl font-headline font-black text-blue-600">6 wks</p>
-                <p className="text-xs text-blue-700 font-bold mt-1 uppercase tracking-wide">To Full Calibration</p>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center">
+                <p className="text-3xl font-headline font-black text-blue-500">6 wks</p>
+                <p className="text-xs text-blue-500/80 font-bold mt-1 uppercase tracking-wide">To Full Calibration</p>
               </div>
             </div>
 
@@ -196,10 +198,10 @@ export default function DeepAnalytics() {
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                  <XAxis dataKey="week" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left" domain={[40, 100]} tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                  <YAxis yAxisId="right" orientation="right" domain={[1, 6]} tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} steps`} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-outline-variant)" opacity={0.4} />
+                  <XAxis dataKey="week" tick={{ fill: 'var(--color-on-surface-variant)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" domain={[40, 100]} tick={{ fill: 'var(--color-on-surface-variant)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                  <YAxis yAxisId="right" orientation="right" domain={[1, 6]} tick={{ fill: 'var(--color-on-surface-variant)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} steps`} />
                   <RechartsTooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} />
                   <Area yAxisId="left" type="monotone" dataKey="accuracy" name="Prediction Accuracy" stroke="#10b981" strokeWidth={3} fill="url(#colorAccuracy)" />
                   <Line yAxisId="right" type="monotone" dataKey="stepsToExpress" name="Avg Steps to Express" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="6 3" dot={{ fill: '#f59e0b', r: 4, strokeWidth: 0 }} />
@@ -258,5 +260,6 @@ export default function DeepAnalytics() {
         </GlowCard>
       </div>
     </div>
+    </PageTransition>
   );
 }

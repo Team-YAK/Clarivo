@@ -5,20 +5,18 @@ import ButtonGrid, { StackAddEvent } from "@/components/patient/ButtonGrid";
 import WordStack, { StackItem } from "@/components/patient/WordStack";
 import SentenceOutput from "@/components/patient/SentenceOutput";
 import CaregiverPanel from "@/components/caregiver/CaregiverPanel";
-import { Sun, Moon, SidebarSimple, Desktop, Gear } from "@phosphor-icons/react";
-import { useTheme } from "next-themes";
+import { SidebarSimple, Desktop, FlowerLotus } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { GlowCard } from "@/components/ui/spotlight-card";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 let idCounter = 0;
 const nextId = () => `stack-${++idCounter}`;
 
 export default function PatientScreen() {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   // ── Stack state ──
   const [stackItems, setStackItems] = useState<StackItem[]>([]);
@@ -87,13 +85,31 @@ export default function PatientScreen() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-surface to-surface-container-low transition-colors duration-500">
-      {/* Minimalist icon-only navigation bar (no text for aphasia users) */}
-      <header className="fixed top-0 w-full h-14 flex items-center justify-end px-6 md:px-12 bg-surface/60 backdrop-blur-xl z-50 border-b border-outline-variant/10">
-        <div className="flex items-center gap-2 relative">
+    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-surface to-surface-container-low transition-colors duration-500 relative">
+      {/* Ambient gradient orbs — give liquid glass cards something colorful to distort through */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
+        <div className="absolute top-[-15%] left-[-10%] w-[55vw] h-[55vw] rounded-full bg-primary/20 blur-[130px] opacity-60" />
+        <div className="absolute bottom-[-10%] right-[-8%] w-[50vw] h-[50vw] rounded-full bg-tertiary/15 blur-[110px] opacity-50" />
+        <div className="absolute top-[38%] right-[18%] w-[30vw] h-[30vw] rounded-full bg-secondary/10 blur-[90px] opacity-40" />
+      </div>
+
+      {/* Glass header */}
+      <header className="fixed top-0 w-full h-14 flex items-center justify-between px-6 md:px-12 bg-surface/50 backdrop-blur-2xl backdrop-saturate-150 z-50 border-b border-white/5 shadow-[0_1px_0_rgba(255,255,255,0.05)]"
+        style={{ WebkitBackdropFilter: 'blur(48px) saturate(1.5)' }}
+      >
+        {/* Left: Branding */}
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-xl bg-gradient-to-br from-primary to-primary-container shadow-sm">
+            <FlowerLotus size={18} weight="fill" className="text-on-primary" />
+          </div>
+          <span className="font-headline font-black text-lg tracking-tight bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">Clarivo</span>
+        </div>
+
+        {/* Right: controls */}
+        <div className="flex items-center gap-2">
           <Link
             href="/caregiver"
-            className="flex items-center justify-center p-2.5 rounded-full transition-all text-outline-variant hover:text-on-surface hover:bg-surface-container-high"
+            className="flex items-center justify-center p-2.5 rounded-full transition-all text-outline-variant hover:text-on-surface hover:bg-white/10"
             title="Caregiver Dashboard"
           >
             <Desktop size={22} weight="fill" />
@@ -101,59 +117,16 @@ export default function PatientScreen() {
 
           <button
             onClick={() => setIsSplitView(!isSplitView)}
-            className={`p-2.5 rounded-full transition-all shadow-sm ${
+            className={`p-2.5 rounded-full transition-all ${
               isSplitView
-                ? "bg-primary-container text-on-primary-container"
-                : "text-outline-variant hover:text-on-surface hover:bg-surface-container-high"
+                ? "bg-primary/15 text-primary"
+                : "text-outline-variant hover:text-on-surface hover:bg-white/10"
             }`}
           >
             <SidebarSimple size={22} weight="fill" />
           </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-2.5 rounded-full transition-all shadow-sm ${
-                showSettings
-                  ? "bg-primary-container text-on-primary-container"
-                  : "text-outline-variant hover:text-on-surface hover:bg-surface-container-high"
-              }`}
-            >
-              <Gear size={22} weight="fill" />
-            </button>
-            <AnimatePresence>
-              {showSettings && mounted && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-14 w-16 z-50"
-                >
-                  <GlowCard
-                    customSize
-                    glowColor="blue"
-                    className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-xl rounded-2xl"
-                  >
-                    <div className="p-2 flex flex-col items-center">
-                      <button
-                        onClick={() => {
-                          setTheme(theme === "dark" ? "light" : "dark");
-                        }}
-                        className="flex items-center justify-center p-3 w-full hover:bg-surface-container-low rounded-xl transition-colors"
-                        title="Toggle theme"
-                      >
-                        {theme === "dark" ? (
-                          <Sun size={24} weight="bold" className="text-orange-400" />
-                        ) : (
-                          <Moon size={24} weight="bold" className="text-purple-500" />
-                        )}
-                      </button>
-                    </div>
-                  </GlowCard>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <ThemeToggle />
         </div>
       </header>
 

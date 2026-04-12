@@ -54,8 +54,11 @@ export default function WordStack({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40">
-      {/* Frosted glass background */}
-      <div className="bg-surface-container/80 backdrop-blur-xl border-t border-outline-variant/20 shadow-[0_-8px_30px_rgba(0,0,0,0.1)]">
+      {/* visionOS liquid glass bottom bar — matches card aesthetic */}
+      <div
+        className="liquid-glass-card rounded-t-3xl border-t border-white/8"
+        style={{ '--depth-color': 'var(--color-primary)' } as React.CSSProperties}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             {/* Undo / Redo buttons */}

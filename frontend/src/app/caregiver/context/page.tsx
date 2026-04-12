@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { UserList, Check, Tag, CloudArrowUp, ArrowsClockwise, Pill, ForkKnife, Sparkle } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { syncAI } from '@/utils/caregiverApi';
+import { PageTransition } from '@/components/ui/page-transition';
+import { GlassInput, GlassTextarea } from '@/components/ui/glass-input';
 
 export default function PatientContextManager() {
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
@@ -47,6 +49,7 @@ export default function PatientContextManager() {
   };
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl">
       <div className="flex items-start justify-between gap-6">
         <div>
@@ -102,7 +105,7 @@ export default function PatientContextManager() {
           </button>
           <button
             onClick={() => setActiveCategory('meds')}
-            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meds' ? 'border-rose-400 bg-rose-50' : 'border-outline-variant/20 hover:border-outline-variant'}`}
+            className={`p-4 rounded-2xl text-left border-2 transition-all ${activeCategory === 'meds' ? 'border-rose-400 bg-rose-500/10' : 'border-outline-variant/20 hover:border-outline-variant'}`}
           >
             <h3 className="font-bold mb-1 w-full flex justify-between">Medications {activeCategory === 'meds' && <Check className="text-rose-500"/>}</h3>
             <p className="text-xs text-on-surface-variant">Prescriptions to cross-reference against requests.</p>
@@ -114,13 +117,12 @@ export default function PatientContextManager() {
             <Tag />
             Add new {activeCategory} tag
           </label>
-          <input
+          <GlassInput
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={addTag}
             placeholder={`Type a rule and press Enter...`}
-            className="w-full bg-surface-variant/30 border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-container focus:bg-surface-container-lowest outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] placeholder:text-on-surface-variant/50 focus:placeholder:text-transparent hover:bg-surface-variant/50"
           />
 
           <div className="mt-6 flex flex-wrap gap-2 min-h-[100px]">
@@ -136,7 +138,7 @@ export default function PatientContextManager() {
                     px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 group cursor-pointer shadow-sm border transition-all
                     ${activeCategory === 'needs' ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' : ''}
                     ${activeCategory === 'meals' ? 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20' : ''}
-                    ${activeCategory === 'meds' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : ''}
+                    ${activeCategory === 'meds' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' : ''}
                   `}
                 >
                   {activeCategory === 'needs' && <Sparkle size={14} weight="fill" className="shrink-0" />}
@@ -160,21 +162,20 @@ export default function PatientContextManager() {
       <div className="grid grid-cols-2 gap-8">
         <div>
           <label className="font-bold text-on-surface mb-2 block">Caregiver Relationship Mapping</label>
-          <textarea
+          <GlassTextarea
             rows={5}
-            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Wife: Sarah\nSon: Tommy\nDog: Bobby"}
-          ></textarea>
+          />
         </div>
         <div>
           <label className="font-bold text-on-surface mb-2 block">Emergency Override Contacts</label>
-          <textarea
+          <GlassTextarea
             rows={5}
-            className="w-full bg-surface-container border border-outline-variant/30 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface outline-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] hover:border-outline-variant"
             defaultValue={"Dr. Smith: 555-0199\nSarah Cell: 555-0188"}
-          ></textarea>
+          />
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }

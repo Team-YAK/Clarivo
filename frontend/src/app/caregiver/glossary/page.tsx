@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { BookBookmark, Trash, Plus, TextAa, Quotes, CheckCircle, Info } from '@phosphor-icons/react';
 import { fetchGlossaryRules, addGlossaryRule, deleteGlossaryRule, toggleGlossaryRule, GlossaryRule } from '@/utils/caregiverApi';
+import { PageTransition } from '@/components/ui/page-transition';
+import { GlassInput } from '@/components/ui/glass-input';
 
 export default function GlossaryManager() {
   const [rules, setRules] = useState<GlossaryRule[]>([]);
@@ -47,6 +49,7 @@ export default function GlossaryManager() {
   };
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-5xl">
       <div>
         <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Glossary & Strict Rules</h1>
@@ -54,11 +57,11 @@ export default function GlossaryManager() {
       </div>
 
       {/* LLM Integration Banner */}
-      <div className="flex items-start gap-4 p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800">
+      <div className="flex items-start gap-4 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-500">
         <CheckCircle size={22} weight="fill" className="text-emerald-500 shrink-0 mt-0.5" />
         <div>
           <p className="font-bold text-sm mb-0.5">Active rules are injected into every AI generation</p>
-          <p className="text-sm text-emerald-700 opacity-90">
+          <p className="text-sm text-emerald-500/80 opacity-90">
             When Kishan selects a path containing a trigger word, the AI is guaranteed to use your enforced meaning — not its best guess. Inactive rules are ignored.
           </p>
         </div>
@@ -72,20 +75,18 @@ export default function GlossaryManager() {
         <form onSubmit={addRule} className="flex gap-4 items-end bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30">
           <div className="flex-1">
             <label className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2"><TextAa /> When Patient Selects / Says:</label>
-            <input
+            <GlassInput
               value={newNoun}
               onChange={e => setNewNoun(e.target.value)}
               placeholder='e.g., "Mimi"'
-              className="w-full bg-surface-variant/30 border border-outline-variant/50 rounded-xl p-3 focus:ring-2 focus:ring-secondary outline-none"
             />
           </div>
           <div className="flex-1">
             <label className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2"><Quotes /> AI Must Understand As:</label>
-            <input
+            <GlassInput
               value={newDef}
               onChange={e => setNewDef(e.target.value)}
               placeholder='e.g., "Grandmother Mary"'
-              className="w-full bg-surface-variant/30 border border-outline-variant/50 rounded-xl p-3 focus:ring-2 focus:ring-secondary outline-none"
             />
           </div>
           <button
@@ -157,5 +158,6 @@ export default function GlossaryManager() {
         )}
       </div>
     </div>
+    </PageTransition>
   );
 }

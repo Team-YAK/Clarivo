@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { BellRinging, DeviceMobile, Envelope, PhoneCall, SlidersHorizontal, WarningCircle } from '@phosphor-icons/react';
 import { GlowCard } from '@/components/ui/spotlight-card';
+import { PageTransition } from '@/components/ui/page-transition';
 
 export default function AlertsConsole() {
   const [threshold, setThreshold] = useState(3);
@@ -19,6 +20,7 @@ export default function AlertsConsole() {
   };
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-4xl">
       <div>
         <h1 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Real-Time Alert Console</h1>
@@ -127,5 +129,6 @@ export default function AlertsConsole() {
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }

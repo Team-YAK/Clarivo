@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { fetchSessionHistory } from '@/utils/caregiverApi';
 import { Session } from '../../../../../shared/api-contract';
 import { FileText, DownloadSimple, Funnel, CalendarBlank, MagnifyingGlass } from '@phosphor-icons/react';
+import { PageTransition } from '@/components/ui/page-transition';
+import { GlassInput } from '@/components/ui/glass-input';
 
 // Mock expanded sessions
 const MOCK_AUDIT_SESSIONS = [
@@ -32,6 +34,7 @@ export default function SessionAuditor() {
   );
 
   return (
+    <PageTransition>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
         <div>
@@ -47,13 +50,13 @@ export default function SessionAuditor() {
         {/* Toolbar */}
         <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low flex gap-4">
           <div className="flex-1 relative">
-            <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-            <input 
-              type="text" 
-              placeholder="Search sentences or pathways..." 
+            <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant z-10" />
+            <GlassInput
+              type="text"
+              placeholder="Search sentences or pathways..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-2 bg-surface rounded-xl border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary outline-none"
+              className="pl-12"
             />
           </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-surface rounded-xl border border-outline-variant/30 text-sm font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors">
@@ -94,7 +97,7 @@ export default function SessionAuditor() {
                   </td>
                   <td className="p-4 font-bold text-on-surface text-base">"{session.sentence}"</td>
                   <td className="p-4 text-center">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${session.confidence >= 90 ? 'bg-green-100 text-green-800' : session.confidence >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${session.confidence >= 90 ? 'bg-green-500/15 text-green-500' : session.confidence >= 70 ? 'bg-amber-500/15 text-amber-500' : 'bg-red-500/15 text-red-500'}`}>
                       {session.confidence}%
                     </span>
                   </td>
@@ -137,5 +140,6 @@ export default function SessionAuditor() {
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }

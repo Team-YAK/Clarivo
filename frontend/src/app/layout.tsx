@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AppShell } from "@/components/AppShell";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,8 +31,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="w-full min-h-full flex flex-col font-body bg-surface text-on-surface">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

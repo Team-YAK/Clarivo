@@ -8,7 +8,6 @@ import {
   expandTreeAI,
 } from "@/utils/patientApi";
 import { getIconComponent } from "@/utils/icon-map";
-import { LiquidButton } from "@/components/ui/liquid-glass-button";
 import {
   DisplayOption,
   extendBreadcrumbs,
@@ -42,14 +41,9 @@ function getIconColor(option: DisplayOption, index: number): string {
 }
 
 // ── Skeleton card ──────────────────────────────────────────────
-function SkeletonCard({ large = false }: { large?: boolean }) {
+function SkeletonCard() {
   return (
-    <div
-      className={[
-        "rounded-3xl bg-surface-container-high/30 animate-pulse",
-        large ? "aspect-square" : "aspect-square",
-      ].join(" ")}
-    />
+    <div className="aspect-square w-full rounded-3xl shimmer-skeleton" />
   );
 }
 
@@ -96,66 +90,67 @@ function OptionCard({
   );
 
   return (
-    <div ref={ref} className="relative group">
+    <div ref={ref} className="relative group aspect-square w-full">
       {isVisible && Icon ? (
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.15, delay: index * 0.03 }}
-          className="aspect-square w-full h-full relative"
+          initial={{ opacity: 0, scale: 0.88, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: index * 0.03, ease: "easeOut" }}
+          className="w-full h-full relative"
         >
-          <LiquidButton
-            size="xxl"
+          <motion.button
             onClick={() => onSelect(option)}
-            className={[
-              "!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg border",
-              featured
-                ? "border-primary/40 ring-2 ring-primary/20"
-                : "border-white/5",
-            ].join(" ")}
-            style={{
-              background: `linear-gradient(135deg, ${color}10, ${color}05)`,
-            }}
+            whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.18, ease: "easeOut" } }}
+            whileTap={{ scale: 0.95 }}
+            className="relative w-full aspect-square rounded-3xl liquid-glass-card flex items-center justify-center cursor-pointer overflow-visible"
+            style={{ '--depth-color': color } as React.CSSProperties}
+            aria-label={option.label}
           >
-            <div className="flex flex-col items-center justify-center w-full h-full p-2 gap-1">
-              {featured && (
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">
-                  Likely
-                </span>
-              )}
-              {/* Icon: 65-70% of card height */}
-              <div className="flex-1 flex items-center justify-center min-h-0">
-                <Icon
-                  weight="fill"
-                  color={color}
-                  className="!w-12 !h-12 sm:!w-14 sm:!h-14 drop-shadow-[0_2px_15px_rgba(0,0,0,0.5)]"
-                />
-              </div>
-              {/* Decorative label */}
-              <span className="text-[10px] font-bold text-on-surface-variant/40 text-center leading-tight uppercase tracking-wider px-1">
-                {option.label}
-              </span>
+            {/* Icon container — 74% of card, 13% padding so every glyph is identically sized */}
+            <div
+              className="aspect-square flex items-center justify-center"
+              style={{ width: '74%', padding: '13%' }}
+            >
+              <Icon
+                weight="fill"
+                color={color}
+                className="!w-full !h-full block"
+                style={{ filter: `drop-shadow(0 6px 20px ${color}90)` }}
+              />
             </div>
-          </LiquidButton>
 
-          {/* Expand deeper */}
+            {/* Label — sits in bottom 20% via absolute positioning, won't shift icon */}
+            <span
+              className="absolute bottom-0 inset-x-0 pb-2.5 text-center text-[9px] font-black uppercase tracking-widest leading-none"
+              style={{ color: `color-mix(in srgb, ${color} 70%, var(--color-on-surface-variant))` }}
+            >
+              {option.label}
+            </span>
+          </motion.button>
+
+          {/* Expand pill — glass pill, appears on hover */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onExpand(option);
             }}
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10
-              flex items-center justify-center w-7 h-7 rounded-full
-              bg-primary text-on-primary shadow-lg
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-20
+              flex items-center justify-center px-3 py-1 rounded-full
+              glass-card text-[10px] font-black uppercase tracking-wide
               opacity-0 group-hover:opacity-100
-              hover:scale-110 active:scale-95
-              transition-all duration-200"
+              hover:scale-105 active:scale-95
+              transition-all duration-200 shadow-lg whitespace-nowrap"
+            style={{
+              color,
+              background: `color-mix(in srgb, ${color} 14%, var(--glass-bg))`,
+              border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+            }}
           >
-            <CaretDown size={16} weight="bold" />
+            <CaretDown size={10} weight="bold" className="mr-1" /> more
           </button>
         </motion.div>
       ) : (
-        <div className="w-full aspect-square rounded-2xl bg-surface-container-high/30 animate-pulse" />
+        <div className="w-full aspect-square rounded-3xl shimmer-skeleton" />
       )}
     </div>
   );
@@ -251,24 +246,9 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   const depth = currentFrame.path.length;
   return (
     <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col overflow-hidden relative">
-      {/* Breadcrumb — icon-based */}
+      {/* Breadcrumb — glass container */}
       <div className="flex items-center gap-3 px-2 pb-3 flex-shrink-0">
-        <AnimatePresence>
-          {depth > 0 && (
-            <motion.button
-              initial={{ opacity: 0, x: -20, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: "auto" }}
-              exit={{ opacity: 0, x: -20, width: 0 }}
-              onClick={handleBack}
-              className="flex items-center justify-center p-3 bg-surface-container-high rounded-full hover:bg-surface-variant transition-colors shadow-sm shrink-0"
-            >
-              <ArrowLeft size={24} weight="bold" className="text-on-surface" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        {/* Breadcrumb icons only (no text) */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 glass-card rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
           {currentFrame.breadcrumbs.map((crumb, i) => {
             const BreadcrumbIcon = getIconComponent(crumb.icon);
             const isLast = i === currentFrame.breadcrumbs.length - 1;
@@ -309,11 +289,19 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
           })}
         </div>
 
-        {depth > 0 && (
-          <span className="ml-auto text-[10px] font-bold text-on-surface-variant/20 uppercase tracking-widest shrink-0">
-            {depth}
-          </span>
-        )}
+          <AnimatePresence>
+            {depth > 0 && (
+              <motion.button
+                initial={{ opacity: 0, x: -20, width: 0 }}
+                animate={{ opacity: 1, x: 0, width: "auto" }}
+                exit={{ opacity: 0, x: -20, width: 0 }}
+                onClick={handleBack}
+                className="flex items-center justify-center w-8 h-8 glass-card rounded-full hover:border-outline-variant/40 transition-all shrink-0"
+              >
+                <ArrowLeft size={18} weight="bold" className="text-on-surface" />
+              </motion.button>
+            )}
+          </AnimatePresence>
       </div>
 
       {/* Grid */}
