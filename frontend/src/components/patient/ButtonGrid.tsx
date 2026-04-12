@@ -17,6 +17,7 @@ import {
 export interface StackAddEvent {
   key: string;
   label: string;
+  icon: string;
 }
 
 interface ButtonGridProps {
@@ -102,7 +103,7 @@ function OptionCard({
             onClick={() => onSelect(option)}
             whileHover={{ y: -12, scale: 1.05, transition: { duration: 0.2, ease: "easeOut" } }}
             whileTap={{ scale: 0.92 }}
-            className="relative w-full aspect-square rounded-[2.5rem] liquid-glass-card flex flex-col items-center justify-center cursor-pointer overflow-visible p-3"
+            className="relative w-full aspect-square rounded-[2.5rem] liquid-glass-card flex flex-col items-center justify-center cursor-pointer overflow-hidden p-3"
             style={{ '--depth-color': color } as React.CSSProperties}
             aria-label={option.label}
           >
@@ -112,15 +113,15 @@ function OptionCard({
               style={{ background: color }}
             />
 
-            {/* Icon container — Maximized to enlarge emojis */}
+            {/* Icon container — Scaled to fit combinations */}
             <div
-              className="flex-1 w-full flex items-center justify-center relative z-10"
-              style={{ containerType: 'inline-size' }}
+              className="flex-1 w-[85%] h-[85%] flex items-center justify-center relative z-10 overflow-hidden"
+              style={{ containerType: 'size' }}
             >
               <Icon
                 weight="fill"
                 color={color}
-                className="!w-[110%] !h-[110%] block transition-transform duration-300 group-hover:scale-110"
+                className="!w-full !h-full block transition-transform duration-300 group-hover:scale-110"
                 style={{ filter: `drop-shadow(0 12px 28px ${color}70)` }}
               />
             </div>
@@ -198,7 +199,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   // SELECT
   const handleSelect = useCallback(
     (opt: DisplayOption) => {
-      onAddToStack({ key: opt.key, label: opt.label });
+      onAddToStack({ key: opt.key, label: opt.label, icon: opt.icon });
     },
     [onAddToStack]
   );
@@ -351,7 +352,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
                 />
               )}
 
-              {currentFrame.options.map((opt, i) => (
+              {currentFrame.options.slice(0, 5).map((opt, i) => (
                 <OptionCard
                   key={`${opt.key}-${i}`}
                   option={opt}

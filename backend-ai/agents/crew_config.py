@@ -17,6 +17,7 @@ import os
 import re
 import time
 import unicodedata
+from pathlib import Path
 
 from dotenv import load_dotenv
 try:
@@ -32,6 +33,51 @@ logger = logging.getLogger(__name__)
 
 _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY")) if AsyncOpenAI else None
 
+# Load fallbacks from the shared dictionary to avoid hardcoding
+def _load_fallbacks():
+    try:
+        dict_path = Path(__file__).resolve().parents[2] / "shared" / "emoji-dictionary.json"
+        if dict_path.exists():
+            with open(dict_path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read())
+                return list(data.values())
+    except Exception:
+        pass
+    return ["🔘", "💬", "❓", "📍", "🔔", "⭐", "🌈", "🔥", "💧", "🌱"]
+
+FALLBACK_EMOJIS = _load_fallbacks()
+
+def _clean_json(text: str) -> str:
+    """Extract JSON from potential markdown code blocks."""
+    if not text:
+        return ""
+    # Remove markdown code blocks if present
+    text = re.sub(r"```json\s*", "", text)
+    text = re.sub(r"```\s*", "", text)
+    return text.strip()
+
+def _label_limit(label: str) -> str:
+    """Ensure labels are very short (1-2 words)."""
+    words = label.split()
+    if len(words) > 2:
+        return " ".join(words[:2])
+    return label
+
+def _semantic_key(provided_key: str, concept: str, label: str) -> str:
+    """Generate a clean kebab-case semantic key."""
+    if provided_key:
+        s = provided_key
+    elif concept:
+        s = concept
+    else:
+        s = label
+    
+    s = s.lower().strip()
+    # Replace non-alphanumeric with hyphens
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    # Remove leading/trailing hyphens
+    s = s.strip("-")
+    return s or "unknown"
 
 async def _chat_once(system: str, user: str, max_tokens: int, temperature: float) -> str:
     if _openai_client is None:
@@ -47,16 +93,6 @@ async def _chat_once(system: str, user: str, max_tokens: int, temperature: float
         stream=False,
     )
     return (resp.choices[0].message.content or "").strip()
-
-
-SYNONYM_HINTS: dict[str, list[str]] = {
-    "run": ["running", "jog", "exercise", "sprint"],
-    "exercise": ["workout", "gym", "fitness", "stretch"],
-    "morning": ["sunrise", "early", "day"],
-    "help": ["assist", "support", "aid"],
-    "pain": ["hurt", "ache", "sore"],
-}
-
 
 
 async def context_agent(context_data: dict) -> dict:
@@ -158,6 +194,8 @@ def _first_grapheme(text: str) -> str:
 
 
 
+from services.icon_dictionary import ICON_DICTIONARY
+
 async def icon_agent(generated: dict) -> tuple[dict, float]:
     """LLM-driven emoji resolver that guarantees a unique emoji per option."""
     start = time.perf_counter()
@@ -172,10 +210,27 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
     for idx, opt in enumerate(options):
         items.append({"id": f"opt_{idx}", "concept": (opt.get("concept") or opt.get("label") or "").strip()})
 
+    # Find relevant core emojis from the dictionary to anchor the LLM
+    reference_emojis = {}
+    if items:
+        for it in items:
+            concept = it['concept'].lower()
+            # Try to find an exact or partial match in our authoritative dictionary
+            if concept in ICON_DICTIONARY:
+                reference_emojis[concept] = ICON_DICTIONARY[concept]
+            else:
+                # Simple keyword matching for better coverage
+                for k, v in ICON_DICTIONARY.items():
+                    if k in concept or concept in k:
+                        reference_emojis[k] = v
+                        if len(reference_emojis) > 15: break # Keep prompt lean
+
     # Ask the LLM to assign a contextually specific emoji combination for each concept
     emoji_map: dict[str, str] = {}
     if items:
         concepts_formatted = "\n".join(f"- id: {it['id']}, concept: {it['concept']}" for it in items)
+        ref_formatted = "\n".join(f"- {k}: {v}" for k, v in reference_emojis.items())
+        
         sys_msg = (
             "You are an expert Emoji Communicator for an aphasia communication app. "
             "Your critical goal is to convey the exact meaning of each concept to patients using ONLY emojis. "
@@ -183,10 +238,14 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
             "CRITICAL RULES — violating any will break the app:\n"
             "1. Each value MUST be exactly 1 to 3 emoji characters combined (no text, no spaces, no punctuation).\n"
             "2. ZERO duplicates allowed — every concept MUST have a completely different emoji combination.\n"
-            "3. COMBINE emojis to create clearer meanings. E.g., 'hot tea' -> 🍵🔥, 'tired' -> 🥱🛌, 'hospital' -> 🏥🚑, 'sad' -> 😢💔.\n"
+            "3. COMBINE 2 to 3 emojis to create clearer meanings (e.g., 'hot tea' -> 🍵🔥, 'tired' -> 🥱🛌, 'hospital' -> 🏥🚑, 'sad' -> 😢💔). HOWEVER, if a single emoji perfectly conveys the exact concept, using just one is perfectly fine and encouraged to prevent clutter.\n"
+
             "4. Keep it to a maximum of 3 emojis per concept to prevent visual clutter.\n"
             "5. Number 1 priority is conveying the message clearly through emojis.\n"
-            "6. If you struggle to find a unique combination, use a unique color dot as a last resort: 🔴🟠🟡🟢🔵🟣.\n"
+            "6. ACCURACY: Use the Core Emoji Reference below as your source of truth for base concepts. "
+            "For example, if the concept is 'drink', ALWAYS include a beverage-related emoji from the reference or common knowledge. "
+            "NEVER use unrelated food (like cakes/desserts) for drinks.\n\n"
+            f"CORE EMOJI REFERENCE (Authoritative):\n{ref_formatted}\n\n"
             "Return ONLY a flat JSON object: {\"id\": \"emoji_combo\"}. No markdown, no explanation."
         )
         hu_msg = f"Concepts to assign unique emoji combinations to:\n{concepts_formatted}"
@@ -222,10 +281,13 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
 
     # Apply emojis back
     resolved = {"quick_option": quick, "options": options}
+    default_q = FALLBACK_EMOJIS[1] if len(FALLBACK_EMOJIS) > 1 else "💬"
+    default_o = FALLBACK_EMOJIS[0] if len(FALLBACK_EMOJIS) > 0 else "🔘"
+
     if resolved.get("quick_option"):
-        resolved["quick_option"]["icon"] = final_map.get("quick", "💬")
+        resolved["quick_option"]["icon"] = final_map.get("quick", default_q)
     for idx, opt in enumerate(resolved.get("options", [])):
-        opt["icon"] = final_map.get(f"opt_{idx}", "🔘")
+        opt["icon"] = final_map.get(f"opt_{idx}", default_o)
 
     icon_ms = (time.perf_counter() - start) * 1000
     return resolved, round(icon_ms, 2)
@@ -233,8 +295,10 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
 
 
 def manager_agent(result: dict) -> dict:
-    options = result.get("options", [])[:12]
+    options = result.get("options", [])[:5]
     cleaned = []
+    default_o = FALLBACK_EMOJIS[0] if len(FALLBACK_EMOJIS) > 0 else "🔘"
+
     for opt in options:
         label = _label_limit(opt.get("label", ""))
         concept = (opt.get("concept") or label).strip()
@@ -246,7 +310,7 @@ def manager_agent(result: dict) -> dict:
 
         # Emoji validation: must contain at least one non-ASCII character
         if not _is_emoji(icon):
-            icon = "🔘"
+            icon = default_o
 
         cleaned.append({"label": label, "key": key, "icon": icon})
 
