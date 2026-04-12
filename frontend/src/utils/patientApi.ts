@@ -1,32 +1,290 @@
 export interface TreeNode {
   key: string;
   label: string;
-  iconName: string;
   isLeaf: boolean;
-  colorClass: string;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Deep decision tree — branching structure for patient UI
+// ─────────────────────────────────────────────────────────────
 const TREE_DATA: Record<string, TreeNode[]> = {
   root: [
-    { key: 'physical', label: 'Physical Needs', iconName: 'PersonArmsSpread', isLeaf: false, colorClass: 'bg-teal-800' },
-    { key: 'emotional', label: 'Emotions', iconName: 'Smiley', isLeaf: false, colorClass: 'bg-red-600' },
-    { key: 'environment', label: 'Environment', iconName: 'House', isLeaf: false, colorClass: 'bg-indigo-900' },
-    { key: 'food', label: 'Food', iconName: 'ForkKnife', isLeaf: false, colorClass: 'bg-amber-500' },
-    { key: 'drink', label: 'Drink', iconName: 'Drop', isLeaf: false, colorClass: 'bg-sky-500' },
-    { key: 'sleep', label: 'Sleep', iconName: 'Moon', isLeaf: true, colorClass: 'bg-purple-800' },
-    { key: 'social', label: 'Social', iconName: 'Users', isLeaf: false, colorClass: 'bg-pink-500' },
-    { key: 'watch', label: 'Watch / Entertainment', iconName: 'Eye', isLeaf: false, colorClass: 'bg-slate-600' },
-    { key: 'toilet', label: 'Toilet', iconName: 'Toilet', isLeaf: true, colorClass: 'bg-slate-400' },
+    { key: "physical", label: "Physical Needs", isLeaf: false },
+    { key: "emotional", label: "Emotions", isLeaf: false },
+    { key: "food", label: "Food", isLeaf: false },
+    { key: "drink", label: "Drink", isLeaf: false },
+    { key: "sleep", label: "Sleep", isLeaf: false },
+    { key: "social", label: "Social", isLeaf: false },
+    { key: "watch", label: "Entertainment", isLeaf: false },
+    { key: "toilet", label: "Toilet", isLeaf: true },
+    { key: "hygiene", label: "Hygiene", isLeaf: false },
+    { key: "environment", label: "Environment", isLeaf: false },
+    { key: "medical", label: "Medical", isLeaf: false },
+    { key: "communication", label: "Communicate", isLeaf: false },
   ],
+
+  // ── Physical ──
   physical: [
-    { key: 'pain', label: 'Pain', iconName: 'Activity', isLeaf: false, colorClass: 'bg-red-600' },
-    { key: 'hot', label: 'Too Hot', iconName: 'Sun', isLeaf: true, colorClass: 'bg-orange-500' },
-    { key: 'cold', label: 'Too Cold', iconName: 'Snowflake', isLeaf: true, colorClass: 'bg-blue-300' },
+    { key: "pain", label: "Pain", isLeaf: false },
+    { key: "hot", label: "Too Hot", isLeaf: true },
+    { key: "cold", label: "Too Cold", isLeaf: true },
+    { key: "itch", label: "Itchy", isLeaf: true },
+    { key: "dizzy", label: "Dizzy", isLeaf: true },
+    { key: "nausea", label: "Nausea", isLeaf: true },
+    { key: "breathing", label: "Breathing", isLeaf: true },
+    { key: "weakness", label: "Weak", isLeaf: true },
+    { key: "fatigue", label: "Tired", isLeaf: true },
+    { key: "numbness", label: "Numb", isLeaf: true },
   ],
   pain: [
-    { key: 'headache', label: 'Headache', iconName: 'Brain', isLeaf: true, colorClass: 'bg-red-700' },
-    { key: 'stomach', label: 'Stomach Ache', iconName: 'Bandaid', isLeaf: true, colorClass: 'bg-amber-600' },
-  ]
+    { key: "headache", label: "Headache", isLeaf: true },
+    { key: "stomach", label: "Stomach", isLeaf: true },
+    { key: "backpain", label: "Back", isLeaf: true },
+    { key: "chestpain", label: "Chest", isLeaf: true },
+    { key: "joints", label: "Joints", isLeaf: true },
+    { key: "teeth", label: "Teeth", isLeaf: true },
+    { key: "earache", label: "Ear", isLeaf: true },
+    { key: "eyepain", label: "Eye", isLeaf: true },
+    { key: "neck", label: "Neck", isLeaf: true },
+    { key: "shoulder", label: "Shoulder", isLeaf: true },
+    { key: "knee", label: "Knee", isLeaf: true },
+    { key: "foot", label: "Foot", isLeaf: true },
+  ],
+
+  // ── Emotions ──
+  emotional: [
+    { key: "happy", label: "Happy", isLeaf: false },
+    { key: "sad", label: "Sad", isLeaf: false },
+    { key: "angry", label: "Angry", isLeaf: false },
+    { key: "anxious", label: "Anxious", isLeaf: true },
+    { key: "tired", label: "Tired", isLeaf: true },
+    { key: "scared", label: "Scared", isLeaf: true },
+    { key: "confused", label: "Confused", isLeaf: true },
+    { key: "excited", label: "Excited", isLeaf: true },
+    { key: "lonely", label: "Lonely", isLeaf: true },
+    { key: "frustrated", label: "Frustrated", isLeaf: true },
+    { key: "grateful", label: "Grateful", isLeaf: true },
+    { key: "calm", label: "Calm", isLeaf: true },
+    { key: "nervous", label: "Nervous", isLeaf: true },
+    { key: "overwhelmed", label: "Overwhelmed", isLeaf: true },
+    { key: "bored", label: "Bored", isLeaf: true },
+    { key: "worried", label: "Worried", isLeaf: true },
+  ],
+  happy: [
+    { key: "joyful", label: "Joyful", isLeaf: true },
+    { key: "laughing", label: "Laughing", isLeaf: true },
+    { key: "cheerful", label: "Cheerful", isLeaf: true },
+    { key: "playful", label: "Playful", isLeaf: true },
+    { key: "elated", label: "Elated", isLeaf: true },
+    { key: "proud", label: "Proud", isLeaf: true },
+    { key: "content", label: "Content", isLeaf: true },
+    { key: "relieved", label: "Relieved", isLeaf: true },
+  ],
+  sad: [
+    { key: "crying", label: "Crying", isLeaf: true },
+    { key: "melancholy", label: "Melancholy", isLeaf: true },
+    { key: "heartbroken", label: "Heartbroken", isLeaf: true },
+    { key: "disappointed", label: "Disappointed", isLeaf: true },
+    { key: "gloomy", label: "Gloomy", isLeaf: true },
+    { key: "depressed", label: "Depressed", isLeaf: true },
+    { key: "nostalgic", label: "Nostalgic", isLeaf: true },
+    { key: "hurt", label: "Hurt", isLeaf: true },
+  ],
+  angry: [
+    { key: "furious", label: "Furious", isLeaf: true },
+    { key: "annoyed", label: "Annoyed", isLeaf: true },
+    { key: "irritated", label: "Irritated", isLeaf: true },
+    { key: "resentful", label: "Resentful", isLeaf: true },
+    { key: "outraged", label: "Outraged", isLeaf: true },
+    { key: "frustrated", label: "Frustrated", isLeaf: true },
+  ],
+
+  // ── Food ──
+  food: [
+    { key: "breakfast", label: "Breakfast", isLeaf: false },
+    { key: "lunch", label: "Lunch", isLeaf: false },
+    { key: "dinner", label: "Dinner", isLeaf: false },
+    { key: "snack", label: "Snack", isLeaf: false },
+    { key: "dessert", label: "Dessert", isLeaf: false },
+  ],
+  breakfast: [
+    { key: "cereal", label: "Cereal", isLeaf: true },
+    { key: "toast", label: "Toast", isLeaf: true },
+    { key: "eggs", label: "Eggs", isLeaf: true },
+    { key: "pancakes", label: "Pancakes", isLeaf: true },
+    { key: "oatmeal", label: "Oatmeal", isLeaf: true },
+    { key: "yogurt", label: "Yogurt", isLeaf: true },
+    { key: "bacon", label: "Bacon", isLeaf: true },
+    { key: "croissant", label: "Croissant", isLeaf: true },
+    { key: "waffles", label: "Waffles", isLeaf: true },
+    { key: "fruit_breakfast", label: "Fruit", isLeaf: true },
+  ],
+  lunch: [
+    { key: "sandwich", label: "Sandwich", isLeaf: true },
+    { key: "salad", label: "Salad", isLeaf: true },
+    { key: "soup", label: "Soup", isLeaf: true },
+    { key: "pasta", label: "Pasta", isLeaf: true },
+    { key: "burger", label: "Burger", isLeaf: true },
+    { key: "wrap", label: "Wrap", isLeaf: true },
+    { key: "sushi", label: "Sushi", isLeaf: true },
+    { key: "pizza", label: "Pizza", isLeaf: true },
+    { key: "rice", label: "Rice", isLeaf: true },
+    { key: "tacos", label: "Tacos", isLeaf: true },
+  ],
+  dinner: [
+    { key: "steak", label: "Steak", isLeaf: true },
+    { key: "chicken", label: "Chicken", isLeaf: true },
+    { key: "fish_dinner", label: "Fish", isLeaf: true },
+    { key: "pasta", label: "Pasta", isLeaf: true },
+    { key: "vegetables", label: "Vegetables", isLeaf: true },
+    { key: "soup", label: "Soup", isLeaf: true },
+    { key: "casserole", label: "Casserole", isLeaf: true },
+    { key: "curry", label: "Curry", isLeaf: true },
+    { key: "stirfry", label: "Stir Fry", isLeaf: true },
+    { key: "grilled", label: "Grilled", isLeaf: true },
+  ],
+  snack: [
+    { key: "fruit", label: "Fruit", isLeaf: true },
+    { key: "chips", label: "Chips", isLeaf: true },
+    { key: "nuts", label: "Nuts", isLeaf: true },
+    { key: "crackers", label: "Crackers", isLeaf: true },
+    { key: "popcorn", label: "Popcorn", isLeaf: true },
+    { key: "cheese", label: "Cheese", isLeaf: true },
+    { key: "chocolate", label: "Chocolate", isLeaf: true },
+    { key: "candy", label: "Candy", isLeaf: true },
+    { key: "granola_bar", label: "Granola Bar", isLeaf: true },
+    { key: "pretzels", label: "Pretzels", isLeaf: true },
+  ],
+  dessert: [
+    { key: "cake", label: "Cake", isLeaf: true },
+    { key: "pie", label: "Pie", isLeaf: true },
+    { key: "ice_cream", label: "Ice Cream", isLeaf: true },
+    { key: "cookies", label: "Cookies", isLeaf: true },
+    { key: "pudding", label: "Pudding", isLeaf: true },
+    { key: "brownie", label: "Brownie", isLeaf: true },
+    { key: "tiramisu", label: "Tiramisu", isLeaf: true },
+    { key: "cheesecake", label: "Cheesecake", isLeaf: true },
+    { key: "donut", label: "Donut", isLeaf: true },
+    { key: "cupcake", label: "Cupcake", isLeaf: true },
+  ],
+
+  // ── Drink ──
+  drink: [
+    { key: "water", label: "Water", isLeaf: true },
+    { key: "juice", label: "Juice", isLeaf: true },
+    { key: "tea", label: "Tea", isLeaf: true },
+    { key: "coffee_drink", label: "Coffee", isLeaf: true },
+    { key: "milk", label: "Milk", isLeaf: true },
+    { key: "soda", label: "Soda", isLeaf: true },
+    { key: "smoothie", label: "Smoothie", isLeaf: true },
+    { key: "hot_chocolate", label: "Hot Chocolate", isLeaf: true },
+    { key: "lemonade", label: "Lemonade", isLeaf: true },
+    { key: "sparkling_water", label: "Sparkling Water", isLeaf: true },
+    { key: "broth", label: "Broth", isLeaf: true },
+  ],
+
+  // ── Sleep ──
+  sleep: [
+    { key: "rest", label: "Rest", isLeaf: true },
+    { key: "nap", label: "Nap", isLeaf: true },
+    { key: "bed", label: "Go to Bed", isLeaf: true },
+    { key: "pillow", label: "Pillow", isLeaf: true },
+    { key: "blanket", label: "Blanket", isLeaf: true },
+    { key: "dark_room", label: "Dark Room", isLeaf: true },
+    { key: "quiet", label: "Quiet", isLeaf: true },
+    { key: "lullaby", label: "Lullaby", isLeaf: true },
+    { key: "insomnia", label: "Can't Sleep", isLeaf: true },
+    { key: "nightmare", label: "Nightmare", isLeaf: true },
+  ],
+
+  // ── Social ──
+  social: [
+    { key: "family", label: "Family", isLeaf: true },
+    { key: "friend", label: "Friend", isLeaf: true },
+    { key: "nurse", label: "Nurse", isLeaf: true },
+    { key: "doctor", label: "Doctor", isLeaf: true },
+    { key: "alone", label: "Be Alone", isLeaf: true },
+    { key: "visitor", label: "Visitor", isLeaf: true },
+    { key: "call_someone", label: "Call", isLeaf: true },
+    { key: "video_call", label: "Video Call", isLeaf: true },
+    { key: "hug", label: "Hug", isLeaf: true },
+    { key: "pet", label: "Pet", isLeaf: true },
+  ],
+
+  // ── Entertainment ──
+  watch: [
+    { key: "tv", label: "TV", isLeaf: true },
+    { key: "movie", label: "Movie", isLeaf: true },
+    { key: "music", label: "Music", isLeaf: true },
+    { key: "news", label: "News", isLeaf: true },
+    { key: "sports", label: "Sports", isLeaf: true },
+    { key: "podcast", label: "Podcast", isLeaf: true },
+    { key: "audiobook", label: "Audiobook", isLeaf: true },
+    { key: "video_game", label: "Game", isLeaf: true },
+    { key: "read", label: "Read", isLeaf: true },
+    { key: "puzzle", label: "Puzzle", isLeaf: true },
+  ],
+
+  // ── Hygiene ──
+  hygiene: [
+    { key: "shower", label: "Shower", isLeaf: true },
+    { key: "bath", label: "Bath", isLeaf: true },
+    { key: "brush_teeth", label: "Brush Teeth", isLeaf: true },
+    { key: "wash_hands", label: "Wash Hands", isLeaf: true },
+    { key: "wash_face", label: "Wash Face", isLeaf: true },
+    { key: "shave", label: "Shave", isLeaf: true },
+    { key: "change_clothes", label: "Change Clothes", isLeaf: true },
+    { key: "lotion", label: "Lotion", isLeaf: true },
+    { key: "comb", label: "Comb Hair", isLeaf: true },
+  ],
+
+  // ── Environment ──
+  environment: [
+    { key: "light", label: "Light", isLeaf: true },
+    { key: "temperature", label: "Temperature", isLeaf: true },
+    { key: "noise", label: "Noise", isLeaf: true },
+    { key: "air", label: "Fresh Air", isLeaf: true },
+    { key: "window", label: "Window", isLeaf: true },
+    { key: "fan", label: "Fan", isLeaf: true },
+    { key: "tv_off", label: "Turn Off TV", isLeaf: true },
+    { key: "clean", label: "Clean Room", isLeaf: true },
+    { key: "comfortable", label: "Comfortable", isLeaf: true },
+  ],
+
+  // ── Medical ──
+  medical: [
+    { key: "medicine", label: "Medicine", isLeaf: true },
+    { key: "pill", label: "Pill", isLeaf: true },
+    { key: "injection", label: "Injection", isLeaf: true },
+    { key: "bandage", label: "Bandage", isLeaf: true },
+    { key: "appointment", label: "Appointment", isLeaf: true },
+    { key: "emergency", label: "Emergency", isLeaf: true },
+    { key: "checkup", label: "Checkup", isLeaf: true },
+    { key: "blood_pressure", label: "Blood Pressure", isLeaf: true },
+    { key: "oxygen", label: "Oxygen", isLeaf: true },
+    { key: "wheelchair", label: "Wheelchair", isLeaf: true },
+    { key: "pain_relief", label: "Pain Relief", isLeaf: true },
+    { key: "vitamins", label: "Vitamins", isLeaf: true },
+  ],
+
+  // ── Communication ──
+  communication: [
+    { key: "yes", label: "Yes", isLeaf: true },
+    { key: "no", label: "No", isLeaf: true },
+    { key: "maybe", label: "Maybe", isLeaf: true },
+    { key: "please", label: "Please", isLeaf: true },
+    { key: "thank_you", label: "Thank You", isLeaf: true },
+    { key: "sorry", label: "Sorry", isLeaf: true },
+    { key: "help", label: "Help", isLeaf: true },
+    { key: "stop", label: "Stop", isLeaf: true },
+    { key: "wait", label: "Wait", isLeaf: true },
+    { key: "i_want", label: "I Want", isLeaf: true },
+    { key: "i_need", label: "I Need", isLeaf: true },
+    { key: "i_feel", label: "I Feel", isLeaf: true },
+    { key: "i_dont_know", label: "I Don't Know", isLeaf: true },
+    { key: "more", label: "More", isLeaf: true },
+    { key: "done", label: "Done", isLeaf: true },
+  ],
 };
 
 export const fetchTreeRoot = async (): Promise<TreeNode[]> => {
@@ -37,35 +295,16 @@ export const fetchTreeChildren = async (parentKey: string): Promise<TreeNode[]> 
   return Promise.resolve(TREE_DATA[parentKey] || []);
 };
 
-export const fetchPredictions = async (currentHour: number): Promise<TreeNode[]> => {
-  if (currentHour < 11) {
-    return [
-      { key: 'breakfast', label: 'Breakfast', iconName: 'Coffee', isLeaf: true, colorClass: 'bg-amber-700' },
-      { key: 'bathroom', label: 'Bathroom', iconName: 'Toilet', isLeaf: true, colorClass: 'bg-slate-500' },
-      { key: 'stretch', label: 'Stretch', iconName: 'PersonArmsSpread', isLeaf: true, colorClass: 'bg-teal-600' }
-    ];
-  } else if (currentHour < 17) {
-    return [
-      { key: 'water', label: 'Water', iconName: 'Drop', isLeaf: true, colorClass: 'bg-sky-500' },
-      { key: 'pain', label: 'Check Pain', iconName: 'Heartbeat', isLeaf: true, colorClass: 'bg-red-600' },
-      { key: 'outdoors', label: 'Outside', iconName: 'Sun', isLeaf: true, colorClass: 'bg-orange-500' }
-    ];
-  } else {
-    return [
-      { key: 'dinner', label: 'Dinner', iconName: 'ForkKnife', isLeaf: true, colorClass: 'bg-amber-600' },
-      { key: 'tv', label: 'Watch TV', iconName: 'Television', isLeaf: true, colorClass: 'bg-indigo-500' },
-      { key: 'sleep', label: 'Sleep', iconName: 'Moon', isLeaf: true, colorClass: 'bg-purple-800' }
-    ];
-  }
-};
-export const fetchShortcuts = async () => Promise.resolve([]);
-export const fetchIcons = async () => Promise.resolve([]);
+export async function* generateIntentStream(labels: string[]): AsyncGenerator<string> {
+  // AI would normally process these into a natural sentence.
+  // For now, we do a simple join with contextual connectors.
+  const sentence = labels.length === 1
+    ? `I want ${labels[0]}.`
+    : `I ${labels.slice(0, -1).join(", ")} ${labels[labels.length - 1]}.`;
 
-export async function* generateIntentStream(path: string[]): AsyncGenerator<string> {
-  const sentence = `I feel ${path[path.length - 1]}.`;
-  const words = sentence.split(' ');
+  const words = sentence.split(" ");
   for (const word of words) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    yield word + ' ';
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    yield word + " ";
   }
 }

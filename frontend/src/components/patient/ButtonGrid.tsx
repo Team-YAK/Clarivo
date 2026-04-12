@@ -1,56 +1,143 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SquaresFour, Keyboard, ArrowLeft } from '@phosphor-icons/react';
-import { fetchTreeRoot, fetchTreeChildren, TreeNode, fetchPredictions } from '@/utils/patientApi';
-import { getIconComponent } from '@/utils/iconMap';
-import SentenceOutput from './SentenceOutput';
-import IconComposer from './IconComposer';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
+import { fetchTreeRoot, fetchTreeChildren, TreeNode } from "@/utils/patientApi";
+import { getIconComponent } from "@/utils/icon-map";
+import { LiquidButton } from "@/components/ui/liquid-glass-button";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } }
-};
+export interface StackAddEvent {
+  key: string;
+  label: string;
+}
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.9 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 300, damping: 20 } }
-};
+interface ButtonGridProps {
+  onAddToStack: (item: StackAddEvent) => void;
+}
 
-export default function ButtonGrid() {
+// ── Lazy-loaded icon card ──────────────────────────────────
+function LazyIconCard({
+  node,
+  onAdd,
+  onDrillDown,
+}: {
+  node: TreeNode;
+  onAdd: (node: TreeNode) => void;
+  onDrillDown: (node: TreeNode) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "100px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const Icon = isVisible ? getIconComponent(node.key) : null;
+
+  return (
+    <div ref={ref} className="relative group">
+      {isVisible && Icon ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          <LiquidButton
+            size="xxl"
+            onClick={() => {
+              if (node.isLeaf) {
+                onAdd(node);
+              } else {
+                // Tap on non-leaf: add the general concept to stack
+                onAdd(node);
+              }
+            }}
+            className="!w-full !h-full !rounded-2xl !px-0 !py-0 flex-col !gap-1"
+          >
+            <div className="flex flex-col items-center justify-center w-full py-5 px-3 gap-2">
+              <Icon size={36} weight="regular" className="text-on-surface drop-shadow-sm" />
+              <span className="font-headline font-bold text-xs text-on-surface/80 text-center leading-tight line-clamp-2">
+                {node.label}
+              </span>
+            </div>
+          </LiquidButton>
+
+          {/* "Go deeper" button for non-leaf nodes */}
+          {!node.isLeaf && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDrillDown(node);
+              }}
+              className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10 
+                flex items-center justify-center w-7 h-7 rounded-full 
+                bg-primary text-on-primary shadow-lg 
+                opacity-0 group-hover:opacity-100 
+                hover:scale-110 active:scale-95 
+                transition-all duration-200"
+              title={`Explore ${node.label} sub-options`}
+            >
+              <CaretDown size={16} weight="bold" />
+            </button>
+          )}
+        </motion.div>
+      ) : (
+        /* Skeleton placeholder matching card size */
+        <div className="w-full aspect-square rounded-2xl bg-surface-container-high/40 animate-pulse" />
+      )}
+    </div>
+  );
+}
+
+// ── Main ButtonGrid ────────────────────────────────────────
+export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   const [currentNode, setCurrentNode] = useState<string | null>(null);
   const [nodes, setNodes] = useState<TreeNode[]>([]);
   const [breadcrumb, setBreadcrumb] = useState<TreeNode[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamedPath, setStreamedPath] = useState<string[]>([]);
-  const [mode, setMode] = useState<'core' | 'type'>('core');
-  const [predictions, setPredictions] = useState<TreeNode[]>([]);
-  
+  const [gridKey, setGridKey] = useState(0);
+
   // Load root nodes on mount
   useEffect(() => {
     fetchTreeRoot().then(setNodes);
-    fetchPredictions(new Date().getHours()).then(setPredictions);
   }, []);
 
-  const handleNodeClick = async (node: TreeNode) => {
-    if (node.isLeaf) {
-      setStreamedPath([...breadcrumb.map(b => b.label), node.label]);
-      setIsStreaming(true);
-    } else {
-      setBreadcrumb([...breadcrumb, node]);
+  const handleAdd = useCallback(
+    (node: TreeNode) => {
+      onAddToStack({ key: node.key, label: node.label });
+    },
+    [onAddToStack]
+  );
+
+  const handleDrillDown = useCallback(
+    async (node: TreeNode) => {
+      setBreadcrumb((prev) => [...prev, node]);
       setCurrentNode(node.key);
       const children = await fetchTreeChildren(node.key);
       setNodes(children);
-    }
-  };
+      setGridKey((k) => k + 1);
+    },
+    []
+  );
 
-  const handleBack = async () => {
+  const handleBack = useCallback(async () => {
     if (breadcrumb.length === 0) return;
     const newBreadcrumb = [...breadcrumb];
     newBreadcrumb.pop();
     setBreadcrumb(newBreadcrumb);
-    
+
     if (newBreadcrumb.length === 0) {
       setCurrentNode(null);
       const root = await fetchTreeRoot();
@@ -61,131 +148,101 @@ export default function ButtonGrid() {
       const children = await fetchTreeChildren(parent.key);
       setNodes(children);
     }
-  };
+    setGridKey((k) => k + 1);
+  }, [breadcrumb]);
 
   return (
-    <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col p-8 overflow-y-auto no-scrollbar relative pt-0">
-      
+    <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col overflow-hidden relative">
       {/* Top Breadcrumb and Nav Controls */}
-      <div className="flex items-center justify-between mb-8 flex-shrink-0 pt-4">
-        <div className="flex items-center gap-4">
-          <AnimatePresence>
-            {breadcrumb.length > 0 && (
-              <motion.button 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, width: 0, overflow: 'hidden' }}
-                onClick={handleBack}
-                className="flex items-center justify-center p-4 bg-surface-container-high rounded-full hover:bg-surface-variant transition-colors shadow-sm"
-              >
-                <ArrowLeft size={28} weight="bold" className="text-on-surface" />
-              </motion.button>
-            )}
-          </AnimatePresence>
-          
-          <div className="flex items-center gap-2 text-xl font-bold font-headline text-on-surface-variant">
-            <span className={breadcrumb.length === 0 ? "text-primary" : ""}>Needs</span>
-            {breadcrumb.map((b, i) => (
-              <React.Fragment key={b.key}>
-                <span className="opacity-50">/</span>
-                <span className={i === breadcrumb.length - 1 ? "text-primary" : ""}>{b.label}</span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center gap-4 px-2 pb-4 flex-shrink-0">
+        <AnimatePresence>
+          {breadcrumb.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, x: -20, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: "auto" }}
+              exit={{ opacity: 0, x: -20, width: 0 }}
+              onClick={handleBack}
+              className="flex items-center justify-center p-3 bg-surface-container-high rounded-full hover:bg-surface-variant transition-colors shadow-sm shrink-0"
+            >
+              <ArrowLeft size={24} weight="bold" className="text-on-surface" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
-        <div className="flex bg-surface-container p-2 rounded-full shadow-inner border border-outline-variant/10">
-          <button 
-            onClick={() => setMode('core')}
-            className={`flex items-center justify-center p-3 px-6 rounded-full font-bold text-sm tracking-wide transition-all gap-2 ${mode === 'core' ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+        <div className="flex items-center gap-2 text-lg font-bold font-headline text-on-surface-variant overflow-x-auto no-scrollbar">
+          <span
+            className={
+              breadcrumb.length === 0
+                ? "text-primary shrink-0"
+                : "shrink-0 cursor-pointer hover:text-primary transition-colors"
+            }
+            onClick={() => {
+              if (breadcrumb.length > 0) {
+                setBreadcrumb([]);
+                setCurrentNode(null);
+                fetchTreeRoot().then(setNodes);
+                setGridKey((k) => k + 1);
+              }
+            }}
           >
-            <SquaresFour size={20} weight="fill" /> Core
-          </button>
-          <button 
-            onClick={() => setMode('type')}
-            className={`flex items-center justify-center p-3 px-6 rounded-full font-bold text-sm tracking-wide transition-all gap-2 ${mode === 'type' ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
-          >
-            <Keyboard size={20} weight="fill" /> Type
-          </button>
+            Needs
+          </span>
+          {breadcrumb.map((b, i) => (
+            <React.Fragment key={b.key}>
+              <span className="opacity-40 shrink-0">/</span>
+              <span
+                className={
+                  i === breadcrumb.length - 1
+                    ? "text-primary shrink-0"
+                    : "shrink-0 cursor-pointer hover:text-primary transition-colors"
+                }
+                onClick={async () => {
+                  if (i < breadcrumb.length - 1) {
+                    const newBc = breadcrumb.slice(0, i + 1);
+                    setBreadcrumb(newBc);
+                    setCurrentNode(newBc[newBc.length - 1].key);
+                    const children = await fetchTreeChildren(
+                      newBc[newBc.length - 1].key
+                    );
+                    setNodes(children);
+                    setGridKey((k) => k + 1);
+                  }
+                }}
+              >
+                {b.label}
+              </span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
-      {/* Dynamic Grid / Composer Rendering */}
-      {mode === 'core' ? (
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* AI Suggested Quick Actions */}
-          {breadcrumb.length === 0 && predictions.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-6 bg-surface-container-low p-4 rounded-3xl border border-secondary/20 shadow-sm"
-            >
-              <h3 className="text-secondary font-bold text-xs uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                Suggested for {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}
-              </h3>
-              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2">
-                {predictions.map(pred => {
-                  const Icon = getIconComponent(pred.iconName);
-                  return (
-                    <button
-                      key={pred.key}
-                      onClick={() => handleNodeClick(pred)}
-                      className={`flex items-center gap-3 px-6 py-4 rounded-2xl ${pred.colorClass} text-white font-bold shadow-md hover:-translate-y-1 transition-all shrink-0 hover:shadow-lg`}
-                    >
-                      <Icon size={24} weight="fill" />
-                      <span className="whitespace-nowrap">{pred.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          <motion.div 
-            key={currentNode || 'root'}
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-2 md:grid-cols-3 gap-6 flex-1 min-h-[400px] pb-8 content-start"
+      {/* Scrollable Grid */}
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-28 px-1 scroll-smooth" style={{ WebkitOverflowScrolling: "touch" }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={gridKey}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 content-start"
           >
-            {nodes.map(node => {
-              const Icon = getIconComponent(node.iconName);
-              return (
-                <motion.button 
-                  key={node.key}
-                  variants={itemVariants} 
-                  whileHover={{ scale: 1.03, y: -4 }} 
-                  whileTap={{ scale: 0.97 }} 
-                  onClick={() => handleNodeClick(node)}
-                  className={`group flex flex-col items-center justify-center p-8 rounded-[2rem] ${node.colorClass} transition-shadow shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.2)] border-b-[8px] border-black/20 aspect-video md:aspect-auto`}
-                >
-                  <Icon size={72} weight="fill" className="text-white drop-shadow-md group-hover:scale-110 transition-transform mb-4" />
-                  <span className="text-white font-headline font-black text-2xl tracking-wide opacity-95 drop-shadow-sm text-center px-4 leading-tight">{node.label}</span>
-                </motion.button>
-              )
-            })}
+            {nodes.map((node) => (
+              <LazyIconCard
+                key={node.key}
+                node={node}
+                onAdd={handleAdd}
+                onDrillDown={handleDrillDown}
+              />
+            ))}
             {nodes.length === 0 && (
-              <div className="col-span-full flex items-center justify-center p-12 text-on-surface-variant font-bold">
-                No items available in this category.
+              <div className="col-span-full flex items-center justify-center p-12 text-on-surface-variant/50 font-bold text-lg">
+                No items in this category.
               </div>
             )}
           </motion.div>
-        </div>
-      ) : (
-        <IconComposer />
-      )}
-
-      {/* Sentence Streaming Overlay superimposed over the grid */}
-      <AnimatePresence>
-        {isStreaming && (
-          <SentenceOutput 
-            path={streamedPath} 
-            onClose={() => setIsStreaming(false)} 
-            onSpeak={() => console.log('Playing synthesized audio...')} 
-          />
-        )}
-      </AnimatePresence>
-      
+        </AnimatePresence>
+      </div>
     </section>
   );
 }
