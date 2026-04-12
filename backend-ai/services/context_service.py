@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Context assembly — builds a dense system prompt from user data.
 Max 300 tokens, priority-ordered.

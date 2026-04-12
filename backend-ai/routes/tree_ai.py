@@ -49,13 +49,8 @@ async def tree_expand(req: ExpandRequest):
         return result
     except Exception as e:
         logger.error(f"tree_expand failed: {e}")
-        return {
-            "quick_option": {"label": "Help", "icon": "help"},
-            "options": [
-                {"label": "Help", "icon": "help"},
-                {"label": "Try Again", "icon": "redo"},
-            ],
-        }
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail="Options generation failed")
 
 
 @router.post("/api/tree/select")

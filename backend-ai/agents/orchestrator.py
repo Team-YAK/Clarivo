@@ -17,8 +17,7 @@ import time
 import logging
 from datetime import datetime
 from agents.context_agent import fetch_context
-from agents.prediction_agent import generate_options
-from agents.ranking_agent import rank_options
+from agents.crew_config import run_crew_pipeline
 from agents.memory_agent import persist_path
 
 logger = logging.getLogger(__name__)
@@ -96,25 +95,19 @@ async def expand(user_id: str, current_path: list[str]) -> dict:
     ctx_ms = (time.time() - ctx_start) * 1000
     logger.info(f"Orchestrator: Context Agent took {ctx_ms:.0f}ms")
 
-    # 3. Prediction Agent (single LLM call)
-    pred_start = time.time()
-    prediction = await generate_options(current_path, context)
-    pred_ms = (time.time() - pred_start) * 1000
-    logger.info(f"Orchestrator: Prediction Agent took {pred_ms:.0f}ms")
+    # 3. CrewAI Pipeline (Concurrent Context/Personalization -> Generation -> Manager)
+    crew_start = time.time()
+    result = await run_crew_pipeline(current_path, context)
+    crew_ms = (time.time() - crew_start) * 1000
+    logger.info(f"Orchestrator: CrewAI took {crew_ms:.0f}ms")
 
-    # 4. Ranking Agent (pure Python)
-    rank_start = time.time()
-    result = rank_options(prediction, context)
-    rank_ms = (time.time() - rank_start) * 1000
-    logger.info(f"Orchestrator: Ranking Agent took {rank_ms:.0f}ms")
-
-    # 5. Cache the result
+    # 4. Cache the result
     _set_cache(ck, result)
 
     elapsed = (time.time() - start_time) * 1000
     logger.info(
         f"Orchestrator: EXPAND total {elapsed:.0f}ms "
-        f"(ctx={ctx_ms:.0f} + pred={pred_ms:.0f} + rank={rank_ms:.0f})"
+        f"(ctx={ctx_ms:.0f} + crew={crew_ms:.0f})"
     )
 
     return result

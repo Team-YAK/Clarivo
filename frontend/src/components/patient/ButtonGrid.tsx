@@ -4,12 +4,10 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CaretDown, Lightning } from "@phosphor-icons/react";
 import {
-  fetchTreeRoot,
   expandTreeAI,
   selectTreeAI,
   AiOption,
   AiExpandResult,
-  TreeNode,
 } from "@/utils/patientApi";
 import { getIconComponent } from "@/utils/icon-map";
 import { LiquidButton } from "@/components/ui/liquid-glass-button";
@@ -53,11 +51,6 @@ const getColorFromClass = (cls: string) => {
   if (cls.includes("orange")) return "#f97316";
   return "#3b82f6";
 };
-
-// Convert root TreeNode[] into DisplayOption[] (for first-level static tree)
-function treeNodesToDisplayOptions(nodes: TreeNode[]): DisplayOption[] {
-  return nodes.map((n) => ({ key: n.key, label: n.label, icon: n.key }));
-}
 
 // Convert AI result into DisplayOption[]
 function aiResultToDisplayOptions(result: AiExpandResult): {
@@ -197,15 +190,23 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   const [loading, setLoading] = useState(true);
   const [gridKey, setGridKey] = useState(0);
 
-  // Load static root on mount
+  // Load AI root on mount
   useEffect(() => {
-    fetchTreeRoot().then((nodes) => {
+    expandTreeAI([]).then((result) => {
+      if (!result) {
+        setLoading(false);
+        return;
+      }
+      const { options, quickOption } = aiResultToDisplayOptions(result);
       setCurrentFrame({
         path: [],
         pathLabels: [],
-        options: treeNodesToDisplayOptions(nodes),
-        quickOption: null,
+        options,
+        quickOption,
       });
+      setLoading(false);
+    }).catch(err => {
+      console.warn('ButtonGrid initial mount gracefully caught failure:', err);
       setLoading(false);
     });
   }, []);
@@ -227,20 +228,31 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
       setLoading(true);
       setGridKey((k) => k + 1);
 
-      const result = await expandTreeAI(newPath);
-      const { options, quickOption } = aiResultToDisplayOptions(result);
+      try {
+        const result = await expandTreeAI(newPath);
+        if (!result) {
+          console.warn("AI returned null (backend offline or failed).");
+          setLoading(false);
+          setGridKey((k) => k + 1);
+          return;
+        }
+        const { options, quickOption } = aiResultToDisplayOptions(result);
 
-      const newFrame: NavFrame = {
-        path: newPath,
-        pathLabels: [...currentFrame.pathLabels, opt.label],
-        options,
-        quickOption,
-      };
+        const newFrame: NavFrame = {
+          path: newPath,
+          pathLabels: [...currentFrame.pathLabels, opt.label],
+          options,
+          quickOption,
+        };
 
-      setNavStack((prev) => [...prev, currentFrame]);
-      setCurrentFrame(newFrame);
-      setLoading(false);
-      setGridKey((k) => k + 1);
+        setNavStack((prev) => [...prev, currentFrame]);
+        setCurrentFrame(newFrame);
+      } catch (err) {
+        console.error("AI generation failed or is offline.", err);
+      } finally {
+        setLoading(false);
+        setGridKey((k) => k + 1);
+      }
     },
     [currentFrame]
   );
