@@ -201,6 +201,7 @@ export interface AiExpandResult {
 export const expandTreeAI = async (
   currentPath: string[],
   userId: string = DEFAULT_USER_ID,
+  excludeKeys: string[] = [],
 ): Promise<AiExpandResult | null> => {
   try {
     const tapTs = Date.now();
@@ -210,7 +211,7 @@ export const expandTreeAI = async (
         'Content-Type': 'application/json',
         'x-client-tap-ts': String(tapTs),
       },
-      body: JSON.stringify({ user_id: userId, current_path: currentPath }),
+      body: JSON.stringify({ user_id: userId, current_path: currentPath, exclude_keys: excludeKeys }),
     });
     if (!res.ok) throw new Error(`AI expand failed: ${res.status}`);
     return await res.json();

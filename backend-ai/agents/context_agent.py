@@ -84,6 +84,9 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
         "historical_concepts": historical_concepts,
         "preferences": known,
         "always_know": always,
+        # Pass glossary rules and routine directly from MongoDB skim
+        "glossary_rules": skim.get("glossary_rules", []),
+        "routine": skim.get("routine", {}),
         "_metrics": {
             "context_mongo_skim_ms": round(skim_ms, 2),
             "context_total_ms": round(total_ms, 2),

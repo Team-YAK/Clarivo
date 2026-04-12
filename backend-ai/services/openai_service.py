@@ -30,12 +30,13 @@ def get_client() -> AsyncOpenAI:
         _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
-INTENT_SYSTEM = """You are the voice of an aphasia patient. Given the navigation path they selected in their AAC app and their personal context, generate a natural first-person sentence expressing their intent.
+INTENT_SYSTEM = """You are the voice of an aphasia patient using an AAC app. Generate a single natural first-person sentence that expresses what they want to say RIGHT NOW.
 
 Rules:
 - First person only ("I want...", "I feel...", "I need...")
 - One sentence, clear and direct
-- Use their personal context to make it specific and accurate
+- HIGHEST PRIORITY: If a live conversation is provided, the sentence MUST be a direct, contextually relevant response to what was just said. It should make sense as a reply.
+- Use personal context (preferences, corrections) to make the sentence specific, but never at the expense of conversation relevance.
 - Max 20 words
 - Sound natural, not robotic"""
 
@@ -74,20 +75,42 @@ If the user says: "Would you like me to get you a glass of water?"
 You should return: [{"label": "You", "icon": "🫵"}, {"label": "Want", "icon": "❓"}, {"label": "Water", "icon": "💧"}]"""
 
 
-async def stream_intent(path: list[str], context: str, input_mode: str = "tree") -> AsyncGenerator[str, None]:
+async def stream_intent(
+    path: list[str],
+    context: str,
+    input_mode: str = "tree",
+    conversation_utterances: list[dict] | None = None,
+) -> AsyncGenerator[str, None]:
     if input_mode == "composer":
-        # Note: mapping logic ideally resolves against E3, but fallback to Title Case here.
         path_str = " + ".join([p.title() for p in path])
-        user_prompt = f"The patient entered a sequence of icons: {path_str}. Interpret this combination as a single coherent intent using their personal context to make it specific."
+        path_desc = f"The patient combined icons: {path_str}."
     else:
         path_str = " > ".join(path)
-        user_prompt = f"The patient selected: {path_str}"
+        path_desc = f"The patient selected: {path_str}."
+
+    # Build conversation block — this is the PRIMARY signal when present
+    conv_block = ""
+    if conversation_utterances:
+        lines = []
+        for u in conversation_utterances[-6:]:
+            speaker = u.get("speaker", "?")
+            text = (u.get("text") or "").strip()
+            if text:
+                lines.append(f'  {speaker}: "{text}"')
+        if lines:
+            conv_block = (
+                "\n\nLIVE CONVERSATION (respond within this context — highest priority):\n"
+                + "\n".join(lines)
+                + "\n\nGenerate a sentence the patient would naturally say next in THIS conversation."
+            )
+
+    user_prompt = path_desc + conv_block
 
     try:
         stream = await get_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"{INTENT_SYSTEM}\n\nPatient context:\n{context}"},
+                {"role": "system", "content": f"{INTENT_SYSTEM}\n\nPatient background context:\n{context}"},
                 {"role": "user", "content": user_prompt},
             ],
             stream=True,

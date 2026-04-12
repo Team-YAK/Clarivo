@@ -20,6 +20,7 @@ export default function PatientContextManager() {
 
   useEffect(() => {
     fetchProfile().then(data => {
+      if (!data) return;
       // Baselines (Preferences)
       if (data.preferences?.known_preferences) {
         setNeeds(data.preferences.known_preferences.split('. ').filter((s: string) => s.length > 0));

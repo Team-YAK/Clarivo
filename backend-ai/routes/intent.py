@@ -68,48 +68,59 @@ async def intent(req: IntentRequest):
         _fetch_conversation(),
     )
     context = build_context_string(user_data, conversation=active_conv)
+
+    # Extract conversation utterances to pass directly to the LLM (highest-priority signal)
+    conv_utterances: list[dict] = []
+    if active_conv and isinstance(active_conv, dict):
+        conv_utterances = [
+            u for u in (active_conv.get("utterances") or [])
+            if u.get("text", "").strip()
+        ][-6:]
+
     session_id = f"s_{uuid.uuid4().hex[:8]}"
 
     async def event_generator():
         full_sentence = ""
         try:
-            # 1. Check E3 Cache First
-            try:
-                # Mock E3 caching fetch. Note: httpx uses E3_BASE_URL internally. 
-                # For direct routing in this environment we assume:
-                e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
-                async with httpx.AsyncClient(timeout=1.0) as client:
-                    resp = await client.get(f"{e3_url}/api/sentences/cached", params={"user_id": user_id, "path_key": path_key})
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        if data and data.get("sentence"):
-                            # CACHE HIT
-                            sentence = data["sentence"]
-                            yield {"data": json.dumps({"token": sentence})}
-                            confidence = data.get("confidence", 0.95)
-                            session_doc = {
-                                "session_id": session_id, "user_id": user_id, "path": path, "path_key": path_key,
-                                "sentence": sentence, "confidence": confidence, "input_mode": input_mode,
-                            }
-                            pending_sessions[session_id] = session_doc
-                            # Write-through to live sessions (fire-and-forget)
-                            async def _live_push_cache():
-                                try:
-                                    e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
-                                    async with httpx.AsyncClient(timeout=2.0) as c:
-                                        await c.post(f"{e3_url}/api/live/upsert", json=session_doc)
-                                except Exception: pass
-                            asyncio.create_task(_live_push_cache())
-                            yield {"data": json.dumps({
-                                "done": True, "session_id": session_id,
-                                "full_sentence": sentence, "confidence": confidence
-                            })}
-                            return # Exit generator cleanly!
-            except Exception as e:
-                logger.warning(f"Failed cache check: {e}")
+            # 1. Check E3 Cache — skip entirely if there's an active conversation
+            #    (cached sentence was generated without current conversation context)
+            if not conv_utterances:
+                try:
+                    e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+                    async with httpx.AsyncClient(timeout=1.0) as client:
+                        resp = await client.get(f"{e3_url}/api/sentences/cached", params={"user_id": user_id, "path_key": path_key})
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            if data and data.get("sentence"):
+                                # CACHE HIT
+                                sentence = data["sentence"]
+                                yield {"data": json.dumps({"token": sentence})}
+                                confidence = data.get("confidence", 0.95)
+                                session_doc = {
+                                    "session_id": session_id, "user_id": user_id, "path": path, "path_key": path_key,
+                                    "sentence": sentence, "confidence": confidence, "input_mode": input_mode,
+                                }
+                                pending_sessions[session_id] = session_doc
+                                async def _live_push_cache():
+                                    try:
+                                        e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+                                        async with httpx.AsyncClient(timeout=2.0) as c:
+                                            await c.post(f"{e3_url}/api/live/upsert", json=session_doc)
+                                    except Exception: pass
+                                asyncio.create_task(_live_push_cache())
+                                yield {"data": json.dumps({
+                                    "done": True, "session_id": session_id,
+                                    "full_sentence": sentence, "confidence": confidence
+                                })}
+                                return
+                except Exception as e:
+                    logger.warning(f"Failed cache check: {e}")
 
-            # 2. CACHE MISS. Proceed with OpenAI.
-            async for token in stream_intent(path, context, input_mode=input_mode):
+            # 2. Generate with OpenAI — pass conversation utterances as primary signal
+            async for token in stream_intent(
+                path, context, input_mode=input_mode,
+                conversation_utterances=conv_utterances if conv_utterances else None,
+            ):
                 full_sentence += token
                 yield {"data": json.dumps({"token": token})}
 
@@ -138,17 +149,19 @@ async def intent(req: IntentRequest):
                 except Exception: pass
             asyncio.create_task(live_push())
 
-            # 4. Write sentence cache asyncly
-            async def cache_push():
-                try:
-                    e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
-                    async with httpx.AsyncClient(timeout=2.0) as client:
-                        await client.post(f"{e3_url}/api/sentences/cache", json={
-                            "user_id": user_id, "path_key": path_key, "sentence": full_sentence,
-                            "confidence": confidence, "input_mode": input_mode, "personalized": True
-                        })
-                except Exception: pass
-            asyncio.create_task(cache_push())
+            # 4. Write sentence cache — skip if generated within a conversation
+            #    (conversation-specific sentences must not be served as generic cached replies)
+            if not conv_utterances:
+                async def cache_push():
+                    try:
+                        e3_url = os.getenv("E3_BASE_URL", "http://localhost:8002")
+                        async with httpx.AsyncClient(timeout=2.0) as client:
+                            await client.post(f"{e3_url}/api/sentences/cache", json={
+                                "user_id": user_id, "path_key": path_key, "sentence": full_sentence,
+                                "confidence": confidence, "input_mode": input_mode, "personalized": True
+                            })
+                    except Exception: pass
+                asyncio.create_task(cache_push())
 
             # Local cleanup after 10 minutes (MongoDB TTL handles its own expiry)
             async def cleanup():

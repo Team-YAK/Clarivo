@@ -55,6 +55,11 @@ export default function PatientScreen() {
   const [undoHistory, setUndoHistory] = useState<StackItem[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [drawingMode, setDrawingMode] = useState(false);
+  // Increments whenever partner input is translated — signals ButtonGrid to re-fetch
+  const [conversationVersion, setConversationVersion] = useState(0);
+  const handlePartnerTranslation = useCallback(() => {
+    setConversationVersion((v) => v + 1);
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -183,7 +188,7 @@ export default function PatientScreen() {
                   }, 100);
                 }} />
               ) : (
-                <ButtonGrid onAddToStack={handleAddToStack} />
+                <ButtonGrid onAddToStack={handleAddToStack} conversationVersion={conversationVersion} />
               )}
             </div>
           </div>
@@ -191,7 +196,7 @@ export default function PatientScreen() {
           {/* Partner Area (Right 50%) */}
           <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6">
             <div className="h-full flex flex-col">
-              <PartnerPanel />
+              <PartnerPanel onTranslationComplete={handlePartnerTranslation} />
             </div>
           </div>
         </div>

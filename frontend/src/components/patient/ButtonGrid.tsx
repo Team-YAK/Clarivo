@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowCounterClockwise, CaretDown } from "@phosphor-icons/react";
 import {
   expandTreeAI,
 } from "@/utils/patientApi";
@@ -22,6 +22,7 @@ export interface StackAddEvent {
 
 interface ButtonGridProps {
   onAddToStack: (item: StackAddEvent) => void;
+  conversationVersion?: number;
 }
 
 // ── Navigation frame ───────────────────────────────────────────
@@ -164,7 +165,7 @@ function OptionCard({
 }
 
 // ── Main ButtonGrid ────────────────────────────────────────────
-export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
+export default function ButtonGrid({ onAddToStack, conversationVersion = 0 }: ButtonGridProps) {
   const [navStack, setNavStack] = useState<NavFrame[]>([]);
   const [currentFrame, setCurrentFrame] = useState<NavFrame>({
     path: [],
@@ -174,6 +175,10 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   });
   const [loading, setLoading] = useState(true);
   const [gridKey, setGridKey] = useState(0);
+  // Refresh state — stores the pre-refresh frame so user can cycle back
+  const [preRefreshFrame, setPreRefreshFrame] = useState<NavFrame | null>(null);
+  const [isRefreshed, setIsRefreshed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Load AI root on mount
   useEffect(() => {
@@ -195,6 +200,33 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
       setLoading(false);
     });
   }, []);
+
+  // Re-fetch current path silently when conversation context updates
+  // Uses the same refreshing state as the manual refresh button (no full skeleton)
+  const currentFrameRef = useRef(currentFrame);
+  useEffect(() => { currentFrameRef.current = currentFrame; }, [currentFrame]);
+
+  useEffect(() => {
+    if (conversationVersion === 0 || loading) return;
+    let cancelled = false;
+    setRefreshing(true);
+    expandTreeAI(currentFrameRef.current.path).then((result) => {
+      if (cancelled || !result) return;
+      const normalized = normalizeAiExpandResult(result);
+      setCurrentFrame((prev) => ({
+        ...prev,
+        options: normalized.options,
+        quickOption: normalized.quickOption,
+      }));
+      setPreRefreshFrame(null);
+      setIsRefreshed(false);
+      setGridKey((k) => k + 1);
+    }).catch(() => {}).finally(() => {
+      if (!cancelled) setRefreshing(false);
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationVersion]);
 
   // SELECT
   const handleSelect = useCallback(
@@ -230,6 +262,8 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
 
         setNavStack((prev) => [...prev, currentFrame]);
         setCurrentFrame(newFrame);
+        setPreRefreshFrame(null);
+        setIsRefreshed(false);
       } catch (err) {
         console.warn("AI generation failed or is offline.", err);
       } finally {
@@ -247,8 +281,50 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
     const prev = stack.pop()!;
     setNavStack(stack);
     setCurrentFrame(prev);
+    setPreRefreshFrame(null);
+    setIsRefreshed(false);
     setGridKey((k) => k + 1);
   }, [navStack]);
+
+  // REFRESH — fetch alternative options excluding the current ones (cycles back on second tap)
+  const handleRefresh = useCallback(async () => {
+    if (refreshing || loading) return;
+
+    // Second tap: restore original options
+    if (isRefreshed && preRefreshFrame) {
+      setCurrentFrame(preRefreshFrame);
+      setPreRefreshFrame(null);
+      setIsRefreshed(false);
+      setGridKey((k) => k + 1);
+      return;
+    }
+
+    // First tap: request fresh alternatives excluding current option keys
+    const currentKeys = [
+      ...(currentFrame.quickOption ? [currentFrame.quickOption.key] : []),
+      ...currentFrame.options.map((o) => o.key),
+    ];
+
+    setRefreshing(true);
+    setGridKey((k) => k + 1);
+    try {
+      const result = await expandTreeAI(currentFrame.path, undefined, currentKeys);
+      if (!result) return;
+      const normalized = normalizeAiExpandResult(result);
+      setPreRefreshFrame(currentFrame);
+      setCurrentFrame((prev) => ({
+        ...prev,
+        options: normalized.options,
+        quickOption: normalized.quickOption,
+      }));
+      setIsRefreshed(true);
+      setGridKey((k) => k + 1);
+    } catch (err) {
+      console.warn("Refresh failed", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [currentFrame, isRefreshed, preRefreshFrame, refreshing, loading]);
 
   const depth = currentFrame.path.length;
   return (
@@ -308,6 +384,34 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               className="flex items-center justify-center w-8 h-8 glass-card rounded-full hover:border-outline-variant/40 transition-all shrink-0"
             >
               <ArrowLeft size={18} weight="bold" className="text-on-surface" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Refresh button — always visible, cycles between original and alternative options */}
+        <AnimatePresence>
+          {!loading && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title={isRefreshed ? "Restore original options" : "Shuffle for different options"}
+              className={[
+                "flex items-center justify-center w-8 h-8 glass-card rounded-full transition-all shrink-0 ml-auto",
+                isRefreshed
+                  ? "border-primary/40 text-primary"
+                  : "hover:border-outline-variant/40 text-on-surface-variant",
+                refreshing ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+              ].join(" ")}
+            >
+              <motion.div
+                animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+                transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: "linear" } : {}}
+              >
+                <ArrowCounterClockwise size={16} weight="bold" />
+              </motion.div>
             </motion.button>
           )}
         </AnimatePresence>

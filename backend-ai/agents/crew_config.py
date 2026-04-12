@@ -117,7 +117,7 @@ async def personalization_agent(context_data: dict) -> dict:
     }
 
 
-async def generation_agent(context_slice: dict, personalization_slice: dict, user_id: str = DEFAULT_USER_ID) -> tuple[dict, float]:
+async def generation_agent(context_slice: dict, personalization_slice: dict, user_id: str = DEFAULT_USER_ID, exclude_keys: list = []) -> tuple[dict, float]:
     # Try dynamic prompts first
     sys_prompt = await get_prompt("generation_sys", user_id)
     hu_prompt = await get_prompt("generation_hu", user_id)
@@ -162,6 +162,11 @@ async def generation_agent(context_slice: dict, personalization_slice: dict, use
         meal_parts = [f'{name} at {time}' for name, time in meals.items()]
         routine_section = f"Daily schedule: {', '.join(meal_parts)}\n"
 
+    # Build exclude section — used during refresh to force alternative options
+    exclude_section = ""
+    if exclude_keys:
+        exclude_section = f"Do NOT generate any of these concepts again (user wants fresh alternatives): {json.dumps(exclude_keys)}\n"
+
     hu_msg = (
         f"{hu_base}\n\n"
         f"Current path: {json.dumps(context_slice.get('current_path', []))}\n"
@@ -174,11 +179,15 @@ async def generation_agent(context_slice: dict, personalization_slice: dict, use
         f"Always know: {personalization_slice.get('always_know', '')}\n"
         f"{glossary_section}"
         f"{routine_section}"
+        f"{exclude_section}"
     )
+
+    # Use higher temperature when refreshing to generate meaningfully different alternatives
+    temperature = 0.75 if exclude_keys else 0.2
 
     start = time.perf_counter()
     try:
-        res_text = await _chat_once(sys_msg, hu_msg, max_tokens=1000, temperature=0.2)
+        res_text = await _chat_once(sys_msg, hu_msg, max_tokens=1000, temperature=temperature)
     except Exception as e:
         logger.warning(f"generation agent fallback due to LLM error: {e}")
         res_text = ""
@@ -275,10 +284,16 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
             "3. COMBINE 2 to 3 emojis to create clearer meanings (e.g., 'hot tea' -> 🍵🔥, 'tired' -> 🥱🛌, 'hospital' -> 🏥🚑, 'sad' -> 😢💔). HOWEVER, if a single emoji perfectly conveys the exact concept, using just one is perfectly fine and encouraged to prevent clutter.\n"
 
             "4. Keep it to a maximum of 3 emojis per concept to prevent visual clutter.\n"
-            "5. Number 1 priority is conveying the message clearly through emojis.\n"
-            "6. ACCURACY: Use the Core Emoji Reference below as your source of truth for base concepts. "
-            "For example, if the concept is 'drink', ALWAYS include a beverage-related emoji from the reference or common knowledge. "
-            "NEVER use unrelated food (like cakes/desserts) for drinks."
+            "5. Number 1 priority is conveying the message clearly through emojis — accuracy is non-negotiable.\n"
+            "6. SEMANTIC ACCURACY RULES:\n"
+            "   - For DESSERT/SWEETS: Use 🍰🎂🧁🍪🍩🍫🍦🍮 (sweet treats only). NEVER use savory vegetables like 🍠🥔🌽.\n"
+            "   - For BEVERAGES: Use 🍵☕🥤🧃🧋🍷🍺🥛 (drinks only). NEVER use food.\n"
+            "   - For MEAT/PROTEIN: Use 🍖🥩🍗🥓🍤🦐 (meat items). NEVER use vegetables.\n"
+            "   - For VEGETABLES: Use 🥦🥬🥒🌽🥕🧅🥒 (vegetables/produce). NOT sweets.\n"
+            "   - For BREAKFAST: 🥐🥞🍳🥣 (breakfast foods). NEVER dinner items.\n"
+            "   - For LUNCH/DINNER: 🍝🍕🍔🌮🍲 (main meals). Match the specific cuisine.\n"
+            "7. Use the Core Emoji Reference below as your source of truth — always prefer reference emojis when available.\n"
+            "8. If uncertain about semantic fit, err toward MORE specific combinations (e.g., for 'coffee' use ☕ or ☕🫘, not just 🥤)."
         )
 
         sys_msg += f"\n\nCORE EMOJI REFERENCE (Authoritative):\n{ref_formatted}\n\nReturn ONLY a flat JSON object: {{\"id\": \"emoji_combo\"}}. No markdown, no explanation."
@@ -365,7 +380,7 @@ def manager_agent(result: dict) -> dict:
 
 
 
-async def run_crew_pipeline(current_path: list[str], context_data: dict) -> dict:
+async def run_crew_pipeline(current_path: list[str], context_data: dict, exclude_keys: list = []) -> dict:
     async def _timed(coro):
         start = time.perf_counter()
         value = await coro
@@ -377,7 +392,7 @@ async def run_crew_pipeline(current_path: list[str], context_data: dict) -> dict
     )
 
     user_id = context_data.get("user_id", "alex_demo")
-    generated, generation_ttft_ms = await generation_agent(context_slice, personalization_slice, user_id=user_id)
+    generated, generation_ttft_ms = await generation_agent(context_slice, personalization_slice, user_id=user_id, exclude_keys=exclude_keys)
     generated["_user_id"] = user_id  # Pass along for icon agent
     resolved, icon_resolve_ms = await icon_agent(generated)
 

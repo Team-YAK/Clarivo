@@ -73,7 +73,7 @@ export default function CaregiverOverview() {
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
-    fetchCaregiverPanel().then(setPanelData).catch(console.error);
+    fetchCaregiverPanel().then(data => { if (data) setPanelData(data); });
   }, []);
 
   // --- Dynamic Mocks affected by Time-Travel Slider ---

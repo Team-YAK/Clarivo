@@ -21,6 +21,7 @@ router = APIRouter()
 class ExpandRequest(BaseModel):
     user_id: str = DEFAULT_USER_ID
     current_path: List[str] = []
+    exclude_keys: List[str] = []  # Keys to exclude (used for refresh alternative generation)
 
 
 # ── Endpoints ────────────────────────────────────────────────
@@ -44,7 +45,7 @@ async def tree_expand(req: ExpandRequest, request: Request):
             tap_to_backend_ms = None
 
     try:
-        result = await expand(req.user_id, req.current_path)
+        result = await expand(req.user_id, req.current_path, exclude_keys=req.exclude_keys)
         timings = result.get("_timings", {})
         total_ms = round((time.perf_counter() - started) * 1000, 2)
         log_line = {

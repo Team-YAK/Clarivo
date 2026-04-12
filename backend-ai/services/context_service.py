@@ -58,20 +58,6 @@ def build_context_string(user_data: dict, conversation: dict | None = None) -> s
             sections.append(glossary_text)
             budget -= cost
 
-    # 0.5. Current conversation — inject last 3–5 utterances at high priority
-    if conversation and isinstance(conversation, dict):
-        utterances = conversation.get("utterances", [])[-5:]
-        if utterances:
-            parts = [f"{u.get('speaker', '?')}: \"{u.get('text', '')}\"" for u in utterances if u.get('text')]
-            if parts:
-                conv_text = "Current conversation: " + " | ".join(parts)
-                if len(conv_text) > 300:
-                    conv_text = conv_text[:300]
-                cost = _count_tokens(conv_text)
-                if cost <= budget:
-                    sections.append(conv_text)
-                    budget -= cost
-
     # 1. Corrections — high priority
     if corrections:
         lines = []

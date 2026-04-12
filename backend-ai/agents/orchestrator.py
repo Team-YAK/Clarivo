@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # ── EXPAND ───────────────────────────────────────────────────
 
-async def expand(user_id: str, current_path: list[str]) -> dict:
+async def expand(user_id: str, current_path: list[str], exclude_keys: list[str] | None = None) -> dict:
     """
     Full pipeline: Context → Prediction → Ranking.
     Returns: { quick_option: {...}, options: [...] }
@@ -28,7 +28,7 @@ async def expand(user_id: str, current_path: list[str]) -> dict:
     context_metrics = context.pop("_metrics", {})
 
     # 3. CrewAI Pipeline (Concurrent Context/Personalization -> Generation -> Manager)
-    result = await run_crew_pipeline(current_path, context)
+    result = await run_crew_pipeline(current_path, context, exclude_keys=exclude_keys or [])
     crew_metrics = result.pop("_timings", {})
 
     elapsed = (time.perf_counter() - start_perf) * 1000

@@ -32,23 +32,35 @@ export const updateAlertSettings = async (settings: AlertSettings, userId: strin
   return await res.json();
 };
 
-export const fetchCaregiverPanel = async (userId: string = DEFAULT_USER_ID): Promise<CaregiverPanel> => {
-  const res = await fetch(`${DATA_BASE_URL}/api/caregiver/panel?user_id=${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch caregiver panel');
-  return await res.json();
+export const fetchCaregiverPanel = async (userId: string = DEFAULT_USER_ID): Promise<CaregiverPanel | null> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/caregiver/panel?user_id=${userId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return null;
+  }
 };
 
 export const fetchSessionHistory = async (userId: string = DEFAULT_USER_ID): Promise<Session[]> => {
-  const res = await fetch(`${DATA_BASE_URL}/api/sessions/history?user_id=${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch session history');
-  const data = await res.json();
-  return data.sessions || [];
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/sessions/history?user_id=${userId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.sessions || [];
+  } catch {
+    return [];
+  }
 };
 
-export const fetchInsights = async (userId: string = DEFAULT_USER_ID): Promise<InsightsResponse> => {
-  const res = await fetch(`${DATA_BASE_URL}/api/insights?user_id=${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch insights');
-  return await res.json();
+export const fetchInsights = async (userId: string = DEFAULT_USER_ID): Promise<InsightsResponse | null> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/insights?user_id=${userId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return null;
+  }
 };
 
 export const submitContextAnswer = async (questionId: string, answer: string, userId: string = DEFAULT_USER_ID) => {
@@ -71,16 +83,24 @@ export const submitFeedback = async (sessionId: string, thumbsUp: boolean, corre
   return await res.json();
 };
 
-export const fetchDigest = async (userId: string = DEFAULT_USER_ID): Promise<{ summary: string }> => {
-  const res = await fetch(`${AI_BASE_URL}/api/digest?user_id=${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch digest');
-  return await res.json();
+export const fetchDigest = async (userId: string = DEFAULT_USER_ID): Promise<{ summary: string } | null> => {
+  try {
+    const res = await fetch(`${AI_BASE_URL}/api/digest?user_id=${userId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return null;
+  }
 };
 
-export const fetchProfile = async (userId: string = DEFAULT_USER_ID): Promise<any> => {
-  const res = await fetch(`${DATA_BASE_URL}/api/profile?user_id=${userId}`);
-  if (!res.ok) throw new Error('Failed to fetch profile');
-  return await res.json();
+export const fetchProfile = async (userId: string = DEFAULT_USER_ID): Promise<any | null> => {
+  try {
+    const res = await fetch(`${DATA_BASE_URL}/api/profile?user_id=${userId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return null;
+  }
 };
 
 export const updateProfileField = async (field: string, value: any, userId: string = DEFAULT_USER_ID) => {
