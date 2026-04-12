@@ -6,9 +6,8 @@ import WordStack, { StackItem } from "@/components/patient/WordStack";
 import SentenceOutput from "@/components/patient/SentenceOutput";
 import PartnerPanel from "@/components/patient/PartnerPanel";
 import { Desktop, FlowerLotus } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { GlowCard } from "@/components/ui/spotlight-card";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 let idCounter = 0;
@@ -31,7 +30,7 @@ export default function PatientScreen() {
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
     const newPercent = (e.clientX / window.innerWidth) * 100;
-    if (newPercent >= 20 && newPercent <= 80) {
+    if (newPercent >= 50 && newPercent <= 80) {
       setSplitPercent(newPercent);
     }
   }, [isResizing]);
@@ -152,36 +151,34 @@ export default function PatientScreen() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex w-full h-full pt-14 overflow-hidden select-none">
+      <main className={`flex w-full h-full pt-14 overflow-hidden ${isResizing ? 'cursor-col-resize select-none' : 'select-none'}`}>
         {/* Patient Area (Left) */}
-        <motion.div
-          layout
-          style={{ width: `${splitPercent}%` }}
-          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+        <div
+          style={{ width: `${splitPercent}%`, transition: isResizing ? 'none' : 'width 0.05s ease' }}
+          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4 shrink-0"
         >
           <div className="h-full flex flex-col">
             <ButtonGrid onAddToStack={handleAddToStack} />
           </div>
-        </motion.div>
+        </div>
 
         {/* Vertical Resizable Separator */}
         <div 
           onMouseDown={startResizing}
-          className={`w-1.5 h-full bg-surface-container-high shadow-inner shrink-0 relative transition-colors duration-200 cursor-col-resize hover:bg-primary/20 hover:w-2 active:bg-primary/40 ${isResizing ? 'bg-primary/30 w-2' : ''}`}
+          className={`w-1.5 h-full bg-surface-container-high shadow-inner shrink-0 relative cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors duration-100 ${isResizing ? 'bg-primary/30' : ''}`}
         >
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-12 bg-outline-variant/40 rounded-full" />
         </div>
 
         {/* Partner Area (Right) */}
-        <motion.div
-          layout
-          style={{ width: `${100 - splitPercent}%` }}
-          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+        <div
+          style={{ width: `${100 - splitPercent}%`, transition: isResizing ? 'none' : 'width 0.05s ease' }}
+          className="h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4 shrink-0"
         >
           <div className="h-full flex flex-col">
             <PartnerPanel />
           </div>
-        </motion.div>
+        </div>
       </main>
 
       {/* Word Stack Bar (Fixed Bottom) */}

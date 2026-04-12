@@ -43,7 +43,7 @@ function getIconColor(option: DisplayOption, index: number): string {
 // ── Skeleton card ──────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="aspect-square w-full rounded-3xl shimmer-skeleton" />
+    <div className="aspect-[4/3] w-full rounded-3xl shimmer-skeleton" />
   );
 }
 
@@ -90,7 +90,7 @@ function OptionCard({
   );
 
   return (
-    <div ref={ref} className="relative group aspect-square w-full">
+    <div ref={ref} className="relative group aspect-[4/3] w-full">
       {isVisible && Icon ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.88, y: 10 }}
@@ -102,14 +102,14 @@ function OptionCard({
             onClick={() => onSelect(option)}
             whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.18, ease: "easeOut" } }}
             whileTap={{ scale: 0.95 }}
-            className="relative w-full aspect-square rounded-3xl liquid-glass-card flex items-center justify-center cursor-pointer overflow-visible"
+            className="relative w-full aspect-[4/3] rounded-3xl liquid-glass-card flex items-center justify-center cursor-pointer overflow-visible"
             style={{ '--depth-color': color } as React.CSSProperties}
             aria-label={option.label}
           >
-            {/* Icon container — 74% of card, 13% padding so every glyph is identically sized */}
+            {/* Icon container — Widen to fit multiple emojis if needed */}
             <div
-              className="aspect-square flex items-center justify-center"
-              style={{ width: '74%', padding: '13%' }}
+              className="w-full h-full flex items-center justify-center overflow-hidden"
+              style={{ padding: '8%', height: '70%', containerType: 'inline-size' }}
             >
               <Icon
                 weight="fill"
@@ -150,7 +150,7 @@ function OptionCard({
           </button>
         </motion.div>
       ) : (
-        <div className="w-full aspect-square rounded-3xl shimmer-skeleton" />
+        <div className="w-full aspect-[4/3] rounded-3xl shimmer-skeleton" />
       )}
     </div>
   );
@@ -317,7 +317,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 content-start px-4 md:px-8 pb-12"
             >
               {Array.from({ length: 8 }).map((_, i) => (
                 <SkeletonCard key={i} />
@@ -330,7 +330,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 content-start px-4 md:px-8 pb-12"
             >
               {currentFrame.quickOption && (
                 <OptionCard

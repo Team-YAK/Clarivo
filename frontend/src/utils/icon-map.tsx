@@ -976,17 +976,28 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
       .join("");
 
   // New backend payload: emoji (native text rendering)
-  if (key && (/\p{Emoji}/u.test(key) || Array.from(key).length <= 2)) {
+  if (key && (/\p{Emoji}/u.test(key) || Array.from(key).length <= 5)) {
     const EmojiIcon = (props: { className?: string; style?: React.CSSProperties; color?: string; weight?: string; size?: number | string }) => {
+      // Calculate length of the emoji combo (a rough approximation since ZWJ sequences can be complex,
+      // but Array.from works decently for visual blocks)
+      const len = Math.max(1, Array.from(key).length);
+      
       return (
         <span
           className={props.className}
           style={{
-            display: "inline-flex",
+            display: "flex",
+            flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: props.size !== undefined ? props.size : "3.5rem",
-            transform: "translateY(2%)", // minor optical alignment
+            width: "100%",
+            height: "100%",
+            lineHeight: 1.1,
+            whiteSpace: "nowrap",
+            // To fit `len` emojis horizontally, font-size must not exceed 100/len% of width (cqi).
+            // To fit vertically, font-size must not exceed 100% of height (cqb).
+            fontSize: `min(${100 / len}cqi, 100cqb, 100%)`,
+            ...(props.size !== undefined ? { fontSize: `${props.size}px`, width: "auto", height: "auto" } : {}),
             ...props.style,
           }}
         >

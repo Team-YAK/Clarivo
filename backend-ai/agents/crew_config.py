@@ -16,14 +16,13 @@ import logging
 import os
 import re
 import time
+import unicodedata
 
 from dotenv import load_dotenv
 try:
     from openai import AsyncOpenAI
 except ImportError:  # pragma: no cover - exercised in envs without optional deps
     AsyncOpenAI = None
-
-from services.icon_dictionary import ICON_DICTIONARY, ICON_NAMES
 
 load_dotenv()
 if os.getenv("OPENAI_API_KEY"):
@@ -58,98 +57,6 @@ SYNONYM_HINTS: dict[str, list[str]] = {
     "pain": ["hurt", "ache", "sore"],
 }
 
-
-def _clean_json(raw: str) -> str:
-    text = raw.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    return text.strip()
-
-
-def _tokenize(text: str) -> list[str]:
-    return [t for t in re.split(r"[^a-z0-9]+", text.lower()) if t]
-
-
-def _label_limit(label: str) -> str:
-    words = [w for w in re.split(r"\s+", label.strip()) if w]
-    if not words:
-        return ""
-    return " ".join(words[:2]).title()
-
-
-def _concept_to_key(concept: str) -> str:
-    return "-".join(_tokenize(concept))
-
-
-def _semantic_key(*parts: str) -> str:
-    for part in parts:
-        key = _concept_to_key(part)
-        if key:
-            return key
-    return ""
-
-
-def _score_candidate(concept: str, candidate: str) -> float:
-    concept_tokens = set(_tokenize(concept))
-    haystack = f"{candidate}"
-    cand_tokens = set(_tokenize(haystack))
-    if not concept_tokens:
-        return 0.0
-
-    overlap = concept_tokens.intersection(cand_tokens)
-    base = float(len(overlap))
-
-    # Bonus for direct key/token prefix matches
-    for token in concept_tokens:
-        if candidate.startswith(token):
-            base += 0.9
-        if token in candidate:
-            base += 0.4
-
-    return base
-
-
-def _prefilter_candidates(concept: str, limit: int = 80) -> list[str]:
-    scored: list[tuple[float, str]] = []
-    for key in ICON_NAMES:
-        score = _score_candidate(concept, key)
-        if score > 0:
-            scored.append((score, key))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    if scored:
-        return [k for _, k in scored[:limit]]
-
-    # Extremely rare: no lexical overlap found
-    key = _concept_to_key(concept)
-    starts = [k for k in ICON_NAMES if k.startswith(key[:2])]
-    return starts[:limit] if starts else list(ICON_NAMES[:limit])
-
-
-def _attempt_reword_match(concept: str) -> str | None:
-    base_key = _concept_to_key(concept)
-    variants = {base_key, base_key.replace("-", "")}
-    tokens = _tokenize(concept)
-    if tokens:
-        singular = tokens[:-1] + [tokens[-1].rstrip("s")]
-        variants.add("-".join(singular))
-
-    for token in tokens:
-        for hint in SYNONYM_HINTS.get(token, []):
-            variants.add(hint)
-            variants.add(hint.replace(" ", "-"))
-
-    for variant in variants:
-        if variant in ICON_DICTIONARY:
-            return ICON_DICTIONARY[variant]
-    return None
-
-def _is_valid_icon_payload(icon_value: str) -> bool:
-    # Any string containing an emoji or extended unicode is considered valid
-    return bool(icon_value and any(ord(c) > 127 for c in icon_value)) or icon_value in ICON_DICTIONARY.values()
 
 
 async def context_agent(context_data: dict) -> dict:
@@ -225,70 +132,104 @@ async def generation_agent(context_slice: dict, personalization_slice: dict) -> 
     return parsed, round(first_token_ms, 2)
 
 
+def _is_emoji(text: str) -> bool:
+    """Return True if the string contains at least one emoji/unicode char."""
+    return bool(text) and any(ord(c) > 127 for c in text)
+
+
+def _first_grapheme(text: str) -> str:
+    """Extract the first full grapheme cluster (emoji) from a string."""
+    if not text:
+        return ""
+    # Walk codepoints and grab until we hit a non-combining character after the first base
+    import unicodedata
+    result = []
+    for ch in text:
+        if not result:
+            result.append(ch)
+        else:
+            cat = unicodedata.category(ch)
+            # Variation selectors, combiners, ZWJ, joiners — all part of the same grapheme
+            if cat in ("Mn", "Mc", "Me", "Cf") or ord(ch) in (0xFE0E, 0xFE0F) or ch == '\u200D':
+                result.append(ch)
+            else:
+                break  # start of next grapheme
+    return "".join(result)
+
+
+
 async def icon_agent(generated: dict) -> tuple[dict, float]:
+    """LLM-driven emoji resolver that guarantees a unique emoji per option."""
     start = time.perf_counter()
 
     options = generated.get("options", [])
     quick = generated.get("quick_option", {})
 
-    concept_rows = []
-    for idx, item in enumerate(options):
-        concept = (item.get("concept") or item.get("label") or "").strip()
-        if concept:
-            concept_rows.append({"id": f"opt_{idx}", "concept": concept})
-
+    # Build ordered concept list: quick first, then options
+    items: list[dict] = []
     if quick:
-        qconcept = (quick.get("concept") or quick.get("label") or "").strip()
-        if qconcept:
-            concept_rows.append({"id": "quick", "concept": qconcept})
+        items.append({"id": "quick", "concept": (quick.get("concept") or quick.get("label") or "").strip()})
+    for idx, opt in enumerate(options):
+        items.append({"id": f"opt_{idx}", "concept": (opt.get("concept") or opt.get("label") or "").strip()})
 
-    pools = {row["id"]: _prefilter_candidates(row["concept"]) for row in concept_rows}
-
-    shortlist_map: dict[str, list[str]] = {}
-    if concept_rows:
+    # Ask the LLM to assign a contextually specific emoji combination for each concept
+    emoji_map: dict[str, str] = {}
+    if items:
+        concepts_formatted = "\n".join(f"- id: {it['id']}, concept: {it['concept']}" for it in items)
         sys_msg = (
-            "You are selecting icon names. For each concept, choose 10-15 best icon keys "
-            "from the provided candidate pool only. Return JSON object: "
-            "{\"shortlists\":{\"id\":[\"icon-a\",\"icon-b\"]}}."
+            "You are an expert Emoji Communicator for an aphasia communication app. "
+            "Your critical goal is to convey the exact meaning of each concept to patients using ONLY emojis. "
+            "Because patients with aphasia rely heavily on visual cues, your emoji combinations must be highly expressive, clear, and unmistakable.\n"
+            "CRITICAL RULES — violating any will break the app:\n"
+            "1. Each value MUST be exactly 1 to 3 emoji characters combined (no text, no spaces, no punctuation).\n"
+            "2. ZERO duplicates allowed — every concept MUST have a completely different emoji combination.\n"
+            "3. COMBINE emojis to create clearer meanings. E.g., 'hot tea' -> 🍵🔥, 'tired' -> 🥱🛌, 'hospital' -> 🏥🚑, 'sad' -> 😢💔.\n"
+            "4. Keep it to a maximum of 3 emojis per concept to prevent visual clutter.\n"
+            "5. Number 1 priority is conveying the message clearly through emojis.\n"
+            "6. If you struggle to find a unique combination, use a unique color dot as a last resort: 🔴🟠🟡🟢🔵🟣.\n"
+            "Return ONLY a flat JSON object: {\"id\": \"emoji_combo\"}. No markdown, no explanation."
         )
-        hu_msg = json.dumps({"concepts": concept_rows, "pools": pools})
+        hu_msg = f"Concepts to assign unique emoji combinations to:\n{concepts_formatted}"
         try:
-            raw = await _chat_once(sys_msg, hu_msg, max_tokens=350, temperature=0.0)
+            raw = await _chat_once(sys_msg, hu_msg, max_tokens=180, temperature=0.0)
             parsed = json.loads(_clean_json(raw))
             if isinstance(parsed, dict):
-                shortlist_map = parsed.get("shortlists", {}) or {}
+                emoji_map = parsed
         except Exception as e:
-            logger.warning(f"icon shortlist fallback: {e}")
+            logger.warning(f"icon_agent emoji LLM call failed: {e}")
 
+    # Deduplicate: if LLM still returned duplicates, replace them from fallback list
+    used: set[str] = set()
+    fallback_idx = 0
+    final_map: dict[str, str] = {}
+    for it in items:
+        # Strip any accidental ASCII text/spaces
+        raw_emoji = emoji_map.get(it["id"], "").strip()
+        emoji = "".join(c for c in raw_emoji if ord(c) > 127)
+        # Limit to first 3 "components" roughly, using grapheme could be too restrictive or slow here,
+        # but since we filtered non-emoji characters, sticking to the raw characters (up to 6 chars 
+        # to allow complex 3-emoji combos with ZWJ) is safe enough.
+        emoji = emoji[:8]
+
+        if not _is_emoji(emoji) or emoji in used:
+            # Assign a guaranteed unique fallback
+            while fallback_idx < len(FALLBACK_EMOJIS) and FALLBACK_EMOJIS[fallback_idx] in used:
+                fallback_idx += 1
+            emoji = FALLBACK_EMOJIS[fallback_idx] if fallback_idx < len(FALLBACK_EMOJIS) else "🔘"
+            fallback_idx += 1
+        used.add(emoji)
+        final_map[it["id"]] = emoji
+
+    # Apply emojis back
     resolved = {"quick_option": quick, "options": options}
-
-    def _resolve_icon(concept: str, row_id: str) -> str:
-        candidates = shortlist_map.get(row_id) or pools.get(row_id, [])[:12]
-        scored = [(c, _score_candidate(concept, c)) for c in candidates if c in ICON_DICTIONARY]
-        scored.sort(key=lambda x: x[1], reverse=True)
-        if scored and scored[0][1] >= 1.25:
-            return ICON_DICTIONARY[scored[0][0]]
-
-        reword = _attempt_reword_match(concept)
-        if reword:
-            return reword
-
-        return "🔘" # fallback generic emoji
-
-    for idx, opt in enumerate(resolved.get("options", [])):
-        concept = (opt.get("concept") or opt.get("label") or "").strip()
-        opt["icon"] = _resolve_icon(concept, f"opt_{idx}")
-
     if resolved.get("quick_option"):
-        qconcept = (
-            resolved["quick_option"].get("concept")
-            or resolved["quick_option"].get("label")
-            or ""
-        ).strip()
-        resolved["quick_option"]["icon"] = _resolve_icon(qconcept, "quick")
+        resolved["quick_option"]["icon"] = final_map.get("quick", "💬")
+    for idx, opt in enumerate(resolved.get("options", [])):
+        opt["icon"] = final_map.get(f"opt_{idx}", "🔘")
 
     icon_ms = (time.perf_counter() - start) * 1000
     return resolved, round(icon_ms, 2)
+
 
 
 def manager_agent(result: dict) -> dict:
@@ -303,9 +244,9 @@ def manager_agent(result: dict) -> dict:
         if not label or not concept or not key:
             continue
 
-        if not _is_valid_icon_payload(icon):
-            fallback_pool = _prefilter_candidates(concept, limit=5)
-            icon = ICON_DICTIONARY[fallback_pool[0]] if fallback_pool else "🔘"
+        # Emoji validation: must contain at least one non-ASCII character
+        if not _is_emoji(icon):
+            icon = "🔘"
 
         cleaned.append({"label": label, "key": key, "icon": icon})
 
@@ -315,15 +256,17 @@ def manager_agent(result: dict) -> dict:
     qo = result.get("quick_option") or cleaned[0]
     quick_label = _label_limit(qo.get("label", ""))
     quick_key = _semantic_key(qo.get("key", ""), qo.get("concept", ""), quick_label)
+    quick_icon = qo.get("icon", cleaned[0]["icon"])
+    if not _is_emoji(quick_icon):
+        quick_icon = cleaned[0]["icon"]
     quick_option = {
         "label": quick_label or cleaned[0]["label"],
         "key": quick_key or cleaned[0]["key"],
-        "icon": qo.get("icon", cleaned[0]["icon"]),
+        "icon": quick_icon,
     }
-    if not _is_valid_icon_payload(quick_option["icon"]):
-        quick_option["icon"] = cleaned[0]["icon"]
 
     return {"quick_option": quick_option, "options": cleaned}
+
 
 
 async def run_crew_pipeline(current_path: list[str], context_data: dict) -> dict:
