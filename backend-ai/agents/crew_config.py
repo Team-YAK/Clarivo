@@ -89,7 +89,7 @@ async def _chat_once(system: str, user: str, max_tokens: int, temperature: float
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        max_completion_tokens=max_tokens,
+        max_tokens=max_tokens,
         temperature=temperature,
         stream=False,
     )
@@ -158,7 +158,7 @@ async def generation_agent(context_slice: dict, personalization_slice: dict, use
 
     start = time.perf_counter()
     try:
-        res_text = await _chat_once(sys_msg, hu_msg, max_tokens=200, temperature=0.2)
+        res_text = await _chat_once(sys_msg, hu_msg, max_tokens=1000, temperature=0.2)
     except Exception as e:
         logger.warning(f"generation agent fallback due to LLM error: {e}")
         res_text = ""
@@ -264,7 +264,7 @@ async def icon_agent(generated: dict) -> tuple[dict, float]:
         sys_msg += f"\n\nCORE EMOJI REFERENCE (Authoritative):\n{ref_formatted}\n\nReturn ONLY a flat JSON object: {{\"id\": \"emoji_combo\"}}. No markdown, no explanation."
         hu_msg = f"Concepts to assign unique emoji combinations to:\n{concepts_formatted}"
         try:
-            raw = await _chat_once(sys_msg, hu_msg, max_tokens=180, temperature=0.0)
+            raw = await _chat_once(sys_msg, hu_msg, max_tokens=800, temperature=0.0)
             parsed = json.loads(_clean_json(raw))
             if isinstance(parsed, dict):
                 emoji_map = parsed

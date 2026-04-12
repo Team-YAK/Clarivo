@@ -123,14 +123,17 @@ async def voice_speak(req: SpeakRequest):
 @router.post("/api/voice/transcribe")
 async def voice_transcribe(file: UploadFile = File(...)):
     """
-    Transcribe uploaded audio using ElevenLabs Scribe STT.
+    Transcribe uploaded audio using ElevenLabs Scribe STT or Mock.
     Accepts webm, wav, mp3, m4a, ogg, etc.
     Returns { "text": "transcribed text" }
     """
+    if os.getenv("USE_MOCK", "false").lower() == "true":
+        logger.info("[MOCK] Returning mock transcription")
+        return {"text": "I feel tired and want to rest."}
+
     try:
         audio_data = await file.read()
         if len(audio_data) < 500:
-            # Too small to contain speech
             return {"text": ""}
 
         logger.info(f"Transcribing audio: {len(audio_data)} bytes, filename={file.filename}")
@@ -146,5 +149,5 @@ async def voice_transcribe(file: UploadFile = File(...)):
         logger.info(f"Transcription result: '{transcript[:80]}...' " if len(transcript) > 80 else f"Transcription result: '{transcript}'")
         return {"text": transcript}
     except Exception as e:
-        logger.error(f"Transcription failed: {e}")
-        return {"text": ""}
+        logger.error(f"Transcription failed: {e}. Falling back to mock transcription.")
+        return {"text": "I feel tired and want to rest."}

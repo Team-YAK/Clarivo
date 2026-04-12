@@ -52,13 +52,14 @@
   --font-headline: var(--font-manrope), sans-serif;
   --font-body: var(--font-inter), sans-serif;
   --font-label: var(--font-inter), sans-serif;
-
-  --animate-first: moveVertical 30s ease infinite;
-  --animate-second: moveInCircle 20s reverse infinite;
-  --animate-third: moveInCircle 40s linear infinite;
-  --animate-fourth: moveHorizontal 40s ease infinite;
-  --animate-fifth: moveInCircle 20s ease infinite;
 }
+
+/* Background gradient animations */
+.animate-first { animation: moveVertical 30s ease infinite; }
+.animate-second { animation: moveInCircle 20s reverse infinite; }
+.animate-third { animation: moveInCircle 40s linear infinite; }
+.animate-fourth { animation: moveHorizontal 40s ease infinite; }
+.animate-fifth { animation: moveInCircle 20s ease infinite; }
 
 @keyframes moveHorizontal {
   0% { transform: translateX(-50%) translateY(-10%); }
