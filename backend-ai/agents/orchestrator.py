@@ -15,6 +15,7 @@ Implements:
 
 import time
 import logging
+import copy
 from datetime import datetime
 from agents.context_agent import fetch_context
 from agents.crew_config import run_crew_pipeline
@@ -58,7 +59,10 @@ def _get_cached(key: str) -> dict | None:
 
 
 def _set_cache(key: str, result: dict):
-    _cache[key] = {"result": result, "timestamp": time.time()}
+    # Keep cache payload clean (no per-request timing metadata).
+    payload = copy.deepcopy(result)
+    payload.pop("_timings", None)
+    _cache[key] = {"result": payload, "timestamp": time.time()}
     # Evict old entries if cache grows too large
     if len(_cache) > 500:
         oldest = min(_cache, key=lambda k: _cache[k]["timestamp"])
@@ -79,36 +83,47 @@ async def expand(user_id: str, current_path: list[str]) -> dict:
     Full pipeline: Context → Prediction → Ranking.
     Returns: { quick_option: {...}, options: [...] }
     """
-    start_time = time.time()
+    start_perf = time.perf_counter()
 
     # 1. Check cache
     ck = _cache_key(user_id, current_path)
     cached = _get_cached(ck)
     if cached:
-        elapsed = (time.time() - start_time) * 1000
-        logger.info(f"Orchestrator: EXPAND (cached) took {elapsed:.0f}ms")
-        return cached
+        elapsed = (time.perf_counter() - start_perf) * 1000
+        result = copy.deepcopy(cached)
+        result["_timings"] = {
+            "cache_hit": True,
+            "context_mongo_skim_ms": 0.0,
+            "personalization_ms": 0.0,
+            "generation_first_token_ms": 0.0,
+            "icon_resolve_ms": 0.0,
+            "manager_ms": 0.0,
+            "orchestrator_total_ms": round(elapsed, 2),
+        }
+        return result
 
     # 2. Context Agent
-    ctx_start = time.time()
     context = await fetch_context(user_id, current_path)
-    ctx_ms = (time.time() - ctx_start) * 1000
-    logger.info(f"Orchestrator: Context Agent took {ctx_ms:.0f}ms")
+    context_metrics = context.pop("_metrics", {})
 
     # 3. CrewAI Pipeline (Concurrent Context/Personalization -> Generation -> Manager)
-    crew_start = time.time()
     result = await run_crew_pipeline(current_path, context)
-    crew_ms = (time.time() - crew_start) * 1000
-    logger.info(f"Orchestrator: CrewAI took {crew_ms:.0f}ms")
+    crew_metrics = result.pop("_timings", {})
 
     # 4. Cache the result
     _set_cache(ck, result)
 
-    elapsed = (time.time() - start_time) * 1000
-    logger.info(
-        f"Orchestrator: EXPAND total {elapsed:.0f}ms "
-        f"(ctx={ctx_ms:.0f} + crew={crew_ms:.0f})"
-    )
+    elapsed = (time.perf_counter() - start_perf) * 1000
+    result["_timings"] = {
+        "cache_hit": False,
+        "context_mongo_skim_ms": context_metrics.get("context_mongo_skim_ms", 0.0),
+        "context_total_ms": context_metrics.get("context_total_ms", 0.0),
+        "personalization_ms": crew_metrics.get("personalization_ms", 0.0),
+        "generation_first_token_ms": crew_metrics.get("generation_first_token_ms", 0.0),
+        "icon_resolve_ms": crew_metrics.get("icon_resolve_ms", 0.0),
+        "manager_ms": crew_metrics.get("manager_ms", 0.0),
+        "orchestrator_total_ms": round(elapsed, 2),
+    }
 
     return result
 

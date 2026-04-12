@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CaretDown, Lightning } from "@phosphor-icons/react";
+import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
 import {
   expandTreeAI,
   selectTreeAI,
-  AiOption,
   AiExpandResult,
 } from "@/utils/patientApi";
 import { getIconComponent } from "@/utils/icon-map";
@@ -68,7 +67,7 @@ function aiResultToDisplayOptions(result: AiExpandResult): {
   quickOption: DisplayOption | null;
 } {
   const options: DisplayOption[] = result.options.map((o) => ({
-    key: o.icon || o.label.toLowerCase().replace(/\s+/g, "_"),
+    key: o.label.toLowerCase().replace(/\s+/g, "_"),
     label: o.label,
     icon: o.icon || o.label.toLowerCase().replace(/\s+/g, "_"),
     isCoreSeed: false,
@@ -77,7 +76,7 @@ function aiResultToDisplayOptions(result: AiExpandResult): {
   const qo = result.quick_option;
   const quickOption: DisplayOption | null = qo
     ? {
-        key: qo.icon || qo.label.toLowerCase().replace(/\s+/g, "_"),
+        key: qo.label.toLowerCase().replace(/\s+/g, "_"),
         label: qo.label,
         icon: qo.icon || qo.label.toLowerCase().replace(/\s+/g, "_"),
         isQuickOption: true,
@@ -175,13 +174,11 @@ function OptionCard({
   option,
   onSelect,
   onExpand,
-  isQuick = false,
   index = 0,
 }: {
   option: DisplayOption;
   onSelect: (opt: DisplayOption) => void;
   onExpand: (opt: DisplayOption) => void;
-  isQuick?: boolean;
   index?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -218,29 +215,17 @@ function OptionCard({
           <LiquidButton
             size="xxl"
             onClick={() => onSelect(option)}
-            className={[
-              "!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg",
-              isQuick
-                ? "border-2 border-amber-400/60"
-                : "border border-white/5",
-            ].join(" ")}
+            className="!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg border border-white/5"
             style={{
-              background: isQuick
-                ? `linear-gradient(135deg, #f59e0b10, #f59e0b05)`
-                : `linear-gradient(135deg, ${color}10, ${color}05)`,
+              background: `linear-gradient(135deg, ${color}10, ${color}05)`,
             }}
           >
             <div className="flex flex-col items-center justify-center w-full h-full p-2 gap-1">
-              {isQuick && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40">
-                  <Lightning size={10} weight="fill" className="text-amber-400" />
-                </div>
-              )}
               {/* Icon: 65-70% of card height */}
               <div className="flex-1 flex items-center justify-center min-h-0">
                 <Icon
                   weight="fill"
-                  color={isQuick ? "#f59e0b" : color}
+                  color={color}
                   className="!w-12 !h-12 sm:!w-14 sm:!h-14 drop-shadow-[0_2px_15px_rgba(0,0,0,0.5)]"
                 />
               </div>
@@ -488,18 +473,6 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
                   ))
                 : (
                   <>
-                    {/* Quick option first */}
-                    {currentFrame.quickOption &&
-                      currentFrame.options[0]?.key !== currentFrame.quickOption.key && (
-                        <OptionCard
-                          key={`quick-${currentFrame.quickOption.key}`}
-                          option={currentFrame.quickOption}
-                          onSelect={handleSelect}
-                          onExpand={handleExpand}
-                          isQuick
-                          index={0}
-                        />
-                      )}
                     {/* All options */}
                     {currentFrame.options.map((opt, i) => (
                       <OptionCard
@@ -507,9 +480,6 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
                         option={opt}
                         onSelect={handleSelect}
                         onExpand={handleExpand}
-                        isQuick={
-                          opt.key === currentFrame.quickOption?.key && i === 0
-                        }
                         index={i}
                       />
                     ))}

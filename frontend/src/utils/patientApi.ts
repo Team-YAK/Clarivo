@@ -77,7 +77,7 @@ const DEFAULT_USER_ID = 'alex_demo';
 
 export interface AiOption {
   label: string;
-  icon: string;  // snake_case identifier, maps to getIconComponent key
+  icon: string;  // kebab-case Phosphor icon name (e.g. "fork-knife")
 }
 
 export interface AiExpandResult {
@@ -91,9 +91,13 @@ export const expandTreeAI = async (
   userId: string = DEFAULT_USER_ID,
 ): Promise<AiExpandResult | null> => {
   try {
+    const tapTs = Date.now();
     const res = await fetch(`${AI_URL}/api/tree/expand`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-client-tap-ts': String(tapTs),
+      },
       body: JSON.stringify({ user_id: userId, current_path: currentPath }),
     });
     if (!res.ok) throw new Error(`AI expand failed: ${res.status}`);

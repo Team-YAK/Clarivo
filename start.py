@@ -20,7 +20,7 @@ def _python_for(subdir: str) -> str:
 SERVERS = [
     {
         "name": "backend-data",
-        "cmd": [_python_for("backend-data"), "main.py"],
+        "cmd": [_python_for("backend-data"), "-u", "main.py"],
         "cwd": os.path.join(root_dir, "backend-data"),
         "port": 8002,
         "health_url": "http://localhost:8002/health",
@@ -28,7 +28,7 @@ SERVERS = [
     },
     {
         "name": "backend-ai",
-        "cmd": [_python_for("backend-ai"), "main.py"],
+        "cmd": [_python_for("backend-ai"), "-u", "main.py"],
         "cwd": os.path.join(root_dir, "backend-ai"),
         "port": 8001,
         "health_url": "http://localhost:8001/health",
@@ -74,8 +74,8 @@ def ensure_npm_dependencies():
     tailwindcss_path = os.path.join(node_modules, "tailwindcss")
     next_cache = os.path.join(frontend_dir, ".next")
 
-    # Clean Next.js build cache to fix module resolution issues
-    if os.path.exists(next_cache):
+    # Optional cache clean; disabled by default for much faster startup.
+    if os.getenv("CLARIVO_CLEAN_NEXT", "false").lower() == "true" and os.path.exists(next_cache):
         import shutil
         print("Cleaning Next.js build cache...")
         try:
@@ -119,10 +119,12 @@ def ensure_npm_dependencies():
     return True
 
 
-def wait_for_service(url, timeout=30, interval=0.5):
+def wait_for_service(url, proc=None, timeout=8, interval=0.35):
     """Wait for a service to be ready."""
     start = time.time()
     while time.time() - start < timeout:
+        if proc is not None and proc.poll() is not None:
+            return False
         try:
             response = requests.get(url, timeout=1)
             if response.status_code == 200:
@@ -158,7 +160,7 @@ def main():
         # Wait for service to be ready
         if server["wait_for_startup"] and server["health_url"]:
             print(f"  Waiting for {server['name']} to be ready...")
-            if wait_for_service(server["health_url"]):
+            if wait_for_service(server["health_url"], proc=proc):
                 print(f"  ✓ {server['name']} is ready\n")
             else:
                 print(f"  ⚠ {server['name']} did not respond (continuing anyway)\n")
@@ -180,6 +182,7 @@ def main():
             sel.register(proc.stdout, selectors.EVENT_READ, name)
 
     try:
+        reported_dead = set()
         while True:
             for key, _ in sel.select(timeout=1):
                 try:
@@ -194,7 +197,9 @@ def main():
             # Check if any process died
             for name, proc in processes:
                 if proc.poll() is not None:
-                    print(f"\n⚠ [{name}] exited with code {proc.returncode}")
+                    if name not in reported_dead:
+                        reported_dead.add(name)
+                        print(f"\n⚠ [{name}] exited with code {proc.returncode}")
     except KeyboardInterrupt:
         shutdown()
 

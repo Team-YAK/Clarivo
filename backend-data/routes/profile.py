@@ -99,6 +99,62 @@ async def get_profile(user_id: str = Query(...)):
     user["id"] = user.pop("_id")
     return user
 
+
+@router.get("/api/context/tree_skim")
+async def get_tree_context_skim(user_id: str = Query(...)):
+    """
+    Lightweight context endpoint for AI tree expansion.
+    Uses projection so the AI backend does not pull full user documents.
+    """
+    user = await db.users.find_one(
+        {"_id": user_id},
+        {
+            "preferences.known_preferences": 1,
+            "preferences.always_know": 1,
+            "path_frequencies": 1,
+        },
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    active_conv = await db.conversations.find_one(
+        {"user_id": user_id, "active": True},
+        {"utterances": {"$slice": -5}},
+    )
+    utterances = (active_conv or {}).get("utterances", [])
+
+    cursor = db.sessions.find(
+        {"user_id": user_id, "status": "confirmed"},
+        {"path": 1, "timestamp": 1, "_id": 0},
+    ).sort("timestamp", -1).limit(20)
+    recent_sessions = await cursor.to_list(length=20)
+
+    recent_paths = []
+    seen = set()
+    for s in recent_sessions:
+        p = s.get("path") or []
+        key = "→".join(p)
+        if key and key not in seen:
+            recent_paths.append(p)
+            seen.add(key)
+        if len(recent_paths) >= 10:
+            break
+
+    freqs = user.get("path_frequencies", {}) or {}
+    clean_freqs = {k: v for k, v in freqs.items() if isinstance(v, (int, float))}
+    top_paths = sorted(clean_freqs.items(), key=lambda x: x[1], reverse=True)[:15]
+
+    prefs = user.get("preferences", {}) or {}
+    return {
+        "conversation_utterances": utterances,
+        "recent_paths": recent_paths,
+        "top_paths": [{"key": k, "count": v} for k, v in top_paths],
+        "preferences": {
+            "known_preferences": prefs.get("known_preferences", ""),
+            "always_know": prefs.get("always_know", ""),
+        },
+    }
+
 @router.post("/api/profile/update")
 async def update_profile(req: ProfileUpdate):
     try:
