@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import ButtonGrid, { StackAddEvent } from "@/components/patient/ButtonGrid";
 import WordStack, { StackItem } from "@/components/patient/WordStack";
 import SentenceOutput from "@/components/patient/SentenceOutput";
-import CaregiverPanel from "@/components/caregiver/CaregiverPanel";
-import { SidebarSimple, Desktop, FlowerLotus } from "@phosphor-icons/react";
+import PartnerPanel from "@/components/patient/PartnerPanel";
+import { Desktop, FlowerLotus } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { GlowCard } from "@/components/ui/spotlight-card";
@@ -16,7 +16,6 @@ const nextId = () => `stack-${++idCounter}`;
 
 export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(false);
 
   // ── Stack state ──
   const [stackItems, setStackItems] = useState<StackItem[]>([]);
@@ -115,55 +114,36 @@ export default function PatientScreen() {
             <Desktop size={22} weight="fill" />
           </Link>
 
-          <button
-            onClick={() => setIsSplitView(!isSplitView)}
-            className={`p-2.5 rounded-full transition-all ${
-              isSplitView
-                ? "bg-primary/15 text-primary"
-                : "text-outline-variant hover:text-on-surface hover:bg-white/10"
-            }`}
-          >
-            <SidebarSimple size={22} weight="fill" />
-          </button>
-
           <ThemeToggle />
         </div>
       </header>
 
       {/* Main Content Area */}
       <main className="flex w-full h-full pt-14 overflow-hidden">
-        {/* Patient Area */}
+        {/* Patient Area (Left 50%) */}
         <motion.div
           layout
-          className="flex-1 min-w-0 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+          className="flex-1 w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
         >
           <div className="h-full flex flex-col">
             <ButtonGrid onAddToStack={handleAddToStack} />
           </div>
         </motion.div>
 
-        <AnimatePresence>
-          {isSplitView && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "30%", opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              className="flex shrink-0 h-full"
-            >
-              {/* Vertical Separator */}
-              <div className="w-2 h-full bg-surface-container-high shadow-inner shrink-0 relative transition-colors duration-500">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-outline-variant/40 rounded-full" />
-              </div>
+        {/* Vertical Separator */}
+        <div className="w-2 h-full bg-surface-container-high shadow-inner shrink-0 relative transition-colors duration-500">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-outline-variant/40 rounded-full" />
+        </div>
 
-              {/* Caregiver Panel (Right) */}
-              <aside className="min-w-[340px] max-w-[500px] w-full shrink-0 h-full relative overflow-hidden bg-surface-container shadow-[inset_1px_0_10px_rgba(0,0,0,0.05)] transition-colors duration-500">
-                <div className="absolute inset-0 flex flex-col">
-                  <CaregiverPanel />
-                </div>
-              </aside>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Partner Area (Right 50%) */}
+        <motion.div
+          layout
+          className="flex-1 w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pb-0 pt-4"
+        >
+          <div className="h-full flex flex-col">
+            <PartnerPanel />
+          </div>
+        </motion.div>
       </main>
 
       {/* Word Stack Bar (Fixed Bottom) */}

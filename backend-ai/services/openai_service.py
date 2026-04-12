@@ -61,6 +61,16 @@ Return ONLY the simplified sentences, one per line."""
 
 DIGEST_SYSTEM = """You are writing a warm daily summary for a caregiver about their loved one's communication sessions. Write 2-3 specific, warm sentences summarizing the sessions. Flag any first-time occurrences. Be encouraging and specific — use actual details from the sessions."""
 
+REVERSE_SYSTEM = """You are an assistant for an aphasia patient analyzing sentences spoken by their conversation partner. 
+Your goal is to simplify their partner's sentence into 3 to 6 core concepts or single words to make it easier for the patient to understand. 
+Return ONLY a valid JSON array of objects, where each object contains:
+- "label": A simplified core concept (1-2 words max, e.g., "You", "Want", "Water", "Happy").
+- "icon": A single relevant emoji that best visualizes the concept.
+
+Example:
+If the user says: "Would you like me to get you a glass of water?"
+You should return: [{"label": "You", "icon": "🫵"}, {"label": "Want", "icon": "❓"}, {"label": "Water", "icon": "💧"}]"""
+
 
 async def stream_intent(path: list[str], context: str, input_mode: str = "tree") -> AsyncGenerator[str, None]:
     if input_mode == "composer":
@@ -264,3 +274,31 @@ async def refine_sentence_with_correction(original: str, correction: str, path: 
     except Exception as e:
         logger.warning(f"Sentence refinement failed: {e}")
         return correction  # Fallback to the raw correction
+
+
+async def reverse_intent(sentence: str, context: str) -> list[dict] | None:
+    try:
+        resp = await get_client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"{REVERSE_SYSTEM}\n\nPatient Context:\n{context}"},
+                {"role": "user", "content": f"Sentence: {sentence}"},
+            ],
+            max_tokens=200,
+            temperature=0.3,
+        )
+        raw = resp.choices[0].message.content.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+        data = json.loads(raw)
+        
+        if not isinstance(data, list):
+            data = [data]
+        return data
+    except Exception as e:
+        logger.warning(f"Reverse translation failed: {e}")
+        return None
+

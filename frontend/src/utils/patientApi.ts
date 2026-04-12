@@ -219,3 +219,22 @@ export const expandTreeAI = async (
     return null;
   }
 };
+
+/** Call the AI to reverse translate a sentence into icons. */
+export const reverseTranslateSentence = async (
+  sentence: string,
+  userId: string = DEFAULT_USER_ID,
+): Promise<{ options: AiOption[] } | null> => {
+  try {
+    const res = await fetch(`${AI_URL}/api/reverse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentence, user_id: userId }),
+    });
+    if (!res.ok) throw new Error(`Reverse translation failed: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('reverseTranslateSentence failed:', err);
+    return null;
+  }
+};
