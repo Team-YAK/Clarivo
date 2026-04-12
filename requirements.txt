@@ -26,4 +26,4 @@ python-multipart==0.0.9
 
 # ─── Node.js (Frontend) Requirements ─────────────────────────────
 # Note: Frontend requires Node.js 18+ and 'npm install' inside /frontend
-# Main dependencies: next, react, framer-motion, @phosphor-icons/react, lucide-react, tailwindcss
+# Main dependencies: next, react, framer-motion, @phosphor-icons/react, lucide-react, tailwindcss, tldraw
