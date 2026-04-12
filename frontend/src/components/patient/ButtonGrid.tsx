@@ -21,36 +21,46 @@ interface ButtonGridProps {
   onAddToStack: (item: StackAddEvent) => void;
 }
 
-// ── Unified display option (works for both static nodes and AI options) ───
+// ── Unified display option ─────────────────────────────────────
 interface DisplayOption {
   key: string;
   label: string;
-  icon: string;   // identifier for getIconComponent
+  icon: string;
   isQuickOption?: boolean;
+  color?: string;       // category color override
+  isCoreSeed?: boolean;  // home screen core need
 }
 
-// ── Navigation stack frame ─────────────────────────────────────────────────
+// ── Navigation frame ───────────────────────────────────────────
 interface NavFrame {
-  path: string[];           // path of keys to reach this level
-  pathLabels: string[];     // human-readable labels for breadcrumb
+  path: string[];
+  pathLabels: string[];
   options: DisplayOption[];
   quickOption: DisplayOption | null;
 }
 
-// ── Color helper (from original ButtonGrid) ────────────────────────────────
-const getColorFromClass = (cls: string) => {
-  if (!cls) return "#1d4ed8";
-  if (cls.includes("teal")) return "#14b8a6";
-  if (cls.includes("red")) return "#ef4444";
-  if (cls.includes("indigo")) return "#6366f1";
-  if (cls.includes("amber")) return "#f59e0b";
-  if (cls.includes("sky") || cls.includes("blue")) return "#0ea5e9";
-  if (cls.includes("purple")) return "#a855f7";
-  if (cls.includes("pink")) return "#ec4899";
-  if (cls.includes("slate")) return "#94a3b8";
-  if (cls.includes("orange")) return "#f97316";
-  return "#3b82f6";
+// ── Core need color palette ────────────────────────────────────
+// Urgency-ordered, high-contrast, immediately recognizable
+const CORE_COLORS: Record<string, string> = {
+  pain:      "#ef4444",  // red — most urgent
+  toilet:    "#f59e0b",  // amber — time-sensitive
+  food:      "#22c55e",  // green — frequent
+  medicine:  "#3b82f6",  // blue — critical
+  emotional: "#a855f7",  // purple — emotional
+  family:    "#f97316",  // warm orange — social
 };
+
+// Icon color for deeper (non-root) levels
+const DEPTH_COLORS = [
+  "#14b8a6", "#6366f1", "#0ea5e9", "#a855f7",
+  "#f59e0b", "#ec4899", "#22c55e", "#ef4444",
+];
+
+function getIconColor(option: DisplayOption, index: number): string {
+  if (option.color) return option.color;
+  if (option.isCoreSeed && CORE_COLORS[option.icon]) return CORE_COLORS[option.icon];
+  return DEPTH_COLORS[index % DEPTH_COLORS.length];
+}
 
 // Convert AI result into DisplayOption[]
 function aiResultToDisplayOptions(result: AiExpandResult): {
@@ -61,6 +71,7 @@ function aiResultToDisplayOptions(result: AiExpandResult): {
     key: o.icon || o.label.toLowerCase().replace(/\s+/g, "_"),
     label: o.label,
     icon: o.icon || o.label.toLowerCase().replace(/\s+/g, "_"),
+    isCoreSeed: false,
   }));
 
   const qo = result.quick_option;
@@ -76,27 +87,106 @@ function aiResultToDisplayOptions(result: AiExpandResult): {
   return { options, quickOption };
 }
 
-// ── Skeleton card ──────────────────────────────────────────────────────────
-function SkeletonCard() {
+// ── Skeleton card ──────────────────────────────────────────────
+function SkeletonCard({ large = false }: { large?: boolean }) {
   return (
-    <div className="w-full aspect-square rounded-2xl bg-surface-container-high/40 animate-pulse" />
+    <div
+      className={[
+        "rounded-3xl bg-surface-container-high/30 animate-pulse",
+        large ? "aspect-square" : "aspect-square",
+      ].join(" ")}
+    />
   );
 }
 
-// ── Option card ────────────────────────────────────────────────────────────
+// ── Core Need Card (home screen) ──────────────────────────────
+function CoreNeedCard({
+  option,
+  onSelect,
+  onExpand,
+  index,
+}: {
+  option: DisplayOption;
+  onSelect: (opt: DisplayOption) => void;
+  onExpand: (opt: DisplayOption) => void;
+  index: number;
+}) {
+  const color = getIconColor(option, index);
+  const Icon = getIconComponent(option.icon);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, delay: index * 0.05 }}
+      className="relative group"
+    >
+      <LiquidButton
+        size="xxl"
+        onClick={() => onSelect(option)}
+        className="!w-full !h-full !rounded-[2rem] !px-0 !py-0 flex-col shadow-xl border border-white/5"
+        style={{
+          background: `linear-gradient(135deg, ${color}15, ${color}08)`,
+          borderColor: `${color}30`,
+        }}
+      >
+        <div className="flex flex-col items-center justify-center w-full h-full p-3 gap-2">
+          {/* Icon takes 65-70% of card height */}
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <Icon
+              weight="fill"
+              color={color}
+              className="!w-14 !h-14 sm:!w-16 sm:!h-16 md:!w-20 md:!h-20 drop-shadow-[0_2px_20px_rgba(0,0,0,0.4)]"
+            />
+          </div>
+          {/* Decorative label — small, muted */}
+          <span
+            className="text-xs font-bold uppercase tracking-wider opacity-40 text-center leading-tight"
+            style={{ color }}
+          >
+            {option.label}
+          </span>
+        </div>
+      </LiquidButton>
+
+      {/* Expand button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onExpand(option);
+        }}
+        className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10
+          flex items-center justify-center w-7 h-7 rounded-full
+          shadow-lg opacity-0 group-hover:opacity-100
+          hover:scale-110 active:scale-95 transition-all duration-200"
+        style={{
+          backgroundColor: color,
+          color: "#fff",
+        }}
+      >
+        <CaretDown size={16} weight="bold" />
+      </button>
+    </motion.div>
+  );
+}
+
+// ── Deep Option Card (inner levels) ───────────────────────────
 function OptionCard({
   option,
   onSelect,
   onExpand,
   isQuick = false,
+  index = 0,
 }: {
   option: DisplayOption;
   onSelect: (opt: DisplayOption) => void;
   onExpand: (opt: DisplayOption) => void;
   isQuick?: boolean;
+  index?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const color = getIconColor(option, index);
 
   useEffect(() => {
     const el = ref.current;
@@ -122,7 +212,7 @@ function OptionCard({
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.15 }}
+          transition={{ duration: 0.15, delay: index * 0.03 }}
           className="aspect-square w-full h-full relative"
         >
           <LiquidButton
@@ -131,29 +221,37 @@ function OptionCard({
             className={[
               "!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col shadow-lg",
               isQuick
-                ? "border-2 border-amber-400/60 bg-amber-500/10"
-                : "border border-white/5 bg-surface-container-high/20",
+                ? "border-2 border-amber-400/60"
+                : "border border-white/5",
             ].join(" ")}
+            style={{
+              background: isQuick
+                ? `linear-gradient(135deg, #f59e0b10, #f59e0b05)`
+                : `linear-gradient(135deg, ${color}10, ${color}05)`,
+            }}
           >
-            <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-3">
+            <div className="flex flex-col items-center justify-center w-full h-full p-2 gap-1">
               {isQuick && (
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40">
                   <Lightning size={10} weight="fill" className="text-amber-400" />
-                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">AI Pick</span>
                 </div>
               )}
-              <Icon
-                weight="fill"
-                color={isQuick ? "#f59e0b" : getColorFromClass("")}
-                className="!w-16 !h-16 sm:!w-20 sm:!h-20 drop-shadow-[0_2px_15px_rgba(0,0,0,0.6)] relative z-10"
-              />
-              <span className="font-headline font-black text-base text-on-surface text-center leading-tight drop-shadow-md px-2 z-10">
+              {/* Icon: 65-70% of card height */}
+              <div className="flex-1 flex items-center justify-center min-h-0">
+                <Icon
+                  weight="fill"
+                  color={isQuick ? "#f59e0b" : color}
+                  className="!w-12 !h-12 sm:!w-14 sm:!h-14 drop-shadow-[0_2px_15px_rgba(0,0,0,0.5)]"
+                />
+              </div>
+              {/* Decorative label */}
+              <span className="text-[10px] font-bold text-on-surface-variant/40 text-center leading-tight uppercase tracking-wider px-1">
                 {option.label}
               </span>
             </div>
           </LiquidButton>
 
-          {/* Expand (go deeper) button — always shown on hover */}
+          {/* Expand deeper */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -165,21 +263,19 @@ function OptionCard({
               opacity-0 group-hover:opacity-100
               hover:scale-110 active:scale-95
               transition-all duration-200"
-            title={`Get more specific options for "${option.label}"`}
           >
             <CaretDown size={16} weight="bold" />
           </button>
         </motion.div>
       ) : (
-        <div className="w-full aspect-square rounded-2xl bg-surface-container-high/40 animate-pulse" />
+        <div className="w-full aspect-square rounded-2xl bg-surface-container-high/30 animate-pulse" />
       )}
     </div>
   );
 }
 
-// ── Main ButtonGrid ────────────────────────────────────────────────────────
+// ── Main ButtonGrid ────────────────────────────────────────────
 export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
-  // Nav stack — each frame is a "level" in the tree
   const [navStack, setNavStack] = useState<NavFrame[]>([]);
   const [currentFrame, setCurrentFrame] = useState<NavFrame>({
     path: [],
@@ -198,10 +294,16 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
         return;
       }
       const { options, quickOption } = aiResultToDisplayOptions(result);
+      // Mark root options as core seeds for color coding
+      const coreOptions = options.map((o) => ({
+        ...o,
+        isCoreSeed: true,
+        color: CORE_COLORS[o.icon] || undefined,
+      }));
       setCurrentFrame({
         path: [],
         pathLabels: [],
-        options,
+        options: coreOptions,
         quickOption,
       });
       setLoading(false);
@@ -211,17 +313,16 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
     });
   }, []);
 
-  // SELECT — add to word stack + notify backend (fire-and-forget)
+  // SELECT
   const handleSelect = useCallback(
     (opt: DisplayOption) => {
       onAddToStack({ key: opt.key, label: opt.label });
-      // Notify backend of selection for frequency tracking
       selectTreeAI(opt.key, currentFrame.path).catch(() => {});
     },
     [onAddToStack, currentFrame.path]
   );
 
-  // EXPAND — AI call → push current frame to stack → show new level
+  // EXPAND
   const handleExpand = useCallback(
     async (opt: DisplayOption) => {
       const newPath = [...currentFrame.path, opt.key];
@@ -248,7 +349,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
         setNavStack((prev) => [...prev, currentFrame]);
         setCurrentFrame(newFrame);
       } catch (err) {
-        console.error("AI generation failed or is offline.", err);
+        console.warn("AI generation failed or is offline.", err);
       } finally {
         setLoading(false);
         setGridKey((k) => k + 1);
@@ -257,7 +358,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
     [currentFrame]
   );
 
-  // BACK — pop stack
+  // BACK
   const handleBack = useCallback(() => {
     if (navStack.length === 0) return;
     const stack = [...navStack];
@@ -267,32 +368,13 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
     setGridKey((k) => k + 1);
   }, [navStack]);
 
-  // Jump to a specific breadcrumb level
-  const handleBreadcrumbJump = useCallback(
-    (targetDepth: number) => {
-      // targetDepth -1 = root, 0 = first level, etc.
-      if (targetDepth < 0) {
-        // Go to root
-        const root = navStack[0] ?? currentFrame;
-        setNavStack([]);
-        setCurrentFrame(root);
-      } else {
-        const targetFrame = navStack[targetDepth + 1] ?? currentFrame;
-        setNavStack(navStack.slice(0, targetDepth + 1));
-        setCurrentFrame(targetFrame);
-      }
-      setGridKey((k) => k + 1);
-    },
-    [navStack, currentFrame]
-  );
-
-  const breadcrumbLabels = currentFrame.pathLabels;
   const depth = currentFrame.path.length;
+  const isRoot = depth === 0;
 
   return (
     <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col overflow-hidden relative">
-      {/* Breadcrumb + Back button */}
-      <div className="flex items-center gap-4 px-2 pb-4 flex-shrink-0">
+      {/* Breadcrumb — icon-based */}
+      <div className="flex items-center gap-3 px-2 pb-3 flex-shrink-0">
         <AnimatePresence>
           {depth > 0 && (
             <motion.button
@@ -307,68 +389,59 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
           )}
         </AnimatePresence>
 
-        <div className="flex items-center gap-2 text-lg font-bold font-headline text-on-surface-variant overflow-x-auto no-scrollbar">
-          {/* Root label */}
-          <span
-            className={
-              depth === 0
-                ? "text-primary shrink-0"
-                : "shrink-0 cursor-pointer hover:text-primary transition-colors"
-            }
-            onClick={() => {
-              if (depth > 0) {
-                // Jump all the way back to root
-                const rootFrame = navStack[0];
-                if (rootFrame) {
-                  setNavStack([]);
-                  setCurrentFrame(rootFrame);
-                  setGridKey((k) => k + 1);
-                }
-              }
-            }}
-          >
-            Needs
-          </span>
-
-          {/* Dynamic breadcrumb from path labels */}
-          {breadcrumbLabels.map((label, i) => (
-            <React.Fragment key={`${label}-${i}`}>
-              <span className="opacity-40 shrink-0">/</span>
-              <span
-                className={
-                  i === breadcrumbLabels.length - 1
-                    ? "text-primary shrink-0"
-                    : "shrink-0 cursor-pointer hover:text-primary transition-colors"
-                }
-                onClick={() => {
-                  if (i < breadcrumbLabels.length - 1) {
-                    // Jump to this breadcrumb level
-                    const targetFrame = navStack[i + 1];
-                    if (targetFrame) {
+        {/* Breadcrumb icons only (no text) */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {currentFrame.pathLabels.map((label, i) => {
+            const pathKey = currentFrame.path[i];
+            const BreadcrumbIcon = getIconComponent(pathKey);
+            const isLast = i === currentFrame.pathLabels.length - 1;
+            return (
+              <React.Fragment key={`${label}-${i}`}>
+                {i > 0 && <span className="text-on-surface-variant/20 text-sm">/</span>}
+                <div
+                  className={[
+                    "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all",
+                    isLast
+                      ? "bg-primary/10"
+                      : "cursor-pointer hover:bg-surface-container-high",
+                  ].join(" ")}
+                  onClick={() => {
+                    if (!isLast && navStack[i + 1]) {
                       setNavStack(navStack.slice(0, i + 1));
-                      setCurrentFrame(targetFrame);
+                      setCurrentFrame(navStack[i + 1]);
                       setGridKey((k) => k + 1);
                     }
-                  }
-                }}
-              >
-                {label}
-              </span>
-            </React.Fragment>
-          ))}
-
-          {/* Depth indicator */}
-          {depth > 0 && (
-            <span className="ml-1 text-xs font-normal text-on-surface-variant/40 shrink-0">
-              depth {depth}
-            </span>
-          )}
+                  }}
+                >
+                  <BreadcrumbIcon
+                    size={18}
+                    weight="fill"
+                    className={isLast ? "text-primary" : "text-on-surface-variant/50"}
+                  />
+                  <span
+                    className={[
+                      "text-xs font-bold",
+                      isLast ? "text-primary" : "text-on-surface-variant/40",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </span>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
+
+        {depth > 0 && (
+          <span className="ml-auto text-[10px] font-bold text-on-surface-variant/20 uppercase tracking-widest shrink-0">
+            {depth}
+          </span>
+        )}
       </div>
 
-      {/* Scrollable Grid */}
+      {/* Grid */}
       <div
-        className="flex-1 overflow-y-auto overscroll-contain pt-8 pb-32 px-1 scroll-smooth"
+        className="flex-1 overflow-y-auto overscroll-contain pt-4 pb-32 px-1 scroll-smooth"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <AnimatePresence mode="wait">
@@ -379,10 +452,14 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 content-start px-4 md:px-8 pb-12"
+              className={
+                isRoot
+                  ? "grid grid-cols-2 sm:grid-cols-3 gap-6 content-start px-6 md:px-12 pb-12"
+                  : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
+              }
             >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <SkeletonCard key={i} />
+              {Array.from({ length: isRoot ? 6 : 8 }).map((_, i) => (
+                <SkeletonCard key={i} large={isRoot} />
               ))}
             </motion.div>
           ) : (
@@ -392,37 +469,66 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 content-start px-4 md:px-8 pb-12"
+              className={
+                isRoot
+                  ? "grid grid-cols-2 sm:grid-cols-3 gap-6 content-start px-6 md:px-12 pb-12"
+                  : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
+              }
             >
-              {/* Quick option first (if AI-generated and not already first in options) */}
-              {currentFrame.quickOption &&
-                currentFrame.options[0]?.key !== currentFrame.quickOption.key && (
-                  <OptionCard
-                    key={`quick-${currentFrame.quickOption.key}`}
-                    option={currentFrame.quickOption}
-                    onSelect={handleSelect}
-                    onExpand={handleExpand}
-                    isQuick
-                  />
+              {/* Home screen: large core need cards */}
+              {isRoot
+                ? currentFrame.options.map((opt, i) => (
+                    <CoreNeedCard
+                      key={`core-${opt.key}`}
+                      option={opt}
+                      onSelect={handleSelect}
+                      onExpand={handleExpand}
+                      index={i}
+                    />
+                  ))
+                : (
+                  <>
+                    {/* Quick option first */}
+                    {currentFrame.quickOption &&
+                      currentFrame.options[0]?.key !== currentFrame.quickOption.key && (
+                        <OptionCard
+                          key={`quick-${currentFrame.quickOption.key}`}
+                          option={currentFrame.quickOption}
+                          onSelect={handleSelect}
+                          onExpand={handleExpand}
+                          isQuick
+                          index={0}
+                        />
+                      )}
+                    {/* All options */}
+                    {currentFrame.options.map((opt, i) => (
+                      <OptionCard
+                        key={`${opt.key}-${i}`}
+                        option={opt}
+                        onSelect={handleSelect}
+                        onExpand={handleExpand}
+                        isQuick={
+                          opt.key === currentFrame.quickOption?.key && i === 0
+                        }
+                        index={i}
+                      />
+                    ))}
+                  </>
                 )}
 
-              {/* All options */}
-              {currentFrame.options.map((opt, i) => (
-                <OptionCard
-                  key={`${opt.key}-${i}`}
-                  option={opt}
-                  onSelect={handleSelect}
-                  onExpand={handleExpand}
-                  isQuick={
-                    opt.key === currentFrame.quickOption?.key &&
-                    i === 0
-                  }
-                />
-              ))}
-
               {currentFrame.options.length === 0 && (
-                <div className="col-span-full flex items-center justify-center p-12 text-on-surface-variant/50 font-bold text-lg">
-                  No options found.
+                <div className="col-span-full flex flex-col items-center justify-center p-16 gap-4">
+                  {/* Icon-based empty state (no text) */}
+                  {(() => {
+                    const HelpIcon = getIconComponent("help");
+                    return (
+                      <HelpIcon
+                        size={64}
+                        weight="fill"
+                        className="text-on-surface-variant/20"
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </motion.div>

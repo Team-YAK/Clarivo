@@ -8,6 +8,7 @@
  * The getIconComponent() helper does a dynamic lookup from @phosphor-icons/react.
  */
 
+import React from "react";
 import * as PhosphorIcons from "@phosphor-icons/react";
 
 // ─────────────────────────────────────────────────────────────
@@ -915,10 +916,31 @@ export const ICON_MAP: Record<string, string> = {
 
 /**
  * Retrieve the React component for a given concept key.
+ * Supports three modes:
+ *   1. ICON_MAP key → Phosphor component
+ *   2. Direct Phosphor component name → Phosphor component
+ *   3. Inline SVG string (starts with "<svg") → renders raw SVG
  * Falls back to the Question icon if no mapping exists.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getIconComponent = (key: string): React.ComponentType<any> => {
+  // Tier 3 fallback: inline SVG from the Icon Agent
+  if (key && key.trim().startsWith("<svg")) {
+    // Return a component that renders the raw SVG
+    const InlineSvgIcon = (props: { className?: string; style?: React.CSSProperties }) => {
+      return (
+        <span
+          className={props.className}
+          style={{ display: "inline-flex", ...props.style }}
+          dangerouslySetInnerHTML={{ __html: key }}
+        />
+      );
+    };
+    InlineSvgIcon.displayName = "InlineSvgIcon";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return InlineSvgIcon as any;
+  }
+
   const iconName = ICON_MAP[key] || key; // try key directly as icon name if not in map
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = (PhosphorIcons as any)[iconName];

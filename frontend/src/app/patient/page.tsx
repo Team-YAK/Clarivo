@@ -88,18 +88,15 @@ export default function PatientScreen() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-surface to-surface-container-low transition-colors duration-500">
-      {/* Hyper Minimalist Top Navigation Bar */}
-      <header className="fixed top-0 w-full h-14 flex items-center justify-between px-6 md:px-12 bg-surface/60 backdrop-blur-xl z-50 border-b border-outline-variant/10">
-        <div className="flex items-center gap-6">
-          {/* Deliberately minimal for aphasia interface */}
-        </div>
-        <div className="flex items-center gap-3 relative">
+      {/* Minimalist icon-only navigation bar (no text for aphasia users) */}
+      <header className="fixed top-0 w-full h-14 flex items-center justify-end px-6 md:px-12 bg-surface/60 backdrop-blur-xl z-50 border-b border-outline-variant/10">
+        <div className="flex items-center gap-2 relative">
           <Link
             href="/caregiver"
-            className="flex items-center gap-2 p-2 px-4 rounded-full transition-all text-outline-variant hover:text-on-surface hover:bg-surface-container-high font-bold text-sm"
+            className="flex items-center justify-center p-2.5 rounded-full transition-all text-outline-variant hover:text-on-surface hover:bg-surface-container-high"
+            title="Caregiver Dashboard"
           >
             <Desktop size={22} weight="fill" />
-            <span className="hidden md:inline">Dashboard</span>
           </Link>
 
           <button
@@ -130,39 +127,26 @@ export default function PatientScreen() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-14 w-56 z-50"
+                  className="absolute right-0 top-14 w-16 z-50"
                 >
                   <GlowCard
                     customSize
                     glowColor="blue"
                     className="!p-0 !gap-0 !grid-rows-[1fr] !shadow-xl rounded-2xl"
                   >
-                    <div className="p-2">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant px-3 py-2 mb-1">
-                        Settings
-                      </h4>
+                    <div className="p-2 flex flex-col items-center">
                       <button
                         onClick={() => {
                           setTheme(theme === "dark" ? "light" : "dark");
                         }}
-                        className="flex items-center gap-3 px-3 py-3 w-full hover:bg-surface-container-low rounded-xl transition-colors text-on-surface font-semibold text-sm"
+                        className="flex items-center justify-center p-3 w-full hover:bg-surface-container-low rounded-xl transition-colors"
+                        title="Toggle theme"
                       >
                         {theme === "dark" ? (
-                          <Sun
-                            size={20}
-                            weight="bold"
-                            className="text-orange-400"
-                          />
+                          <Sun size={24} weight="bold" className="text-orange-400" />
                         ) : (
-                          <Moon
-                            size={20}
-                            weight="bold"
-                            className="text-purple-500"
-                          />
+                          <Moon size={24} weight="bold" className="text-purple-500" />
                         )}
-                        {theme === "dark"
-                          ? "Enable Light Mode"
-                          : "Enable Dark Mode"}
                       </button>
                     </div>
                   </GlowCard>
