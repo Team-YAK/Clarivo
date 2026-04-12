@@ -51,22 +51,28 @@ async def confirm(req: ConfirmRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=404, detail="Session not found or expired")
 
     user_data = await get_user(req.user_id)
-    # Cascade: E3 profile -> .env -> Preset Voice
+    # 1. Start with the DB preference
     voice_id = user_data.get("voice_id")
-    voice_source = "preset"
-    if not voice_id:
-        voice_id = os.getenv("YUKI_VOICE_ID")
-        if voice_id:
+    
+    # 2. If DB is empty, or specifically marked as "mock_voice_id", use the Kishan voice ID from .env
+    if not voice_id or voice_id in ["mock_voice_id", "mock_voice_123"]:
+        env_voice = os.getenv("KISHAN_VOICE_ID")
+        if env_voice:
+            voice_id = env_voice
             voice_source = "env_override"
+            print(f"DEBUG: Using KISHAN_VOICE_ID from .env: '{voice_id}'")
+        else:
+            voice_id = "21m00Tcm4TlvDq8ikWAM"  # Rachel fallback
+            voice_source = "preset"
+            print("DEBUG: KISHAN_VOICE_ID missing in .env, using Rachel fallback.")
     else:
         voice_source = "cloned"
-    if not voice_id:
-        voice_id = "21m00Tcm4TlvDq8ikWAM"  # Hardcoded fallback preset
+        print(f"DEBUG: Using Cloned voice from DB: '{voice_id}'")
 
+    # Double check we don't return the literal string "mock_voice_id" to ElevenLabs
     if voice_id == "mock_voice_id":
-        # In mock mode, return a placeholder audio URL
-        audio_url = "/audio/mock_patient.mp3"
-        voice_source = "mock"
+        voice_id = "21m00Tcm4TlvDq8ikWAM"
+        voice_source = "preset"
     else:
         try:
             audio_url = await synthesize_patient_voice(session["sentence"], voice_id)

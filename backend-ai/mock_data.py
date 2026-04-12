@@ -33,6 +33,9 @@ MOCK_USER = {
     "glossary_rules": [
         {"trigger_word": "Bobby", "enforced_meaning": "Kishan's Golden Retriever dog", "active": True},
         {"trigger_word": "Blue Pill", "enforced_meaning": "Aspirin (taken at 8am)", "active": True},
+        {"trigger_word": "The Drafting Pen", "enforced_meaning": "Kishan's specialized fountain pen for architectural sketching", "active": True},
+        {"trigger_word": "Earl Grey", "enforced_meaning": "Kishan's favorite tea, served hot with no sugar", "active": True},
+        {"trigger_word": "The Terrace", "enforced_meaning": "The overlook at the Japanese rock garden where Kishan spends his mornings", "active": True},
     ],
     "path_frequencies": {
         "food→dessert→tiramisu": 14,
@@ -44,7 +47,7 @@ MOCK_USER = {
         "food→main_course": 4,
         "health→headache": 3,
     },
-    "voice_id": "mock_voice_id",
+    "voice_id": "",
 }
 
 MOCK_SESSIONS = [

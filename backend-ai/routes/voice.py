@@ -51,15 +51,16 @@ async def voice_clone(audio: UploadFile = File(...), user_id: str = Form(DEFAULT
             from pathlib import Path
 
             # Save the raw voice sample for potential future cloning
-            samples_dir = Path("/tmp/voicemap_audio/voice_samples")
+            audio_root = os.getenv("AUDIO_OUTPUT_DIR", "audio_output")
+            samples_dir = Path(audio_root) / "voice_samples"
             samples_dir.mkdir(parents=True, exist_ok=True)
             sample_path = samples_dir / f"{user_id}_{uuid.uuid4().hex[:8]}.webm"
             with open(sample_path, "wb") as f:
                 f.write(audio_data)
             logger.info(f"Voice sample saved: {sample_path} ({len(audio_data)} bytes)")
 
-            # Use the pre-configured YUKI_VOICE_ID as the patient voice
-            fallback_voice_id = os.getenv("YUKI_VOICE_ID", FALLBACK_VOICE_ID)
+            # Use the pre-configured KISHAN_VOICE_ID as the patient voice
+            fallback_voice_id = os.getenv("KISHAN_VOICE_ID", FALLBACK_VOICE_ID)
             await save_voice_id(user_id, fallback_voice_id)
             logger.info(f"Using pre-configured voice_id={fallback_voice_id} for user {user_id}")
 
@@ -82,7 +83,7 @@ class SpeakRequest(BaseModel):
 async def voice_speak(req: SpeakRequest):
     """
     Synthesize speech using the patient's cloned voice.
-    Fallback chain: user.voice_id → YUKI_VOICE_ID env → Rachel preset.
+    Fallback chain: user.voice_id → KISHAN_VOICE_ID env → Rachel preset.
     Returns { audio_url, voice_source } so the frontend knows which voice was used.
     """
     try:
@@ -100,9 +101,9 @@ async def voice_speak(req: SpeakRequest):
         except Exception as e:
             logger.warning(f"Could not fetch user profile for voice_id: {e}")
 
-        # 2. Fallback to YUKI_VOICE_ID environment variable
+        # 2. Fallback to KISHAN_VOICE_ID environment variable
         if not voice_id:
-            voice_id = os.getenv("YUKI_VOICE_ID")
+            voice_id = os.getenv("KISHAN_VOICE_ID")
             if voice_id:
                 voice_source = "env_override"
 

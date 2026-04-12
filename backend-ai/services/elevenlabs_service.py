@@ -17,8 +17,9 @@ except ImportError:  # pragma: no cover - exercised in envs without optional dep
 
 logger = logging.getLogger(__name__)
 
-AUDIO_DIR = Path("/tmp/voicemap_audio")
-AUDIO_DIR.mkdir(exist_ok=True)
+audio_dir_path = os.getenv("AUDIO_OUTPUT_DIR", "audio_output")
+AUDIO_DIR = Path(audio_dir_path)
+AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # Neutral preset voice for caregiver direction (Rachel — clear, warm)
 CAREGIVER_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs "Rachel" preset
@@ -61,6 +62,7 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
     filepath = AUDIO_DIR / filename
 
     try:
+        print(f"DEBUG: Synthesis triggered for voice_id='{voice_id}'")
         logger.info(f"Calling ElevenLabs TTS: voice_id={voice_id}, text='{text[:40]}...'")
 
         audio_generator = get_client().text_to_speech.convert(
@@ -69,7 +71,7 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
             model_id="eleven_multilingual_v2",
             voice_settings=VoiceSettings(
                 stability=0.5,
-                similarity_boost=0.75,
+                similarity_boost=0.85,
                 style=0.0,
                 use_speaker_boost=True,
             ),
@@ -85,51 +87,13 @@ async def synthesize_patient_voice(text: str, voice_id: str) -> str:
             raise Exception("ElevenLabs returned a 0-byte audio file")
 
         logger.info(f"Audio file written: {filepath} ({file_size} bytes)")
+        print(f"DEBUG: Synthesis SUCCESS. File: {filepath}")
         return f"/audio/{filename}"
 
     except Exception as e:
         logger.error(f"Patient voice synthesis failed with voice_id={voice_id}: {e}")
-
-        # If the voice_id was a custom clone and it failed, retry with Rachel preset
-        if voice_id != FALLBACK_VOICE_ID:
-            logger.warning(f"Retrying synthesis with fallback voice (Rachel): {FALLBACK_VOICE_ID}")
-            try:
-                # Clean up the failed file if it was partially written
-                if filepath.exists():
-                    os.remove(filepath)
-
-                fallback_filename = f"{uuid.uuid4()}.mp3"
-                fallback_filepath = AUDIO_DIR / fallback_filename
-
-                audio_generator = get_client().text_to_speech.convert(
-                    voice_id=FALLBACK_VOICE_ID,
-                    text=text,
-                    model_id="eleven_multilingual_v2",
-                    voice_settings=VoiceSettings(
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        style=0.0,
-                        use_speaker_boost=True,
-                    ),
-                )
-
-                with open(fallback_filepath, "wb") as f:
-                    for chunk in audio_generator:
-                        f.write(chunk)
-
-                file_size = os.path.getsize(fallback_filepath)
-                if file_size == 0:
-                    os.remove(fallback_filepath)
-                    raise Exception("Fallback also returned 0-byte audio")
-
-                logger.info(f"Fallback audio written: {fallback_filepath} ({file_size} bytes)")
-                return f"/audio/{fallback_filename}"
-
-            except Exception as fallback_error:
-                logger.error(f"Fallback synthesis also failed: {fallback_error}")
-                raise fallback_error
-        else:
-            raise
+        print(f"DEBUG: Synthesis ERROR: {str(e)}")
+        raise e
 
 
 async def synthesize_caregiver_voice(text: str) -> str:

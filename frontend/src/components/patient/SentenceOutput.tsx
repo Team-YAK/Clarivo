@@ -193,15 +193,15 @@ export default function SentenceOutput({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
-                voiceSource === "cloned"
+                voiceSource === "cloned" || voiceSource === "env_override"
                   ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
                   : voiceSource === "browser"
                     ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
                     : "bg-[#14F1D9]/10 text-[#14F1D9] ring-1 ring-[#14F1D9]/20"
               }`}
             >
-              {voiceSource === "cloned" ? (
-                <><MicrophoneStage size={14} weight="fill" /> Using Cloned Voice</>
+              {(voiceSource === "cloned" || voiceSource === "env_override") ? (
+                <><MicrophoneStage size={14} weight="fill" /> Using Kishan's Voice</>
               ) : voiceSource === "browser" ? (
                 <><Waveform size={14} weight="fill" /> Browser Fallback</>
               ) : (

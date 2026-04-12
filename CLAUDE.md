@@ -35,7 +35,7 @@
   - `/api/confirm` (Voice): < 2s
   - `/api/clarify`: < 600ms
 - **Voice Distinction**: 
-  - **Patient (Yuki)**: Cloned `voice_id` (YUKI_VOICE_ID in .env).
+  - **Patient (Kishan)**: Cloned `voice_id` (KISHAN_VOICE_ID in .env).
   - **Caregiver**: Neutral preset ("Rachel").
 - **Path Key Standard**: `→` delimiter. Examples: `food→dessert→tiramisu`, `composer→running→sun`
 

@@ -56,7 +56,7 @@ async def seed():
             "always_know": "Yuki works as a digital artist in the home studio. Hachi is their 5-year-old Shiba Inu."
         },
         "routine": {"meals": {"breakfast": "07:30", "lunch": "13:00", "dinner": "19:00"}},
-        "voice_id": "",  # Empty so E2 cascades to YUKI_VOICE_ID env var
+        "voice_id": "",  # Empty so E2 cascades to KISHAN_VOICE_ID env var
         "interface_settings": {"simplified_view": False, "show_subtitles": True, "shortcut_threshold": 5},
         "knowledge_score": 85,
         "knowledge_breakdown": {"profile": 30, "medical": 25, "preferences": 20, "conversation": 10},
@@ -77,6 +77,9 @@ async def seed():
             {"id": "gr_001", "trigger_word": "Hachi", "enforced_meaning": "Kishan and Yuki's Shiba Inu dog", "active": True, "created_at": (now - timedelta(days=30)).isoformat()},
             {"id": "gr_002", "trigger_word": "The Studio", "enforced_meaning": "Yuki's workspace where they create digital art", "active": True, "created_at": (now - timedelta(days=28)).isoformat()},
             {"id": "gr_003", "trigger_word": "The Grid", "enforced_meaning": "Kishan's architectural drafting table", "active": True, "created_at": (now - timedelta(days=25)).isoformat()},
+            {"id": "gr_004", "trigger_word": "The Drafting Pen", "enforced_meaning": "Kishan's specialized fountain pen for architectural sketching", "active": True, "created_at": (now - timedelta(days=20)).isoformat()},
+            {"id": "gr_005", "trigger_word": "Earl Grey", "enforced_meaning": "Kishan's favorite tea, served hot with no sugar", "active": True, "created_at": (now - timedelta(days=15)).isoformat()},
+            {"id": "gr_006", "trigger_word": "The Terrace", "enforced_meaning": "The overlook at the Japanese rock garden where Kishan spends his mornings", "active": True, "created_at": (now - timedelta(days=10)).isoformat()},
         ],
         "correction_history": [
             {"path": "food→drink→tea", "original_sentence": "I want drink.", "corrected_sentence": "I'd love some Earl Grey tea, Yuki.", "timestamp": (now - timedelta(days=5)).isoformat()},

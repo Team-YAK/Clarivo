@@ -178,7 +178,7 @@ cd backend-ai && python test_endpoints.py
 ```
 OPENAI_API_KEY=sk-proj-...
 ELEVENLABS_API_KEY=sk_...
-YUKI_VOICE_ID=kZMkZDS1CEEqIA2z3WtJ
+KISHAN_VOICE_ID=kZMkZDS1CEEqIA2z3WtJ
 E3_BASE_URL=http://localhost:8002
 USE_MOCK=false
 ```
