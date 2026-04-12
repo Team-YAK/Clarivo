@@ -17,7 +17,7 @@ export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
   const [splitPercent, setSplitPercent] = useState(50);
   const [isResizing, setIsResizing] = useState(false);
-  const [demoMode] = useState(true); // Hardcoded to true as requested, but UI removed
+  const [demoMode] = useState(false); // Set to false as requested
   const [isInitializingDemo, setIsInitializingDemo] = useState(false);
   const [conversationVersion, setConversationVersion] = useState(0);
 

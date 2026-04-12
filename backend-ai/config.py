@@ -10,5 +10,5 @@ DISTRESS_TERMS = {
     "stomach_pain", "back_pain", "in_pain",
 }
 
-DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 
