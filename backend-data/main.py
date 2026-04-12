@@ -1,7 +1,11 @@
 import os
 import logging
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load environment variables
+load_dotenv()
 from database import connect_to_mongo, close_mongo_connection
 from routes.icons import router as icons_router
 from routes.sentences import router as sentences_router

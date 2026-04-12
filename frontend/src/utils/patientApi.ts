@@ -1,5 +1,6 @@
 const AI_URL_INTENT = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
-const DEFAULT_USER_ID_INTENT = 'alex_demo';
+const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || 'alex_demo';
+const DEFAULT_USER_ID_INTENT = DEFAULT_USER_ID;
 
 export interface IntentTokenEvent {
   type: 'token';
@@ -184,7 +185,6 @@ export const streamAndConfirmIntent = async ({
 };
 
 const AI_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
-const DEFAULT_USER_ID = 'alex_demo';
 
 export interface AiOption {
   key: string;

@@ -32,19 +32,21 @@ app.add_middleware(
 )
 
 # Mount audio files directory
-audio_dir = Path("/tmp/voicemap_audio")
-audio_dir.mkdir(exist_ok=True)
+audio_dir_path = os.getenv("AUDIO_OUTPUT_DIR", "audio_output")
+audio_dir = Path(audio_dir_path)
+audio_dir.mkdir(parents=True, exist_ok=True)
 
 import time
 # Cleanup old audio files (>24 hours old) on startup
 now = time.time()
-for f in audio_dir.iterdir():
-    if f.is_file() and f.stat().st_mtime < now - 86400:
-        try:
-            f.unlink()
-            logging.info(f"Cleaned up old audio file: {f.name}")
-        except Exception as e:
-            logging.error(f"Failed to delete {f.name}: {e}")
+if audio_dir.exists():
+    for f in audio_dir.iterdir():
+        if f.is_file() and f.stat().st_mtime < now - 86400:
+            try:
+                f.unlink()
+                logging.info(f"Cleaned up old audio file: {f.name}")
+            except Exception as e:
+                logging.error(f"Failed to delete {f.name}: {e}")
 
 app.mount("/audio", StaticFiles(directory=str(audio_dir)), name="audio")
 

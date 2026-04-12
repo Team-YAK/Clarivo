@@ -93,7 +93,7 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
       <span
         className={props.className}
         style={{ display: "inline-flex", ...props.style }}
-        dangerouslySetInnerHTML={{ __html: key }}
+        /* dangerouslySetInnerHTML={{ __html: key }} */
       />
     );
     InlineSvgIcon.displayName = "InlineSvgIcon";

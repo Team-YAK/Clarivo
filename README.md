@@ -60,42 +60,68 @@ Clarivo/
 
 ---
 
-## Getting Started
+## Local Setup
 
-### Prerequisites
+To get Clarivo running on your machine, follow these steps. If you don't have API keys (OpenAI/ElevenLabs) or MongoDB installed, you can still run the app in **Offline Mode**.
 
-- Node.js 18+
-- Python 3.11+
-- MongoDB Atlas account
-- OpenAI API key
-- ElevenLabs API key
+### 1. Environment Variables
 
-### Environment Variables
+Each service needs its own configuration file. Follow these steps to set them up:
 
+**AI Backend (E2):**
 ```bash
+cd backend-ai
 cp .env.example .env
-# Fill in:
-# OPENAI_API_KEY
-# ELEVENLABS_API_KEY
-# YUKI_VOICE_ID        # pre-cloned voice ID
-# MONGODB_URI
+# Edit .env and set USE_MOCK=true if you don't have API keys
 ```
 
-### Installation
-
+**Data Backend (E3):**
 ```bash
-# Frontend
-cd frontend && npm install && npm run dev
-
-# AI Backend
-cd backend-ai && pip install -r requirements.txt && uvicorn main:app --port 8001
-
-# Data Backend
-cd backend-data && pip install -r requirements.txt && uvicorn main:app --port 8002
-
-# Seed demo data
-cd backend-data && python seed_demo.py
+cd backend-data
+cp .env.example .env
+# Edit .env and set USE_MOCK_DB=true to run without MongoDB
 ```
+
+**Frontend:**
+```bash
+cd frontend
+cp .env.example .env.local
+```
+
+### 2. Installation & Running
+
+**AI Backend (Port 8001):**
+```bash
+cd backend-ai
+pip install -r requirements.txt
+python main.py
+```
+
+**Data Backend (Port 8002):**
+```bash
+cd backend-data
+pip install -r requirements.txt
+python main.py
+```
+
+**Frontend (Port 3000):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## Offline Mode (No API Keys Required)
+
+If you or your collaborators want to test the UI without setting up OpenAI, ElevenLabs, or MongoDB:
+
+1. In `backend-ai/.env`, set `USE_MOCK=true`.
+2. In `backend-data/.env`, set `USE_MOCK_DB=true`.
+3. Start all three services as described above.
+
+The app will use pre-defined mock responses for all AI and database operations, allowing you to navigate the UI and test the buttons immediately.
 
 ### Demo Mode
 
