@@ -38,8 +38,28 @@ async def intent(req: IntentRequest):
     input_mode = req.input_mode
     path_key = path_to_key(path, input_mode)
 
-    user_data = await get_user(user_id)
-    context = build_context_string(user_data)
+    E3_BASE = os.getenv("E3_BASE_URL", "http://localhost:8002")
+
+    async def _fetch_conversation():
+        try:
+            async with httpx.AsyncClient(timeout=1.0) as client:
+                resp = await client.get(
+                    f"{E3_BASE}/api/conversations/active",
+                    params={"user_id": user_id},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return data if isinstance(data, dict) else None
+        except Exception:
+            pass
+        return None
+
+    import asyncio
+    user_data, active_conv = await asyncio.gather(
+        get_user(user_id),
+        _fetch_conversation(),
+    )
+    context = build_context_string(user_data, conversation=active_conv)
     session_id = f"s_{uuid.uuid4().hex[:8]}"
 
     async def event_generator():

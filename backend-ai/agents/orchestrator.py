@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ── In-memory cache ──────────────────────────────────────────
 # Key: f"{user_id}:{time_slot}:{path_key}" → { "result": {...}, "timestamp": float }
 _cache: dict[str, dict] = {}
-CACHE_TTL = 300  # 5 minutes
+CACHE_TTL = 60  # 1 minute — keeps options fresh as conversations progress
 
 # ── In-memory session paths ─────────────────────────────────
 # Key: user_id → list[str]

@@ -102,6 +102,12 @@ async def generate_options(
         recent_leaves = [p[-1] for p in recent[:5] if p]
         prompt_parts.append(f"Recent: {', '.join(recent_leaves)}")
 
+    # Add conversation context — what's been said so far in this session
+    utterances = context.get("conversation_utterances", [])
+    if utterances:
+        convo_str = " | ".join(utterances)
+        prompt_parts.append(f"Conversation so far: {convo_str[:150]}")
+
     user_prompt = "\n".join(prompt_parts)
 
     try:
@@ -170,26 +176,108 @@ async def generate_options(
 
 
 def _fallback_options(current_path: list[str]) -> dict:
-    """Sensible fallback when LLM is unavailable."""
+    """Path-aware sensible fallback when LLM is unavailable."""
+    # Static category map: covers all 12 root categories
+    CATEGORY_DEFAULTS: dict[str, list[dict]] = {
+        "physical": [
+            {"label": "Pain", "icon": "pain"}, {"label": "Hot", "icon": "temperature_hot"},
+            {"label": "Cold", "icon": "temperature_cold"}, {"label": "Dizzy", "icon": "dizzy"},
+            {"label": "Nausea", "icon": "nausea"}, {"label": "Tired", "icon": "fatigue"},
+            {"label": "Itchy", "icon": "itch"}, {"label": "Weak", "icon": "weakness"},
+        ],
+        "emotional": [
+            {"label": "Happy", "icon": "happy"}, {"label": "Sad", "icon": "sad"},
+            {"label": "Anxious", "icon": "anxious"}, {"label": "Angry", "icon": "angry"},
+            {"label": "Scared", "icon": "scared"}, {"label": "Excited", "icon": "excited"},
+            {"label": "Lonely", "icon": "lonely"}, {"label": "Calm", "icon": "calm"},
+        ],
+        "food": [
+            {"label": "Breakfast", "icon": "breakfast"}, {"label": "Lunch", "icon": "lunch"},
+            {"label": "Dinner", "icon": "dinner"}, {"label": "Snack", "icon": "snack"},
+            {"label": "Dessert", "icon": "dessert"}, {"label": "Fruit", "icon": "fruit"},
+        ],
+        "drink": [
+            {"label": "Water", "icon": "water"}, {"label": "Tea", "icon": "tea"},
+            {"label": "Coffee", "icon": "coffee_drink"}, {"label": "Juice", "icon": "juice"},
+            {"label": "Milk", "icon": "milk"}, {"label": "Soda", "icon": "soda"},
+        ],
+        "sleep": [
+            {"label": "Rest", "icon": "rest"}, {"label": "Nap", "icon": "nap"},
+            {"label": "Pillow", "icon": "pillow"}, {"label": "Blanket", "icon": "blanket"},
+            {"label": "Dark Room", "icon": "dark_room"}, {"label": "Quiet", "icon": "quiet"},
+        ],
+        "social": [
+            {"label": "Family", "icon": "family"}, {"label": "Friend", "icon": "friend"},
+            {"label": "Nurse", "icon": "nurse"}, {"label": "Doctor", "icon": "doctor"},
+            {"label": "Call", "icon": "call_someone"}, {"label": "Alone", "icon": "alone"},
+        ],
+        "watch": [
+            {"label": "TV", "icon": "tv"}, {"label": "Movie", "icon": "movie"},
+            {"label": "Music", "icon": "music"}, {"label": "Sports", "icon": "sports"},
+            {"label": "News", "icon": "news"}, {"label": "Read", "icon": "read"},
+        ],
+        "hygiene": [
+            {"label": "Shower", "icon": "shower"}, {"label": "Bath", "icon": "bath"},
+            {"label": "Brush Teeth", "icon": "brush_teeth"}, {"label": "Wash Hands", "icon": "wash_hands"},
+            {"label": "Shave", "icon": "shave"}, {"label": "Change", "icon": "change_clothes"},
+        ],
+        "environment": [
+            {"label": "Light", "icon": "light"}, {"label": "Temperature", "icon": "temperature"},
+            {"label": "Fresh Air", "icon": "air"}, {"label": "Window", "icon": "window"},
+            {"label": "Fan", "icon": "fan"}, {"label": "Quiet", "icon": "quiet"},
+        ],
+        "medical": [
+            {"label": "Medicine", "icon": "medicine"}, {"label": "Pill", "icon": "pill"},
+            {"label": "Emergency", "icon": "emergency"}, {"label": "Checkup", "icon": "checkup"},
+            {"label": "Pain Relief", "icon": "pain_relief"}, {"label": "Bandage", "icon": "bandage"},
+        ],
+        "communication": [
+            {"label": "Yes", "icon": "yes"}, {"label": "No", "icon": "no"},
+            {"label": "Please", "icon": "please"}, {"label": "Thank You", "icon": "thank_you"},
+            {"label": "Help", "icon": "help"}, {"label": "Stop", "icon": "stop"},
+        ],
+        "pain": [
+            {"label": "Headache", "icon": "headache"}, {"label": "Stomach", "icon": "stomach"},
+            {"label": "Back", "icon": "backpain"}, {"label": "Chest", "icon": "chestpain"},
+            {"label": "Neck", "icon": "neck"}, {"label": "Joints", "icon": "joints"},
+        ],
+    }
+
     if not current_path:
-        # Root-level fallback
+        # Root-level fallback: all 12 top categories
         options = [
+            {"label": "Physical", "icon": "physical"},
+            {"label": "Emotions", "icon": "emotional"},
             {"label": "Food", "icon": "food"},
             {"label": "Drink", "icon": "drink"},
-            {"label": "Emotions", "icon": "emotional"},
-            {"label": "Physical", "icon": "physical"},
             {"label": "Sleep", "icon": "sleep"},
             {"label": "Social", "icon": "social"},
-            {"label": "Medical", "icon": "medical"},
+            {"label": "Entertainment", "icon": "watch"},
             {"label": "Toilet", "icon": "toilet"},
+            {"label": "Hygiene", "icon": "hygiene"},
+            {"label": "Environment", "icon": "environment"},
+            {"label": "Medical", "icon": "medical"},
+            {"label": "Communicate", "icon": "communication"},
         ]
     else:
-        last = current_path[-1]
-        options = [
-            {"label": "More Info", "icon": "more"},
-            {"label": "Something Else", "icon": "other"},
-            {"label": last.title(), "icon": last.lower()},
-        ]
+        last = current_path[-1].lower()
+        # Look up the closest matching category in our static map
+        options = CATEGORY_DEFAULTS.get(last)
+        if not options:
+            # Search by partial key match
+            for key, vals in CATEGORY_DEFAULTS.items():
+                if last in key or key in last:
+                    options = vals
+                    break
+        if not options:
+            # Truly unknown path — generic but useful fallback
+            options = [
+                {"label": last.title(), "icon": last.replace(" ", "_")},
+                {"label": "Yes", "icon": "yes"},
+                {"label": "No", "icon": "no"},
+                {"label": "Help", "icon": "help"},
+                {"label": "More", "icon": "more"},
+            ]
 
     return {
         "quick_option": options[0],

@@ -17,12 +17,13 @@ def _count_tokens(text: str) -> int:
     return len(ENCODER.encode(text))
 
 
-def build_context_string(user_data: dict) -> str:
+def build_context_string(user_data: dict, conversation: dict | None = None) -> str:
     """
     Assemble a max-300-token system prompt from user data.
 
     Priority order (highest first):
     0. Glossary rules (hardcoded semantic terms — deterministic)
+    0.5. Current conversation utterances (last 3–5 turns)
     1. Correction history (last 10)
     2. Context answers (last 15)
     3. Known preferences + communication notes
@@ -51,7 +52,21 @@ def build_context_string(user_data: dict) -> str:
             sections.append(glossary_text)
             budget -= cost
 
-    # 1. Corrections — highest priority
+    # 0.5. Current conversation — inject last 3–5 utterances at high priority
+    if conversation and isinstance(conversation, dict):
+        utterances = conversation.get("utterances", [])[-5:]
+        if utterances:
+            parts = [f"{u.get('speaker', '?')}: \"{u.get('text', '')}\"" for u in utterances if u.get('text')]
+            if parts:
+                conv_text = "Current conversation: " + " | ".join(parts)
+                if len(conv_text) > 300:
+                    conv_text = conv_text[:300]
+                cost = _count_tokens(conv_text)
+                if cost <= budget:
+                    sections.append(conv_text)
+                    budget -= cost
+
+    # 1. Corrections — high priority
     if corrections:
         lines = []
         for c in corrections:

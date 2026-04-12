@@ -58,12 +58,39 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
             logger.warning(f"Context: sessions fetch failed: {e}")
             return []
 
-    # Run all three in parallel
-    user_data, frequencies, recent_sessions = await asyncio.gather(
+    async def _fetch_active_conversation():
+        try:
+            async with httpx.AsyncClient(timeout=1.5) as client:
+                resp = await client.get(
+                    f"{E3_BASE}/api/conversations/active",
+                    params={"user_id": user_id},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data and isinstance(data, dict):
+                        return data
+            return None
+        except Exception as e:
+            logger.warning(f"Context: active conversation fetch failed: {e}")
+            return None
+
+    # Run all four in parallel — no latency added vs. three-way gather
+    user_data, frequencies, recent_sessions, active_conv = await asyncio.gather(
         _fetch_user(),
         _fetch_frequencies(),
         _fetch_sessions(),
+        _fetch_active_conversation(),
     )
+
+    # Extract last 5 utterances from the active conversation
+    conversation_utterances = []
+    if active_conv and isinstance(active_conv, dict):
+        utterances = active_conv.get("utterances", [])
+        for u in utterances[-5:]:
+            speaker = u.get("speaker", "Unknown")
+            text = u.get("text", "")
+            if text:
+                conversation_utterances.append(f"{speaker}: '{text}'")
 
     # Compute time context
     hour = datetime.now().hour
@@ -133,4 +160,5 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
         "path_corrections": path_specific_corrections,
         "glossary_rules": active_glossary,
         "profile_name": user_data.get("profile", {}).get("name", "Patient"),
+        "conversation_utterances": conversation_utterances,
     }

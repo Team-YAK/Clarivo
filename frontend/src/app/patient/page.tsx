@@ -227,6 +227,7 @@ export default function PatientScreen() {
         {isSynthesizing && (
           <SentenceOutput
             labels={stackItems.map((item) => item.label)}
+            path={stackItems.map((item) => item.key)}
             onClose={handleSynthesisClose}
             onSpeak={() => console.log("Playing synthesized audio...")}
           />

@@ -295,17 +295,55 @@ export const fetchTreeChildren = async (parentKey: string): Promise<TreeNode[]> 
   return Promise.resolve(TREE_DATA[parentKey] || []);
 };
 
-export async function* generateIntentStream(labels: string[]): AsyncGenerator<string> {
-  // AI would normally process these into a natural sentence.
-  // For now, we do a simple join with contextual connectors.
-  const sentence = labels.length === 1
-    ? `I want ${labels[0]}.`
-    : `I ${labels.slice(0, -1).join(", ")} ${labels[labels.length - 1]}.`;
+const AI_URL_INTENT = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
+const DEFAULT_USER_ID_INTENT = 'alex_demo';
 
-  const words = sentence.split(" ");
-  for (const word of words) {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    yield word + " ";
+export async function* generateIntentStream(
+  path: string[],
+  labels: string[],
+  userId: string = DEFAULT_USER_ID_INTENT,
+  inputMode: string = 'composer',
+): AsyncGenerator<string> {
+  try {
+    const res = await fetch(`${AI_URL_INTENT}/api/intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, user_id: userId, input_mode: inputMode }),
+    });
+    if (!res.ok || !res.body) throw new Error(`Intent failed: ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const json = JSON.parse(line.slice(6));
+          if (json.done) return;
+          if (json.token) yield json.token;
+        } catch {
+          // skip malformed SSE lines
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('generateIntentStream backend fallback:', err);
+    // Fallback: simple sentence from labels when backend is unreachable
+    const sentence = labels.length === 1
+      ? `I want ${labels[0]}.`
+      : `I want ${labels.join(' and ')}.`;
+    for (const word of sentence.split(' ')) {
+      await new Promise((r) => setTimeout(r, 150));
+      yield word + ' ';
+    }
   }
 }
 
@@ -357,13 +395,15 @@ export const expandTreeAI = async (
     return await res.json();
   } catch (err) {
     console.warn('expandTreeAI fallback:', err);
-    // Contextual fallback based on last path item
-    const last = currentPath[currentPath.length - 1] ?? '';
+    const last = currentPath.length > 0
+      ? currentPath[currentPath.length - 1].replace(/_/g, ' ')
+      : '';
+    const iconKey = last.toLowerCase().replace(/\s+/g, '_') || 'more';
     return {
-      quick_option: { label: 'More specific', icon: 'magnifying_glass' },
+      quick_option: { label: last ? `More ${last}` : 'More options', icon: iconKey },
       options: [
-        { label: `${last} now`, icon: 'clock' },
-        { label: `${last} later`, icon: 'calendar' },
+        ...(last ? [{ label: `More ${last}`, icon: iconKey }] : []),
+        { label: 'Related', icon: 'link' },
         { label: 'Something else', icon: 'swap' },
       ],
     };

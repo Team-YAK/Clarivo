@@ -6,12 +6,14 @@ import { SpeakerHigh, X } from "@phosphor-icons/react";
 
 interface SentenceOutputProps {
   labels: string[];
+  path: string[];
   onClose: () => void;
   onSpeak: () => void;
 }
 
 export default function SentenceOutput({
   labels,
+  path,
   onClose,
   onSpeak,
 }: SentenceOutputProps) {
@@ -22,12 +24,13 @@ export default function SentenceOutput({
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const sentenceRef = useRef("");
 
-  // Stream the sentence word-by-word
+  // Stream the sentence word-by-word via backend /api/intent SSE
   useEffect(() => {
     let active = true;
     const runStream = async () => {
       let builtSentence = "";
-      const generator = generateIntentStream(labels);
+      // Pass path keys (for backend AI) + labels (for fallback display)
+      const generator = generateIntentStream(path, labels);
       for await (const word of generator) {
         if (!active) break;
         builtSentence += word;
@@ -42,7 +45,7 @@ export default function SentenceOutput({
     return () => {
       active = false;
     };
-  }, [labels]);
+  }, [labels, path]);
 
   // When streaming is done, synthesize voice via ElevenLabs
   useEffect(() => {
