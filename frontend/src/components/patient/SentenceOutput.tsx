@@ -57,6 +57,8 @@ export default function SentenceOutput({
         const res = await synthesizeVoice(finalSentence);
         if (res?.audio_url) {
           setAudioUrl(res.audio_url);
+        } else {
+          fallbackSpeech(finalSentence);
         }
 
         // Log patient utterance to any active conversation
@@ -70,6 +72,7 @@ export default function SentenceOutput({
         }
       } catch (e) {
         console.error("ElevenLabs synthesis failed:", e);
+        fallbackSpeech(finalSentence);
       } finally {
         setIsSynthesizing(false);
       }
@@ -83,8 +86,28 @@ export default function SentenceOutput({
     }
   }, [audioUrl]);
 
+  const fallbackSpeech = (text: string) => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = () => {
+        setIsPlaying(false);
+        setTimeout(onClose, 1000);
+      };
+      utterance.onerror = () => {
+        setIsPlaying(false);
+      };
+      setIsPlaying(true);
+      window.speechSynthesis.speak(utterance);
+      onSpeak();
+    }
+  };
+
   const playAudio = () => {
-    if (!audioUrl) return;
+    if (!audioUrl) {
+      fallbackSpeech(sentenceRef.current.trim());
+      return;
+    }
     setIsPlaying(true);
 
     const AI_URL = process.env.NEXT_PUBLIC_AI_URL || "http://localhost:8001";
