@@ -26,6 +26,12 @@ const QUICK_ACTIONS: DisplayOption[] = [
   { key: "and", label: "And", icon: "➕" },
   { key: "please", label: "Please", icon: "🙏" },
   { key: "thank_you", label: "Thanks", icon: "❤️" },
+  { key: "want", label: "Want", icon: "🤲" },
+  { key: "need", label: "Need", icon: "❗" },
+  { key: "but", label: "But", icon: "🧐" },
+  { key: "or", label: "Or", icon: "🔀" },
+  { key: "now", label: "Now", icon: "⚡" },
+  { key: "help", label: "Help", icon: "🆘" },
 ];
 
 interface WordStackProps {
@@ -68,7 +74,7 @@ export default function WordStack({
   return (
     <div className="w-full h-full flex flex-col p-3 gap-2">
       {/* ── Quick Actions Row (Smaller) ── */}
-      <div className="flex items-center justify-center gap-6 py-1 h-12 shrink-0">
+      <div className="flex items-center justify-center gap-3 py-1 h-16 shrink-0">
         {QUICK_ACTIONS.map((action) => {
           const Icon = getIconComponent(action.icon);
           return (
@@ -79,9 +85,9 @@ export default function WordStack({
               onClick={() => onAddToStack({ key: action.key, label: action.label, icon: action.icon })}
               className="flex flex-col items-center group"
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-primary/10 border border-white/5 transition-all">
-                <Icon size={18} className="text-on-surface" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface/50 group-hover:text-primary transition-colors">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-primary/10 border border-white/5 transition-all">
+                <Icon size={28} className="text-on-surface" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-on-surface/50 group-hover:text-primary transition-colors">
                   {action.label}
                 </span>
               </div>
