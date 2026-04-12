@@ -43,7 +43,7 @@ function getIconColor(option: DisplayOption, index: number): string {
 // ── Skeleton card ──────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="aspect-[4/3] w-full rounded-3xl shimmer-skeleton" />
+    <div className="aspect-square w-full rounded-[2.5rem] shimmer-skeleton" />
   );
 }
 
@@ -90,39 +90,46 @@ function OptionCard({
   );
 
   return (
-    <div ref={ref} className="relative group aspect-[4/3] w-full">
+    <div ref={ref} className="relative group aspect-square w-full">
       {isVisible && Icon ? (
         <motion.div
-          initial={{ opacity: 0, scale: 0.88, y: 10 }}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.2, delay: index * 0.03, ease: "easeOut" }}
+          transition={{ duration: 0.3, delay: index * 0.04, ease: "easeOut" }}
           className="w-full h-full relative"
         >
           <motion.button
             onClick={() => onSelect(option)}
-            whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.18, ease: "easeOut" } }}
-            whileTap={{ scale: 0.95 }}
-            className="relative w-full aspect-[4/3] rounded-3xl liquid-glass-card flex items-center justify-center cursor-pointer overflow-visible"
+            whileHover={{ y: -12, scale: 1.05, transition: { duration: 0.2, ease: "easeOut" } }}
+            whileTap={{ scale: 0.92 }}
+            className="relative w-full aspect-square rounded-[2.5rem] liquid-glass-card flex flex-col items-center justify-center cursor-pointer overflow-visible p-3"
             style={{ '--depth-color': color } as React.CSSProperties}
             aria-label={option.label}
           >
-            {/* Icon container — Widen to fit multiple emojis if needed */}
+            {/* Background Icon Glow */}
+            <div 
+              className="absolute inset-0 opacity-25 blur-[40px] rounded-full pointer-events-none"
+              style={{ background: color }}
+            />
+
+            {/* Icon container — Maximized to enlarge emojis */}
             <div
-              className="w-full h-full flex items-center justify-center overflow-hidden"
-              style={{ padding: '8%', height: '70%', containerType: 'inline-size' }}
+              className="flex-1 w-full flex items-center justify-center relative z-10 overflow-visible"
+              style={{ containerType: 'size' }}
             >
               <Icon
+                size="110%"
                 weight="fill"
                 color={color}
-                className="!w-full !h-full block"
-                style={{ filter: `drop-shadow(0 6px 20px ${color}90)` }}
+                className="!w-[110%] !h-[110%] block transition-transform duration-300 group-hover:scale-110"
+                style={{ filter: `drop-shadow(0 12px 28px ${color}70)` }}
               />
             </div>
 
-            {/* Label — sits in bottom 20% via absolute positioning, won't shift icon */}
+            {/* Label — larger font, more prominent */}
             <span
-              className="absolute bottom-0 inset-x-0 pb-2.5 text-center text-[9px] font-black uppercase tracking-widest leading-none"
-              style={{ color: `color-mix(in srgb, ${color} 70%, var(--color-on-surface-variant))` }}
+              className="relative z-10 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] leading-none mb-2 mt-1"
+              style={{ color: `color-mix(in srgb, ${color} 80%, var(--color-on-surface))` }}
             >
               {option.label}
             </span>
@@ -134,23 +141,23 @@ function OptionCard({
               e.stopPropagation();
               onExpand(option);
             }}
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-20
-              flex items-center justify-center px-3 py-1 rounded-full
-              glass-card text-[10px] font-black uppercase tracking-wide
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-1/2 z-20
+              flex items-center justify-center px-4 py-1.5 rounded-full
+              glass-card text-[11px] font-black uppercase tracking-widest
               opacity-0 group-hover:opacity-100
-              hover:scale-105 active:scale-95
-              transition-all duration-200 shadow-lg whitespace-nowrap"
+              hover:scale-110 active:scale-90
+              transition-all duration-300 shadow-xl whitespace-nowrap"
             style={{
               color,
-              background: `color-mix(in srgb, ${color} 14%, var(--glass-bg))`,
-              border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+              background: `color-mix(in srgb, ${color} 18%, var(--glass-bg))`,
+              border: `1.5px solid color-mix(in srgb, ${color} 40%, transparent)`,
             }}
           >
-            <CaretDown size={10} weight="bold" className="mr-1" /> more
+            <CaretDown size={12} weight="bold" className="mr-1.5" /> more
           </button>
         </motion.div>
       ) : (
-        <div className="w-full aspect-[4/3] rounded-3xl shimmer-skeleton" />
+        <div className="w-full aspect-square rounded-[2.5rem] shimmer-skeleton" />
       )}
     </div>
   );
@@ -248,8 +255,9 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
     <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col overflow-hidden relative">
       {/* Breadcrumb — glass container */}
       <div className="flex items-center gap-3 px-2 pb-3 flex-shrink-0">
-        <div className="flex items-center gap-2 glass-card rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
-          {currentFrame.breadcrumbs.map((crumb, i) => {
+        {currentFrame.breadcrumbs.length > 0 && (
+          <div className="flex items-center gap-2 glass-card rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
+            {currentFrame.breadcrumbs.map((crumb, i) => {
             const BreadcrumbIcon = getIconComponent(crumb.icon);
             const isLast = i === currentFrame.breadcrumbs.length - 1;
             return (
@@ -288,6 +296,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
             );
           })}
         </div>
+        )}
 
           <AnimatePresence>
             {depth > 0 && (
@@ -317,9 +326,9 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 content-start px-4 md:px-8 pb-12"
+              className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-10 content-start px-4 md:px-10 pb-12"
             >
-              {Array.from({ length: 8 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
             </motion.div>
@@ -330,7 +339,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 content-start px-4 md:px-8 pb-12"
+              className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-10 content-start px-4 md:px-10 pb-12"
             >
               {currentFrame.quickOption && (
                 <OptionCard
