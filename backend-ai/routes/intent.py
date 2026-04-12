@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover - exercised in envs without optional dep
 from services.data_service import get_user
 from services.context_service import build_context_string
 from services.openai_service import stream_intent, compute_confidence
-from config import DEFAULT_USER_ID
+from config import DEFAULT_USER_ID, DEMO_MODE
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -83,7 +83,8 @@ async def intent(req: IntentRequest):
     async def event_generator():
         full_sentence = ""
         # HARDCODED DEMO LOGIC
-        if req.demo:
+        is_demo = req.demo or DEMO_MODE
+        if is_demo:
             path_str = " ".join(req.path).lower()
             # If path contains running or is the specific demo sequence
             if "running" in path_str and "sunny" in path_str:

@@ -5,7 +5,7 @@ import os
 import json
 from datetime import datetime
 import httpx
-from config import DEFAULT_USER_ID, E3_BASE_URL
+from config import DEFAULT_USER_ID, E3_BASE_URL, DEMO_MODE
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -72,7 +72,8 @@ async def fetch_vision_context(user_id: str) -> str:
 @router.post("/api/analyze-drawing")
 async def analyze_drawing_endpoint(req: DrawingRequest):
     try:
-        if req.demo:
+        is_demo = req.demo or DEMO_MODE
+        if is_demo:
             return {"sentence": "I want an apple.", "confidence": 0.99}
             
         from services.vision_service import analyze_drawing

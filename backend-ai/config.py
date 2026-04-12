@@ -9,3 +9,6 @@ DISTRESS_TERMS = {
     "pain", "help", "emergency", "headache", "dizzy",
     "stomach_pain", "back_pain", "in_pain",
 }
+
+DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+
