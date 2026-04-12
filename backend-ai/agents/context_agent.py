@@ -105,6 +105,21 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
         if path_str and corrected:
             correction_map[path_str] = corrected
 
+    # Extract active glossary rules for LLM injection
+    raw_rules = user_data.get("glossary_rules", [])
+    active_glossary = [
+        {"trigger_word": r["trigger_word"], "enforced_meaning": r["enforced_meaning"]}
+        for r in raw_rules
+        if r.get("active", True)
+    ]
+
+    # Extract corrections relevant to the current path prefix
+    path_key_prefix = "→".join(current_path) if current_path else ""
+    path_specific_corrections = {
+        k: v for k, v in correction_map.items()
+        if path_key_prefix and k.startswith(path_key_prefix)
+    }
+
     return {
         "user_id": user_id,
         "current_path": current_path,
@@ -115,5 +130,7 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
         "preferences": known_prefs,
         "always_know": always_know,
         "corrections": correction_map,
+        "path_corrections": path_specific_corrections,
+        "glossary_rules": active_glossary,
         "profile_name": user_data.get("profile", {}).get("name", "Patient"),
     }

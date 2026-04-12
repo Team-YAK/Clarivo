@@ -15,6 +15,7 @@ Implements:
 
 import time
 import logging
+from datetime import datetime
 from agents.context_agent import fetch_context
 from agents.prediction_agent import generate_options
 from agents.ranking_agent import rank_options
@@ -23,7 +24,7 @@ from agents.memory_agent import persist_path
 logger = logging.getLogger(__name__)
 
 # ── In-memory cache ──────────────────────────────────────────
-# Key: f"{user_id}:{path_key}" → { "result": {...}, "timestamp": float }
+# Key: f"{user_id}:{time_slot}:{path_key}" → { "result": {...}, "timestamp": float }
 _cache: dict[str, dict] = {}
 CACHE_TTL = 300  # 5 minutes
 
@@ -32,8 +33,19 @@ CACHE_TTL = 300  # 5 minutes
 _session_paths: dict[str, list[str]] = {}
 
 
+def _time_slot() -> str:
+    """Returns 'morning' | 'afternoon' | 'evening' — cache varies per slot."""
+    hour = datetime.now().hour
+    if hour < 11:
+        return "morning"
+    elif hour < 17:
+        return "afternoon"
+    return "evening"
+
+
 def _cache_key(user_id: str, path: list[str]) -> str:
-    return f"{user_id}:{'→'.join(path) if path else 'root'}"
+    slot = _time_slot()
+    return f"{user_id}:{slot}:{'→'.join(path) if path else 'root'}"
 
 
 def _get_cached(key: str) -> dict | None:

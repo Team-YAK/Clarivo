@@ -27,16 +27,67 @@ async def seed():
         {"_id": "cat_activities", "key": "activities", "label": "Activities", "icon": "person-simple-run", "subtitle": "Things to do", "parent_key": None, "is_leaf": False, "category": "activities", "is_custom": False, "user_id": None},
 
         # Food Children
+        {"_id": "food_breakfast", "key": "breakfast", "label": "Breakfast", "icon": "egg", "subtitle": "Morning meal", "parent_key": "food", "is_leaf": False, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "food_dessert", "key": "dessert", "label": "Dessert", "icon": "ice-cream", "subtitle": "Sweet treats", "parent_key": "food", "is_leaf": False, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "food_main", "key": "main_course", "label": "Main Course", "icon": "hamburger", "subtitle": "Lunch and dinner", "parent_key": "food", "is_leaf": False, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "food_drink", "key": "drink", "label": "Drink", "icon": "drop", "subtitle": "Water and beverages", "parent_key": "food", "is_leaf": False, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "food_snack", "key": "snack", "label": "Snack", "icon": "cookie", "subtitle": "Light bites", "parent_key": "food", "is_leaf": False, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "food_nothing", "key": "nothing", "label": "Nothing", "icon": "x-circle", "subtitle": "I don't want anything", "parent_key": "food", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+
+        # Food -> Breakfast Leaves
+        {"_id": "breakfast_toast", "key": "toast", "label": "Toast", "icon": "bread", "subtitle": "Buttered toast", "parent_key": "breakfast", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "breakfast_eggs", "key": "eggs", "label": "Eggs", "icon": "egg", "subtitle": "Scrambled or fried", "parent_key": "breakfast", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "breakfast_cereal", "key": "cereal", "label": "Cereal", "icon": "bowl-food", "subtitle": "With milk", "parent_key": "breakfast", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "breakfast_oatmeal", "key": "oatmeal", "label": "Oatmeal", "icon": "bowl-food", "subtitle": "Warm porridge", "parent_key": "breakfast", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "breakfast_yogurt", "key": "yogurt", "label": "Yogurt", "icon": "bowl-food", "subtitle": "With fruit", "parent_key": "breakfast", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
 
         # Food -> Dessert Leaves
         {"_id": "dessert_tiramisu", "key": "tiramisu", "label": "Tiramisu", "icon": "cake", "subtitle": "Italian dessert", "parent_key": "dessert", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "dessert_icecream", "key": "ice_cream", "label": "Ice Cream", "icon": "ice-cream", "subtitle": "Cold treat", "parent_key": "dessert", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "dessert_cake", "key": "cake", "label": "Cake", "icon": "cake", "subtitle": "Slice of cake", "parent_key": "dessert", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
         {"_id": "dessert_chocolate", "key": "chocolate", "label": "Chocolate", "icon": "cookie", "subtitle": "Chocolate bar", "parent_key": "dessert", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "dessert_fruit", "key": "fruit", "label": "Fruit", "icon": "apple", "subtitle": "Fresh fruit", "parent_key": "dessert", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+
+        # Food -> Drink Leaves
+        {"_id": "drink_water", "key": "water", "label": "Water", "icon": "drop", "subtitle": "Glass of water", "parent_key": "drink", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "drink_coffee", "key": "coffee", "label": "Coffee", "icon": "coffee", "subtitle": "Hot coffee", "parent_key": "drink", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "drink_tea", "key": "tea", "label": "Tea", "icon": "coffee", "subtitle": "Hot or iced tea", "parent_key": "drink", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "drink_juice", "key": "juice", "label": "Juice", "icon": "orange", "subtitle": "Orange or apple juice", "parent_key": "drink", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+        {"_id": "drink_milk", "key": "milk", "label": "Milk", "icon": "drop", "subtitle": "Glass of milk", "parent_key": "drink", "is_leaf": True, "category": "food", "is_custom": False, "user_id": None},
+
+        # Feelings Children
+        {"_id": "feelings_happy", "key": "happy", "label": "Happy", "icon": "smiley", "subtitle": "Feeling good", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+        {"_id": "feelings_sad", "key": "sad", "label": "Sad", "icon": "smiley-sad", "subtitle": "Feeling down", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+        {"_id": "feelings_tired", "key": "tired", "label": "Tired", "icon": "moon", "subtitle": "Feeling fatigued", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+        {"_id": "feelings_pain", "key": "pain", "label": "In Pain", "icon": "warning", "subtitle": "Physical discomfort", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+        {"_id": "feelings_anxious", "key": "anxious", "label": "Anxious", "icon": "warning-circle", "subtitle": "Feeling worried", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+        {"_id": "feelings_bored", "key": "bored", "label": "Bored", "icon": "minus-circle", "subtitle": "Nothing to do", "parent_key": "feelings", "is_leaf": True, "category": "feelings", "is_custom": False, "user_id": None},
+
+        # Needs Children
+        {"_id": "needs_medicine", "key": "medicine", "label": "Medicine", "icon": "pill", "subtitle": "Need medication", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+        {"_id": "needs_bathroom", "key": "bathroom", "label": "Bathroom", "icon": "toilet", "subtitle": "Need the bathroom", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+        {"_id": "needs_help", "key": "help", "label": "Help", "icon": "hand-waving", "subtitle": "Need assistance", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+        {"_id": "needs_rest", "key": "rest", "label": "Rest", "icon": "moon", "subtitle": "Need to rest", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+        {"_id": "needs_phone", "key": "phone", "label": "My Phone", "icon": "device-mobile", "subtitle": "Get my phone", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+        {"_id": "needs_pain", "key": "pain", "label": "Pain Relief", "icon": "first-aid-kit", "subtitle": "Pain management", "parent_key": "needs", "is_leaf": True, "category": "needs", "is_custom": False, "user_id": None},
+
+        # Health Children
+        {"_id": "health_headache", "key": "headache", "label": "Headache", "icon": "warning", "subtitle": "Head pain", "parent_key": "health", "is_leaf": True, "category": "health", "is_custom": False, "user_id": None},
+        {"_id": "health_checkup", "key": "checkup", "label": "Check Up", "icon": "stethoscope", "subtitle": "Medical check", "parent_key": "health", "is_leaf": True, "category": "health", "is_custom": False, "user_id": None},
+        {"_id": "health_nausea", "key": "nausea", "label": "Nausea", "icon": "warning-circle", "subtitle": "Feeling sick", "parent_key": "health", "is_leaf": True, "category": "health", "is_custom": False, "user_id": None},
+        {"_id": "health_dizzy", "key": "dizzy", "label": "Dizzy", "icon": "spinner", "subtitle": "Feeling dizzy", "parent_key": "health", "is_leaf": True, "category": "health", "is_custom": False, "user_id": None},
+
+        # Activities Children
+        {"_id": "activities_walk", "key": "walk", "label": "Walk", "icon": "person-simple-walk", "subtitle": "Go for a walk", "parent_key": "activities", "is_leaf": True, "category": "activities", "is_custom": False, "user_id": None},
+        {"_id": "activities_tv", "key": "tv", "label": "Watch TV", "icon": "television", "subtitle": "Watch television", "parent_key": "activities", "is_leaf": True, "category": "activities", "is_custom": False, "user_id": None},
+        {"_id": "activities_music", "key": "music", "label": "Music", "icon": "music-note", "subtitle": "Listen to music", "parent_key": "activities", "is_leaf": True, "category": "activities", "is_custom": False, "user_id": None},
+        {"_id": "activities_read", "key": "read", "label": "Read", "icon": "book", "subtitle": "Read a book", "parent_key": "activities", "is_leaf": True, "category": "activities", "is_custom": False, "user_id": None},
+        {"_id": "activities_outside", "key": "outside", "label": "Outside", "icon": "sun", "subtitle": "Go outside", "parent_key": "activities", "is_leaf": True, "category": "activities", "is_custom": False, "user_id": None},
+
+        # People Children
+        {"_id": "people_maria", "key": "maria", "label": "Maria", "icon": "user", "subtitle": "His daughter in Boston", "parent_key": "people", "is_leaf": True, "category": "people", "is_custom": False, "user_id": None},
+        {"_id": "people_yuki", "key": "yuki", "label": "Yuki", "icon": "user", "subtitle": "Caregiver", "parent_key": "people", "is_leaf": True, "category": "people", "is_custom": False, "user_id": None},
+        {"_id": "people_doctor", "key": "doctor", "label": "Doctor", "icon": "stethoscope", "subtitle": "Call the doctor", "parent_key": "people", "is_leaf": True, "category": "people", "is_custom": False, "user_id": None},
 
         # Custom Nodes
         {"_id": "custom_alex_call_maria", "key": "custom_alex_call_maria", "label": "Call Maria", "icon": "phone", "subtitle": "My daughter", "parent_key": "people", "is_leaf": True, "category": "people", "is_custom": True, "user_id": user_id},
@@ -87,9 +138,33 @@ async def seed():
         "knowledge_score": 71,
         "knowledge_breakdown": {"profile": 25, "medical": 20, "preferences": 15, "conversation": 11},
         "path_frequencies": {
+            # Food paths — rich history for demo personalization
             "food→dessert→tiramisu": 14,
+            "food→drink→water": 9,
+            "food→dessert→ice_cream": 6,
+            "food→drink→coffee": 5,
+            "food→main_course": 4,
+            "food→breakfast→toast": 3,
+            "food→breakfast→eggs": 2,
+            "food→snack": 2,
+            # Needs paths
             "needs→medicine": 11,
-            "custom→custom_alex_call_maria": 5
+            "needs→bathroom": 8,
+            "needs→help": 4,
+            "needs→rest": 3,
+            # Feelings paths
+            "feelings→tired": 7,
+            "feelings→happy": 4,
+            "feelings→pain": 2,
+            # Activities paths
+            "activities→walk": 5,
+            "activities→tv": 4,
+            "activities→music": 3,
+            # Health paths
+            "health→headache": 3,
+            # People paths
+            "people→maria": 6,
+            "custom→custom_alex_call_maria": 5,
         },
         "glossary_rules": [
             {"id": "gr_001", "trigger_word": "Bobby", "enforced_meaning": "Kishan's Golden Retriever dog", "active": True, "created_at": (now - timedelta(days=30)).isoformat()},

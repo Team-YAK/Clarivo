@@ -319,3 +319,84 @@ export const synthesizeVoice = async (text: string, userId: string = "alex_demo"
   if (!res.ok) throw new Error('Synthesis failed');
   return await res.json(); // returns { audio_url: "..." }
 };
+
+// ─────────────────────────────────────────────────────────────
+// AI-powered Decision Tree — infinite depth via backend agents
+// ─────────────────────────────────────────────────────────────
+
+const AI_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
+const DEFAULT_USER_ID = 'alex_demo';
+
+export interface AiOption {
+  label: string;
+  icon: string;  // snake_case identifier, maps to getIconComponent key
+}
+
+export interface AiExpandResult {
+  quick_option: AiOption;
+  options: AiOption[];
+}
+
+/** Call the AI agents to get next-level options for a given path. */
+export const expandTreeAI = async (
+  currentPath: string[],
+  userId: string = DEFAULT_USER_ID,
+): Promise<AiExpandResult> => {
+  try {
+    const res = await fetch(`${AI_URL}/api/tree/expand`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, current_path: currentPath }),
+    });
+    if (!res.ok) throw new Error(`AI expand failed: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('expandTreeAI fallback:', err);
+    // Contextual fallback based on last path item
+    const last = currentPath[currentPath.length - 1] ?? '';
+    return {
+      quick_option: { label: 'More specific', icon: 'magnifying_glass' },
+      options: [
+        { label: `${last} now`, icon: 'clock' },
+        { label: `${last} later`, icon: 'calendar' },
+        { label: 'Something else', icon: 'swap' },
+      ],
+    };
+  }
+};
+
+/** Notify the backend of a SELECT action (lightweight path tracking). */
+export const selectTreeAI = async (
+  selectedKey: string,
+  currentPath: string[],
+  userId: string = DEFAULT_USER_ID,
+): Promise<void> => {
+  try {
+    await fetch(`${AI_URL}/api/tree/select`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, selected_key: selectedKey, current_path: currentPath }),
+    });
+  } catch {
+    // Fire-and-forget — failure is silent
+  }
+};
+
+/** Persist a confirmed path and increment frequency counters. */
+export const confirmTreeAI = async (
+  path: string[],
+  confidence: number = 0.9,
+  userId: string = DEFAULT_USER_ID,
+): Promise<{ ok: boolean; session_id?: string }> => {
+  try {
+    const res = await fetch(`${AI_URL}/api/tree/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, path, confidence }),
+    });
+    if (!res.ok) throw new Error(`confirm failed: ${res.status}`);
+    return await res.json();
+  } catch {
+    return { ok: false };
+  }
+};

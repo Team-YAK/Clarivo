@@ -15,7 +15,7 @@ from services.openai_service import get_client
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You generate button options for an AAC (Augmentative and Alternative Communication) app for aphasia patients.
+BASE_SYSTEM_PROMPT = """You generate button options for an AAC (Augmentative and Alternative Communication) app for aphasia patients.
 
 Given the user's current navigation path and their personal context, generate the next 6-12 options they might want to select.
 
@@ -33,6 +33,17 @@ Rules:
 - No explanations, ONLY the JSON object"""
 
 
+def _build_system_prompt(glossary_rules: list[dict]) -> str:
+    """Inject active glossary rules as a strict prefix."""
+    if not glossary_rules:
+        return BASE_SYSTEM_PROMPT
+    mappings = " | ".join(
+        f'"{r["trigger_word"]}" = {r["enforced_meaning"]}'
+        for r in glossary_rules
+    )
+    return f"Strict Terms (always use these meanings): {mappings}\n\n{BASE_SYSTEM_PROMPT}"
+
+
 async def generate_options(
     current_path: list[str],
     context: dict,
@@ -42,6 +53,8 @@ async def generate_options(
     Target: <500ms (gpt-4o-mini, <300 token prompt).
     """
     path_str = " > ".join(current_path) if current_path else "root"
+    glossary_rules = context.get("glossary_rules", [])
+    system_prompt = _build_system_prompt(glossary_rules)
 
     # Build a compact user prompt
     prompt_parts = [f"Path: {path_str}"]
@@ -51,6 +64,13 @@ async def generate_options(
     prefs = context.get("preferences", "")
     if prefs:
         prompt_parts.append(f"Preferences: {prefs[:100]}")
+
+    # Add path-specific corrections as strong hints
+    path_corrections = context.get("path_corrections", {})
+    if path_corrections:
+        # Show only the corrected values (not full path keys) to keep prompt tight
+        correction_hints = list(path_corrections.values())[:3]
+        prompt_parts.append(f"Prior corrections: {'; '.join(correction_hints[:80])}")
 
     # Add frequency hints (top 5 relevant)
     frequencies = context.get("frequencies", {})
@@ -89,7 +109,7 @@ async def generate_options(
         resp = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             max_tokens=300,
