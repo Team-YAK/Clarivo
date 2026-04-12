@@ -1,10 +1,11 @@
-"""POST /api/voice/clone — Onboarding voice cloning. /api/voice/speak - Text-to-speech."""
+"""POST /api/voice/clone — Onboarding voice cloning. /api/voice/speak - Text-to-speech. /api/voice/transcribe - Speech-to-text."""
 
 import os
+import io
 
 import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.elevenlabs_service import clone_voice, synthesize_patient_voice
+from services.elevenlabs_service import clone_voice, synthesize_patient_voice, get_client
 from services.data_service import save_voice_id, get_user
 from pydantic import BaseModel
 
@@ -57,3 +58,34 @@ async def voice_speak(req: SpeakRequest):
     except Exception as e:
         logger.error(f"Speak route failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/voice/transcribe")
+async def voice_transcribe(file: UploadFile = File(...)):
+    """
+    Transcribe uploaded audio using ElevenLabs Scribe STT.
+    Accepts webm, wav, mp3, m4a, ogg, etc.
+    Returns { "text": "transcribed text" }
+    """
+    try:
+        audio_data = await file.read()
+        if len(audio_data) < 500:
+            # Too small to contain speech
+            return {"text": ""}
+
+        logger.info(f"Transcribing audio: {len(audio_data)} bytes, filename={file.filename}")
+
+        client = get_client()
+        result = client.speech_to_text.convert(
+            model_id="scribe_v1",
+            file=audio_data,
+            language_code="en",
+        )
+
+        transcript = result.text.strip() if result and result.text else ""
+        logger.info(f"Transcription result: '{transcript[:80]}...' " if len(transcript) > 80 else f"Transcription result: '{transcript}'")
+        return {"text": transcript}
+    except Exception as e:
+        logger.error(f"Transcription failed: {e}")
+        return {"text": ""}
+

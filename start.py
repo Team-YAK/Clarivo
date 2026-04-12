@@ -10,10 +10,17 @@ import requests
 
 root_dir = os.path.dirname(__file__)
 
+def _python_for(subdir: str) -> str:
+    """Return the venv python for a backend if it exists, else sys.executable."""
+    venv_python = os.path.join(root_dir, subdir, "venv", "bin", "python3")
+    if os.path.isfile(venv_python):
+        return venv_python
+    return sys.executable
+
 SERVERS = [
     {
         "name": "backend-data",
-        "cmd": [sys.executable, "main.py"],
+        "cmd": [_python_for("backend-data"), "main.py"],
         "cwd": os.path.join(root_dir, "backend-data"),
         "port": 8002,
         "health_url": "http://localhost:8002/health",
@@ -21,7 +28,7 @@ SERVERS = [
     },
     {
         "name": "backend-ai",
-        "cmd": [sys.executable, "main.py"],
+        "cmd": [_python_for("backend-ai"), "main.py"],
         "cwd": os.path.join(root_dir, "backend-ai"),
         "port": 8001,
         "health_url": "http://localhost:8001/health",
@@ -36,6 +43,7 @@ SERVERS = [
         "wait_for_startup": False,
     },
 ]
+
 
 processes = []
 

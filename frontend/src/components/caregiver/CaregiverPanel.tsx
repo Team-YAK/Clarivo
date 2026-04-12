@@ -10,6 +10,7 @@ import {
   endConversation,
   addUtterance,
   fetchActiveConversation,
+  transcribeAudio,
 } from '@/utils/caregiverApi';
 import { Session, CaregiverPanel as CaregiverPanelData } from '../../../../shared/api-contract';
 import { Warning, Brain, ArrowCounterClockwise, ThumbsUp, ThumbsDown, Check, Microphone, MicrophoneSlash, ChatTeardropText } from '@phosphor-icons/react';
@@ -37,71 +38,184 @@ export default function CaregiverPanel() {
   const [submittingContext, setSubmittingContext] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [activeConv, setActiveConv] = useState<any>(null);
+  const [interimText, setInterimText] = useState("");
 
-  // Use refs to avoid re-creating SpeechRecognition on every state change
-  const recognitionRef = useRef<any>(null);
+  // Refs for MediaRecorder-based transcription
   const activeConvRef = useRef<any>(null);
   const isRecordingRef = useRef(false);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const recordingIntervalRef = useRef<any>(null);
+  const isTranscribingRef = useRef(false);
 
-  // Keep refs in sync with state
+  // Keep activeConv ref in sync
   useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
-  useEffect(() => { isRecordingRef.current = isRecording; }, [isRecording]);
 
   // Auto-scroll transcript to bottom
   useEffect(() => {
     if (transcriptContainerRef.current) {
       transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
     }
-  }, [activeConv?.utterances?.length]);
+  }, [activeConv?.utterances?.length, interimText]);
 
-  // Initialize SpeechRecognition once
+  // Cleanup on unmount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const rec = new SpeechRecognition();
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.lang = 'en-US';
-
-    rec.onresult = async (event: any) => {
-      const last = event.results[event.results.length - 1];
-      if (!last.isFinal) return;
-      const transcript = last[0].transcript.trim();
-      const conv = activeConvRef.current;
-      if (conv?.id && transcript) {
-        console.log("Transcribed:", transcript);
-        try {
-          await addUtterance(conv.id, "Visitor", transcript);
-        } catch (e) {
-          console.error("Failed to save utterance:", e);
-        }
-      }
-    };
-
-    rec.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      // Don't stop recording on no-speech errors, just let it restart
-      if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        setIsRecording(false);
-      }
-    };
-
-    rec.onend = () => {
-      // Auto-restart if we're still supposed to be recording
-      if (isRecordingRef.current) {
-        try { rec.start(); } catch { /* already started */ }
-      }
-    };
-
-    recognitionRef.current = rec;
-
     return () => {
-      try { rec.stop(); } catch { /* not running */ }
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try { mediaRecorderRef.current.stop(); } catch { /* ok */ }
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
     };
-  }, []); // Empty deps — only initialize once
+  }, []);
+
+  /**
+   * Start the MediaRecorder cycle:
+   *  1. Request mic permission
+   *  2. Record for ~5 seconds
+   *  3. Stop → collect blob → send to /api/voice/transcribe
+   *  4. Restart recording
+   *  Repeat until isRecordingRef.current === false
+   */
+  const startMediaRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          channelCount: 1,
+          sampleRate: 16000,
+        }
+      });
+      mediaStreamRef.current = stream;
+      console.log("[STT] Microphone access granted");
+
+      const startRecordingCycle = () => {
+        if (!isRecordingRef.current || !mediaStreamRef.current) return;
+
+        // Pick a supported MIME type
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : 'audio/mp4';
+
+        const recorder = new MediaRecorder(stream, { mimeType });
+        const chunks: Blob[] = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          if (chunks.length === 0) {
+            // No data captured, restart
+            if (isRecordingRef.current) startRecordingCycle();
+            return;
+          }
+
+          const blob = new Blob(chunks, { type: mimeType });
+          console.log(`[STT] Audio chunk: ${(blob.size / 1024).toFixed(1)}KB`);
+
+          // Don't send tiny blobs (likely silence)
+          if (blob.size < 1000) {
+            setInterimText("");
+            if (isRecordingRef.current) startRecordingCycle();
+            return;
+          }
+
+          // Show "Processing..." while transcribing
+          if (!isTranscribingRef.current) {
+            setInterimText("Processing audio...");
+          }
+          isTranscribingRef.current = true;
+
+          try {
+            const text = await transcribeAudio(blob);
+            if (text && text.trim()) {
+              console.log("[STT] Transcribed:", text);
+              setInterimText("");
+              const conv = activeConvRef.current;
+              if (conv?.id) {
+                const utterance = {
+                  speaker: "Visitor",
+                  text: text.trim(),
+                  timestamp: new Date().toISOString(),
+                };
+                // Update local state IMMEDIATELY so it appears in UI
+                setActiveConv((prev: any) => {
+                  if (!prev) return prev;
+                  const updated = {
+                    ...prev,
+                    utterances: [...(prev.utterances || []), utterance],
+                  };
+                  activeConvRef.current = updated;
+                  return updated;
+                });
+                // Also persist to DB (fire and forget)
+                addUtterance(conv.id, "Visitor", text.trim()).catch((e) =>
+                  console.error("Failed to persist utterance:", e)
+                );
+              }
+            } else {
+              setInterimText("");
+            }
+          } catch (e) {
+            console.error("[STT] Transcription error:", e);
+            setInterimText("");
+          }
+
+          isTranscribingRef.current = false;
+
+          // Start next cycle
+          if (isRecordingRef.current) startRecordingCycle();
+        };
+
+        recorder.onerror = (e: any) => {
+          console.error("[STT] MediaRecorder error:", e);
+          if (isRecordingRef.current) {
+            setTimeout(startRecordingCycle, 1000);
+          }
+        };
+
+        mediaRecorderRef.current = recorder;
+        recorder.start();
+        console.log("[STT] Recording started");
+
+        // Stop after 5 seconds to send the chunk
+        recordingIntervalRef.current = setTimeout(() => {
+          if (recorder.state === 'recording') {
+            recorder.stop();
+          }
+        }, 5000);
+      };
+
+      startRecordingCycle();
+    } catch (e: any) {
+      console.error("[STT] Mic access denied:", e);
+      isRecordingRef.current = false;
+      setIsRecording(false);
+      alert("Microphone access is required for transcription. Please allow microphone access and try again.");
+    }
+  };
+
+  const stopMediaRecording = () => {
+    if (recordingIntervalRef.current) {
+      clearTimeout(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch { /* ok */ }
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    mediaRecorderRef.current = null;
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -114,6 +228,8 @@ export default function CaregiverPanel() {
       setHistory(hData);
       if (active?.id) {
         setActiveConv(active);
+      } else if (!isRecordingRef.current) {
+        setActiveConv(null);
       }
     } catch (e) {
       console.error(e);
@@ -155,26 +271,30 @@ export default function CaregiverPanel() {
 
   const toggleConversation = async () => {
     if (activeConv) {
-      // End conversation
+      // ── End conversation ──
+      isRecordingRef.current = false;
+      setIsRecording(false);
+      setInterimText("");
+      stopMediaRecording();
+
       try {
         await endConversation(activeConv.id);
       } catch (e) { console.error(e); }
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch { /* ok */ }
-      }
-      setIsRecording(false);
       setActiveConv(null);
     } else {
-      // Start conversation
+      // ── Start conversation ──
       try {
         const res = await startConversation();
         const convId = res.conversation_id || res.id;
         const conv = { id: convId, utterances: [] };
         setActiveConv(conv);
+
+        isRecordingRef.current = true;
         setIsRecording(true);
-        if (recognitionRef.current) {
-          try { recognitionRef.current.start(); } catch { /* already started */ }
-        }
+
+        // Start mic recording + backend STT
+        await startMediaRecording();
+        console.log("[STT] MediaRecorder pipeline started for conversation:", convId);
       } catch (e) {
         console.error("Failed to start conversation:", e);
       }
@@ -231,26 +351,52 @@ export default function CaregiverPanel() {
           <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant/10 shadow-xl h-[400px] flex flex-col">
             <div ref={transcriptContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
               {activeConv && activeConv.utterances && activeConv.utterances.length > 0 ? (
-                activeConv.utterances.map((u: any, i: number) => (
-                  <div key={i} className={`flex flex-col ${u.speaker === 'Patient' ? 'items-start' : 'items-end'}`}>
-                    <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${u.speaker === 'Patient' ? 'text-primary' : 'text-on-surface-variant'}`}>
-                      {u.speaker}
-                    </span>
-                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm leading-relaxed ${
-                      u.speaker === 'Patient' 
-                      ? 'bg-primary-container text-on-primary-container rounded-tl-none' 
-                      : 'bg-surface-container-highest text-on-surface rounded-tr-none border border-outline-variant/10'
-                    }`}>
-                      {u.text}
+                <>
+                  {activeConv.utterances.map((u: any, i: number) => (
+                    <div key={i} className={`flex flex-col ${u.speaker === 'Patient' ? 'items-start' : 'items-end'}`}>
+                      <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${u.speaker === 'Patient' ? 'text-primary' : 'text-on-surface-variant'}`}>
+                        {u.speaker}
+                      </span>
+                      <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm leading-relaxed ${
+                        u.speaker === 'Patient' 
+                        ? 'bg-primary-container text-on-primary-container rounded-tl-none' 
+                        : 'bg-surface-container-highest text-on-surface rounded-tr-none border border-outline-variant/10'
+                      }`}>
+                        {u.text}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  {/* Show interim text being transcribed */}
+                  {interimText && (
+                    <div className="flex flex-col items-end animate-pulse">
+                      <span className="text-[10px] font-black uppercase tracking-widest mb-1 text-on-surface-variant/50">
+                        Visitor (hearing...)
+                      </span>
+                      <div className="max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed bg-surface-container text-on-surface/50 rounded-tr-none border border-dashed border-outline-variant/20">
+                        {interimText}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : activeConv ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">
-                    <Microphone size={24} weight="fill" />
-                  </div>
-                  <p className="text-on-surface-variant text-xs font-bold uppercase tracking-widest animate-pulse">Listening for dialogue...</p>
+                  {interimText ? (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <Microphone size={24} weight="fill" />
+                      </div>
+                      <div className="bg-surface-container px-4 py-2.5 rounded-2xl text-sm font-medium text-on-surface/60 border border-dashed border-outline-variant/20 animate-pulse">
+                        {interimText}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">
+                        <Microphone size={24} weight="fill" />
+                      </div>
+                      <p className="text-on-surface-variant text-xs font-bold uppercase tracking-widest animate-pulse">Listening for dialogue...</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 opacity-50">

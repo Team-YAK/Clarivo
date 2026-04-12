@@ -29,6 +29,12 @@ class MockCollection:
         self._data = {} # Indexed by _id
 
     async def find_one(self, query, projection=None, sort=None):
+        import copy
+        doc = await self._find_one_raw(query, projection, sort)
+        return copy.deepcopy(doc) if doc else None
+
+    async def _find_one_raw(self, query, projection=None, sort=None):
+        """Internal: returns the original stored doc reference (for mutations)."""
         await asyncio.sleep(0.01)
         # Sort first if present (by getting all matches)
         matches = []
@@ -93,7 +99,7 @@ class MockCollection:
 
     async def update_one(self, query, update, upsert=False):
         # Very simplified mongo update simulation
-        doc = await self.find_one(query)
+        doc = await self._find_one_raw(query)
         if not doc:
             if upsert and "$set" in update:
                 # Create minimal doc from query + $set
@@ -172,7 +178,7 @@ class MockCollection:
                     doc.pop(k, None)
 
     async def delete_one(self, query):
-        doc = await self.find_one(query)
+        doc = await self._find_one_raw(query)
         if doc and "_id" in doc:
             del self._data[doc["_id"]]
     

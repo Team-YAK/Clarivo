@@ -236,3 +236,21 @@ export const fetchActiveConversation = async (userId: string = DEFAULT_USER_ID) 
     return null;
   }
 };
+
+export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const res = await fetch(`${AI_BASE_URL}/api/voice/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Transcription failed');
+    const data = await res.json();
+    return data.text || "";
+  } catch (err) {
+    console.warn("Transcription failed:", err);
+    return "";
+  }
+};
