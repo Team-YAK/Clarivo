@@ -150,16 +150,16 @@ export default function PatientScreen() {
       {/* Main Layout Grid */}
       <main className="flex-1 flex flex-col pt-14 overflow-hidden select-none">
         {/* Top Section: 50:50 Split */}
-        <div className="flex-1 flex overflow-hidden border-b border-white/5">
+        <div className="flex-1 flex overflow-hidden">
           {/* Patient Area (Left 50%) */}
-          <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 border-r border-white/5">
+          <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6 border-r border-white/5">
             <div className="h-full flex flex-col">
               <ButtonGrid onAddToStack={handleAddToStack} />
             </div>
           </div>
 
           {/* Partner Area (Right 50%) */}
-          <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4">
+          <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6">
             <div className="h-full flex flex-col">
               <PartnerPanel />
             </div>
@@ -167,7 +167,7 @@ export default function PatientScreen() {
         </div>
 
         {/* Bottom Panel Area: Fixed Height */}
-        <div className="h-48 shrink-0 bg-surface/30 backdrop-blur-xl relative">
+        <div className="h-48 shrink-0 bg-surface/30 backdrop-blur-xl relative border-t border-white/10">
           <WordStack
             items={stackItems}
             onReorder={setStackItems}
