@@ -1,21 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sun, Moon } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Only render after hydration — avoids SSR/client mismatch on theme-dependent attributes
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isDark = resolvedTheme === "dark";
+
+  // Render a stable placeholder until mounted so SSR and client agree
+  if (!mounted) {
+    return (
+      <button
+        className="relative flex items-center justify-center w-10 h-10 rounded-full glass-card border border-outline-variant/10"
+        aria-label="Toggle theme"
+        disabled
+      />
+    );
+  }
 
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="relative flex items-center justify-center w-10 h-10 rounded-full glass-card border border-outline-variant/10 transition-all hover:border-outline-variant/30 hover:scale-105"
-      title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      aria-label="Toggle theme"
+      aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
     >
       <AnimatePresence mode="wait" initial={false}>
         {isDark ? (
