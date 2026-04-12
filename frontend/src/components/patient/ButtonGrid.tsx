@@ -54,6 +54,7 @@ function LazyIconCard({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
+          className="aspect-square w-full h-full relative"
         >
           <LiquidButton
             size="xxl"
@@ -61,15 +62,14 @@ function LazyIconCard({
               if (node.isLeaf) {
                 onAdd(node);
               } else {
-                // Tap on non-leaf: add the general concept to stack
                 onAdd(node);
               }
             }}
-            className="!w-full !h-full !rounded-2xl !px-0 !py-0 flex-col !gap-1"
+            className={`!w-full !h-full !rounded-[1.5rem] !px-0 !py-0 flex-col border border-white/20 shadow-lg ${node.colorClass}`}
           >
-            <div className="flex flex-col items-center justify-center w-full py-5 px-3 gap-2">
-              <Icon size={36} weight="regular" className="text-on-surface drop-shadow-sm" />
-              <span className="font-headline font-bold text-xs text-on-surface/80 text-center leading-tight line-clamp-2">
+            <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4">
+              <Icon weight="fill" className="!w-20 !h-20 sm:!w-24 sm:!h-24 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
+              <span className="font-headline font-black text-lg text-white text-center leading-tight drop-shadow-md px-2">
                 {node.label}
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 content-start"
+            className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 content-start px-4 md:px-8"
           >
             {nodes.map((node) => (
               <LazyIconCard
