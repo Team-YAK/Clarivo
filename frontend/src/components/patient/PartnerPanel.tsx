@@ -31,7 +31,7 @@ export default function PartnerPanel() {
   const isListeningRef = useRef(false); // track whether recognition is currently started
   const convIdRef = useRef<string | null>(null);
 
-  const SILENCE_MS = 1500;
+  const SILENCE_MS = 1000;
 
   // Check browser support on mount
   useEffect(() => {
@@ -147,13 +147,22 @@ export default function PartnerPanel() {
             const recognition = new SR();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.onresult = (evt: any) => {
-              let text = "";
-              for (let i = evt.resultIndex; i < evt.results.length; ++i) {
-                text += evt.results[i][0].transcript;
+              if (text.trim()) {
+                setLiveText(text.trim());
+                
+                // --- SILENCE DETECTION ---
+                // If the user stops talking for SILENCE_MS, we stop the recorder early 
+                // to trigger the transcription pipeline immediately.
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = setTimeout(() => {
+                  if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                    console.log("Silence detected, stopping recorder early...");
+                    mediaRecorderRef.current.stop();
+                    // Clear the long-lived 5s interval so it doesn't trigger again
+                    if (recordingIntervalRef.current) clearTimeout(recordingIntervalRef.current);
+                  }
+                }, SILENCE_MS);
               }
-              if (text.trim()) setLiveText(text.trim());
-            };
             recognition.onend = () => {
               // Keep alive if still listening
               if (isListeningRef.current) {
