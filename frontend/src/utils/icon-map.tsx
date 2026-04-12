@@ -979,7 +979,7 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
   if (key && (/\p{Emoji}/u.test(key) || Array.from(key).length <= 5)) {
     const EmojiIcon = (props: { className?: string; style?: React.CSSProperties; color?: string; weight?: string; size?: number | string }) => {
       const len = Math.max(1, Array.from(key).length);
-      
+
       return (
         <span
           className={props.className}
@@ -990,11 +990,11 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
             justifyContent: "center",
             width: "100%",
             height: "100%",
-            // Massively enlarged emoji font-size. 110cqi means 110% of the container width. 
-            // We use min() to ensure it doesn't get taller than the container (cqb) or 100% of viewport.
-            fontSize: `min(${110 / len}cqi, 90cqb, 50vh)`,
-            lineHeight: 0.9,
+            lineHeight: 1,
             whiteSpace: "nowrap",
+            // Use 85cqi / len as font-size to fill the container width. 
+            // This ensures emojis are HUGE within the button.
+            fontSize: `${85 / len}cqi`,
             ...(props.size !== undefined ? { fontSize: `${props.size}px`, width: "auto", height: "auto" } : {}),
             ...props.style,
           }}

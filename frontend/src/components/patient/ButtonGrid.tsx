@@ -107,18 +107,17 @@ function OptionCard({
             aria-label={option.label}
           >
             {/* Background Icon Glow */}
-            <div 
+            <div
               className="absolute inset-0 opacity-25 blur-[40px] rounded-full pointer-events-none"
               style={{ background: color }}
             />
 
             {/* Icon container — Maximized to enlarge emojis */}
             <div
-              className="flex-1 w-full flex items-center justify-center relative z-10 overflow-visible"
-              style={{ containerType: 'size' }}
+              className="flex-1 w-full flex items-center justify-center relative z-10"
+              style={{ containerType: 'inline-size' }}
             >
               <Icon
-                size="110%"
                 weight="fill"
                 color={color}
                 className="!w-[110%] !h-[110%] block transition-transform duration-300 group-hover:scale-110"
@@ -258,59 +257,59 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
         {currentFrame.breadcrumbs.length > 0 && (
           <div className="flex items-center gap-2 glass-card rounded-2xl px-3 py-1.5 overflow-x-auto no-scrollbar">
             {currentFrame.breadcrumbs.map((crumb, i) => {
-            const BreadcrumbIcon = getIconComponent(crumb.icon);
-            const isLast = i === currentFrame.breadcrumbs.length - 1;
-            return (
-              <React.Fragment key={`${crumb.key}-${i}`}>
-                {i > 0 && <span className="text-on-surface-variant/20 text-sm">/</span>}
-                <div
-                  className={[
-                    "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all",
-                    isLast
-                      ? "bg-primary/10"
-                      : "cursor-pointer hover:bg-surface-container-high",
-                  ].join(" ")}
-                  onClick={() => {
-                    if (!isLast && navStack[i + 1]) {
-                      setNavStack(navStack.slice(0, i + 1));
-                      setCurrentFrame(navStack[i + 1]);
-                      setGridKey((k) => k + 1);
-                    }
-                  }}
-                >
-                  <BreadcrumbIcon
-                    size={18}
-                    weight="fill"
-                    className={isLast ? "text-primary" : "text-on-surface-variant/50"}
-                  />
-                  <span
+              const BreadcrumbIcon = getIconComponent(crumb.icon);
+              const isLast = i === currentFrame.breadcrumbs.length - 1;
+              return (
+                <React.Fragment key={`${crumb.key}-${i}`}>
+                  {i > 0 && <span className="text-on-surface-variant/20 text-sm">/</span>}
+                  <div
                     className={[
-                      "text-xs font-bold",
-                      isLast ? "text-primary" : "text-on-surface-variant/40",
+                      "flex items-center gap-1.5 px-2 py-1 rounded-full transition-all",
+                      isLast
+                        ? "bg-primary/10"
+                        : "cursor-pointer hover:bg-surface-container-high",
                     ].join(" ")}
+                    onClick={() => {
+                      if (!isLast && navStack[i + 1]) {
+                        setNavStack(navStack.slice(0, i + 1));
+                        setCurrentFrame(navStack[i + 1]);
+                        setGridKey((k) => k + 1);
+                      }
+                    }}
                   >
-                    {crumb.label}
-                  </span>
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
+                    <BreadcrumbIcon
+                      size={18}
+                      weight="fill"
+                      className={isLast ? "text-primary" : "text-on-surface-variant/50"}
+                    />
+                    <span
+                      className={[
+                        "text-xs font-bold",
+                        isLast ? "text-primary" : "text-on-surface-variant/40",
+                      ].join(" ")}
+                    >
+                      {crumb.label}
+                    </span>
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
         )}
 
-          <AnimatePresence>
-            {depth > 0 && (
-              <motion.button
-                initial={{ opacity: 0, x: -20, width: 0 }}
-                animate={{ opacity: 1, x: 0, width: "auto" }}
-                exit={{ opacity: 0, x: -20, width: 0 }}
-                onClick={handleBack}
-                className="flex items-center justify-center w-8 h-8 glass-card rounded-full hover:border-outline-variant/40 transition-all shrink-0"
-              >
-                <ArrowLeft size={18} weight="bold" className="text-on-surface" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+        <AnimatePresence>
+          {depth > 0 && (
+            <motion.button
+              initial={{ opacity: 0, x: -20, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: "auto" }}
+              exit={{ opacity: 0, x: -20, width: 0 }}
+              onClick={handleBack}
+              className="flex items-center justify-center w-8 h-8 glass-card rounded-full hover:border-outline-variant/40 transition-all shrink-0"
+            >
+              <ArrowLeft size={18} weight="bold" className="text-on-surface" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Grid */}
