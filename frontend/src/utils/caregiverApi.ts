@@ -187,7 +187,7 @@ export interface GlossaryRule {
   created_at: string;
 }
 
-const FALLBACK_GLOSSARY: GlossaryRule[] = [
+let FALLBACK_GLOSSARY: GlossaryRule[] = [
   { id: 'gr_001', trigger_word: 'Bobby', enforced_meaning: "Kishan's Golden Retriever dog", active: true, created_at: new Date().toISOString() },
   { id: 'gr_002', trigger_word: 'Blue Pill', enforced_meaning: 'Aspirin (taken at 8am)', active: true, created_at: new Date().toISOString() },
   { id: 'gr_003', trigger_word: 'The Lake', enforced_meaning: 'Lake Tahoe summer cabin', active: false, created_at: new Date().toISOString() },
@@ -221,7 +221,9 @@ export const addGlossaryRule = async (
     return data.rule;
   } catch {
     // Optimistic local fallback
-    return { id: `gr_${Date.now()}`, trigger_word: triggerWord, enforced_meaning: enforcedMeaning, active: true, created_at: new Date().toISOString() };
+    const newRule = { id: `gr_${Date.now()}`, trigger_word: triggerWord, enforced_meaning: enforcedMeaning, active: true, created_at: new Date().toISOString() };
+    FALLBACK_GLOSSARY.push(newRule);
+    return newRule;
   }
 };
 
@@ -230,6 +232,7 @@ export const deleteGlossaryRule = async (ruleId: string, userId: string = DEFAUL
     await fetch(`${DATA_BASE_URL}/api/glossary/${ruleId}?user_id=${userId}`, { method: 'DELETE' });
   } catch {
     // Swallow — UI already updated optimistically
+    FALLBACK_GLOSSARY = FALLBACK_GLOSSARY.filter(rule => rule.id !== ruleId);
   }
 };
 
@@ -242,6 +245,8 @@ export const toggleGlossaryRule = async (ruleId: string, active: boolean, userId
     });
   } catch {
     // Swallow — UI already updated optimistically
+    const rule = FALLBACK_GLOSSARY.find(r => r.id === ruleId);
+    if (rule) rule.active = active;
   }
 };
 
