@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover - exercised in envs without optional dep
 from services.data_service import get_user
 from services.context_service import build_context_string
 from services.openai_service import stream_intent, compute_confidence
-from config import DEFAULT_USER_ID, DEMO_MODE
+from config import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,10 +32,9 @@ import httpx
 from services.utils import path_to_key
 
 class IntentRequest(BaseModel):
-    path: Optional[List[str]] = None
+    path: List[str]
     user_id: str = DEFAULT_USER_ID
-    input_mode: str = "tree"
-    demo: bool = False
+    input_mode: str = "tree"  # "tree" or "composer"
 
 @router.post("/api/intent")
 async def intent(req: IntentRequest):
@@ -82,31 +81,6 @@ async def intent(req: IntentRequest):
 
     async def event_generator():
         full_sentence = ""
-        # HARDCODED DEMO LOGIC
-        is_demo = req.demo or DEMO_MODE
-        if is_demo:
-            path_str = " ".join(req.path).lower()
-            # If path contains running or is the specific demo sequence
-            if "running" in path_str and "sunny" in path_str:
-                full_sentence = "I want to run in the morning."
-            elif "running" in path_str:
-                full_sentence = "I want to go running."
-            elif "apple" in path_str:
-                full_sentence = "I want an apple."
-            
-            if full_sentence:
-                yield {"data": json.dumps({"token": full_sentence})}
-                confidence = 0.99
-                session_doc = {
-                    "session_id": session_id, "user_id": user_id, "path": path, "path_key": path_key,
-                    "sentence": full_sentence, "confidence": confidence, "input_mode": input_mode,
-                }
-                pending_sessions[session_id] = session_doc
-                yield {"data": json.dumps({
-                    "done": True, "session_id": session_id,
-                    "full_sentence": full_sentence, "confidence": confidence
-                })}
-                return
 
         try:
             # 1. Check E3 Cache — skip entirely if there's an active conversation

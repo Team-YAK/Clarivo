@@ -49,34 +49,5 @@ async def purge_and_reseed(x_admin_token: Optional[str] = Header(None)):
     except Exception as e:
         logger.error(f"Purge+reseed failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-@router.post("/api/demo/start-exercise-demo")
-async def start_exercise_demo():
-    """Sets up the specific conversation state for the Exercise Demo."""
-    user_id = "alex_demo"
-    from datetime import datetime
-    
-    try:
-        # 1. Close any active conversations
-        await db.conversations.update_many(
-            {"user_id": user_id, "active": True},
-            {"$set": {"active": False}}
-        )
-        
-        # 2. Create the specific starting question from Yuki
-        new_conv = {
-            "user_id": user_id,
-            "active": True,
-            "started_at": datetime.utcnow().isoformat(),
-            "utterances": [
-                {
-                    "speaker": "caregiver",
-                    "text": "What exercise do you want to do?",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-            ]
-        }
-        await db.conversations.insert_one(new_conv)
-        return {"success": True, "message": "Demo conversation initialized."}
-    except Exception as e:
-        logger.error(f"Failed to start exercise demo state: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+

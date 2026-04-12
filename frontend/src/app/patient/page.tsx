@@ -17,28 +17,9 @@ export default function PatientScreen() {
   const [mounted, setMounted] = useState(false);
   const [splitPercent, setSplitPercent] = useState(50);
   const [isResizing, setIsResizing] = useState(false);
-  const [demoMode] = useState(false); // Set to false as requested
-  const [isInitializingDemo, setIsInitializingDemo] = useState(false);
   const [conversationVersion, setConversationVersion] = useState(0);
 
-  // Auto-initialize demo state on mount if in demo mode
-  useEffect(() => {
-    if (demoMode) {
-      const initDemo = async () => {
-        setIsInitializingDemo(true);
-        try {
-          const dataUrl = process.env.NEXT_PUBLIC_DATA_URL || 'http://localhost:8002';
-          await fetch(`${dataUrl}/api/demo/start-exercise-demo`, { method: 'POST' });
-          setConversationVersion(v => v + 1);
-        } catch (e) {
-          console.error("Failed to init demo state", e);
-        } finally {
-          setIsInitializingDemo(false);
-        }
-      };
-      initDemo();
-    }
-  }, [demoMode]);
+
 
   // ── Drag handlers ──
   const startResizing = useCallback(() => {
@@ -205,7 +186,6 @@ export default function PatientScreen() {
               <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                 {drawingMode ? (
                   <DrawingCanvas
-                    demoMode={demoMode}
                     onComplete={(data) => {
                       handleAddToStack({
                         key: data.label.toLowerCase(),
@@ -254,7 +234,6 @@ export default function PatientScreen() {
           {isSynthesizing && (
             <SentenceOutput
               path={stackState.items.map((item) => item.key)}
-              demo={demoMode}
               onClose={handleSynthesisClose}
               onSpeak={() => console.log("Playing synthesized audio...")}
             />

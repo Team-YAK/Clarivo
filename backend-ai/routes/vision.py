@@ -5,16 +5,15 @@ import os
 import json
 from datetime import datetime
 import httpx
-from config import DEFAULT_USER_ID, E3_BASE_URL, DEMO_MODE
+from config import DEFAULT_USER_ID, E3_BASE_URL
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 class DrawingRequest(BaseModel):
-    image: str
+    image: str  # base64
     user_id: str = DEFAULT_USER_ID
-    demo: bool = False
 
 
 async def fetch_vision_context(user_id: str) -> str:
@@ -72,10 +71,6 @@ async def fetch_vision_context(user_id: str) -> str:
 @router.post("/api/analyze-drawing")
 async def analyze_drawing_endpoint(req: DrawingRequest):
     try:
-        is_demo = req.demo or DEMO_MODE
-        if is_demo:
-            return {"sentence": "I want an apple.", "confidence": 0.99}
-            
         from services.vision_service import analyze_drawing
         context = await fetch_vision_context(req.user_id)
         result = await analyze_drawing(req.image, context)
