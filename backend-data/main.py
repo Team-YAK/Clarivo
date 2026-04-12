@@ -24,14 +24,6 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
-    # If we are using mock collections, seed them immediately so endpoints don't 404
-    from database import db, USE_MOCK
-    # Check if we are in mock mode (either explicitly or via connection failure fallback)
-    # A good indicator is if the users collection is a MockCollection
-    if hasattr(db.users, "_data"):
-        from services.seed_service import seed
-        logging.info("Seeding Mock Database for alex_demo...")
-        await seed()
     yield
     await close_mongo_connection()
 

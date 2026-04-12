@@ -20,24 +20,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-from contextlib import asynccontextmanager
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: Preload icon dictionary
-    try:
-        from services.icon_dictionary import ICON_DICTIONARY, ICON_DICTIONARY_PATH
-        logging.info(
-            "Loaded icon dictionary at startup: %s entries from %s",
-            len(ICON_DICTIONARY),
-            ICON_DICTIONARY_PATH,
-        )
-    except Exception as e:
-        logging.error(f"Failed to preload icon dictionary: {e}")
-    yield
-    # Shutdown: (No-op)
-
-app = FastAPI(title="VoiceMap AI Backend (E2)", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="VoiceMap AI Backend", version="1.0.0")
 
 # CORS — allow frontend on localhost:3000
 app.add_middleware(
@@ -52,7 +35,9 @@ app.add_middleware(
 audio_dir_path = os.getenv("AUDIO_OUTPUT_DIR", "audio_output")
 audio_dir = Path(audio_dir_path)
 audio_dir.mkdir(parents=True, exist_ok=True)
+
 import time
+# Cleanup old audio files (>24 hours old) on startup
 now = time.time()
 if audio_dir.exists():
     for f in audio_dir.iterdir():
@@ -92,9 +77,22 @@ app.include_router(tree_ai_router)
 app.include_router(reverse_router)
 app.include_router(vision_router)
 
+
+@app.on_event("startup")
+async def preload_icon_dictionary():
+    from services.icon_dictionary import ICON_DICTIONARY, ICON_DICTIONARY_PATH
+
+    logging.info(
+        "Loaded icon dictionary at startup: %s entries from %s",
+        len(ICON_DICTIONARY),
+        ICON_DICTIONARY_PATH,
+    )
+
+
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "VoiceMap AI Backend (E2)", "port": 8001}
+
 
 @app.get("/health")
 async def health():
