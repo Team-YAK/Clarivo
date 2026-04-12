@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { AiOption, reverseTranslateSentence } from "@/utils/patientApi";
-import { addUtterance, fetchActiveConversation, startConversation, endConversation } from "@/utils/caregiverApi";
+import { addUtterance, fetchActiveConversation, startConversation, endConversation, transcribeAudio } from "@/utils/caregiverApi";
 import {
   ChatCircleText,
   HandPointing,
@@ -71,108 +71,105 @@ export default function PartnerPanel() {
         // best-effort
       }
     } finally {
-      // Return to listening mode after translation if conversation is still active
+      // Return to listening mode
       if (isListeningRef.current) {
         setMode("listening");
         setLiveText("");
-        startRecognition(); // restart recognition for the next utterance
       } else {
         setMode("idle");
       }
     }
   }, []);
 
-  // ── Create a fresh SpeechRecognition instance ────────────────
-  const buildRecognition = useCallback(() => {
-    const SR =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (!SR) return null;
+  // ── Start MediaRecorder API ──────────────────────────────────────
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const recordingIntervalRef = useRef<any>(null);
 
-    const rec = new SR();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-    rec.maxAlternatives = 1;
-    return rec;
-  }, []);
-
-  // ── Start recognition ────────────────────────────────────────
-  const startRecognition = useCallback(() => {
-    if (!hasSpeechSupport) return;
-
-    // Abort any previous instance cleanly
-    try { recognitionRef.current?.abort(); } catch {}
-
-    const rec = buildRecognition();
-    if (!rec) return;
-    recognitionRef.current = rec;
-    finalRef.current = "";
-
-    const clearSilence = () => {
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    };
-    const resetSilence = () => {
-      clearSilence();
-      silenceTimerRef.current = setTimeout(() => {
-        // Silence detected — finalize utterance
-        const spoken = finalRef.current.trim();
-        finalRef.current = "";
-        clearSilence();
-        if (spoken) {
-          translateAndLog(spoken);
-        }
-      }, SILENCE_MS);
-    };
-
-    rec.onstart = () => {
-      setSpeechError(null);
-    };
-
-    rec.onresult = (event: any) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const r = event.results[i];
-        if (r.isFinal) {
-          finalRef.current += r[0].transcript;
-        } else {
-          interim += r[0].transcript;
-        }
-      }
-      setLiveText(finalRef.current + interim);
-      if (finalRef.current.trim() || interim.trim()) {
-        resetSilence(); // voice detected — reset the silence timer
-      }
-    };
-
-    rec.onerror = (event: any) => {
-      if (event.error === "no-speech" || event.error === "aborted") return;
-      setSpeechError("Mic error: " + event.error);
-    };
-
-    rec.onend = () => {
-      // Browser stopped the session (e.g., timeout). If we're still in listening mode,
-      // restart it immediately so the mic stays open.
-      if (isListeningRef.current) {
-        setTimeout(() => {
-          if (isListeningRef.current) startRecognition();
-        }, 150);
-      }
-    };
-
+  const startMediaRecording = useCallback(async () => {
     try {
-      rec.start();
-    } catch (e) {
-      console.warn("recognition.start() failed:", e);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1, sampleRate: 16000 }
+      });
+      mediaStreamRef.current = stream;
+      setSpeechError(null);
+
+      const startChunkCycle = () => {
+        if (!isListeningRef.current || !mediaStreamRef.current) return;
+
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+
+        const recorder = new MediaRecorder(stream, { mimeType });
+        const chunks: Blob[] = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          if (chunks.length === 0) {
+            if (isListeningRef.current) startChunkCycle();
+            return;
+          }
+
+          const blob = new Blob(chunks, { type: mimeType });
+          if (blob.size < 1000) {
+            if (isListeningRef.current) startChunkCycle();
+            return;
+          }
+
+          try {
+            const text = await transcribeAudio(blob);
+            if (text && text.trim()) {
+              translateAndLog(text.trim());
+            }
+          } catch (e: any) {
+            console.error("Transcription error:", e);
+          }
+
+          if (isListeningRef.current) startChunkCycle();
+        };
+
+        recorder.onerror = (e: any) => {
+          setSpeechError("Mic error: " + (e.error || e.message || "Unknown plugin error"));
+          if (isListeningRef.current) setTimeout(startChunkCycle, 1000);
+        };
+
+        mediaRecorderRef.current = recorder;
+        recorder.start();
+
+        recordingIntervalRef.current = setTimeout(() => {
+          if (recorder.state === 'recording') recorder.stop();
+        }, 5000);
+      };
+
+      startChunkCycle();
+    } catch (e: any) {
+      isListeningRef.current = false;
+      setMode("idle");
+      setSpeechError("Mic access denied or unavailable.");
     }
-  }, [hasSpeechSupport, buildRecognition, translateAndLog]);
+  }, [translateAndLog]);
+
+  const stopMediaRecording = useCallback(() => {
+    if (recordingIntervalRef.current) clearTimeout(recordingIntervalRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch {}
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    mediaRecorderRef.current = null;
+  }, []);
 
   // ── Start Conversation ───────────────────────────────────────
   const handleStartConversation = useCallback(async () => {
     setSpeechError(null);
     setLiveText("");
     setResults([]);
-    finalRef.current = "";
     isListeningRef.current = true;
     setMode("listening");
 
@@ -183,18 +180,16 @@ export default function PartnerPanel() {
       setConvId(id);
       convIdRef.current = id;
     } catch {
-      // non-fatal — logging will fall back to fetchActiveConversation
+      // non-fatal
     }
 
-    startRecognition();
-  }, [startRecognition]);
+    startMediaRecording();
+  }, [startMediaRecording]);
 
   // ── End Conversation ─────────────────────────────────────────
   const handleEndConversation = useCallback(() => {
     isListeningRef.current = false;
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    try { recognitionRef.current?.abort(); } catch {}
-    recognitionRef.current = null;
+    stopMediaRecording();
 
     if (convIdRef.current) {
       endConversation(convIdRef.current).catch(() => {});
@@ -205,16 +200,15 @@ export default function PartnerPanel() {
     setMode("idle");
     setLiveText("");
     setResults([]);
-  }, []);
+  }, [stopMediaRecording]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isListeningRef.current = false;
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      try { recognitionRef.current?.abort(); } catch {}
+      stopMediaRecording();
     };
-  }, []);
+  }, [stopMediaRecording]);
 
   const isActive = mode !== "idle";
 

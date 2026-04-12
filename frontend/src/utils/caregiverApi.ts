@@ -353,3 +353,22 @@ export const simplifyText = async (text: string, userId: string = DEFAULT_USER_I
     return { simplified: "Time for lunch 🍽️\nDoctor appointment later 👨‍⚕️" };
   }
 };
+
+export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+  try {
+    const formData = new FormData();
+    const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const res = await fetch(`${AI_BASE_URL}/api/voice/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Transcription failed');
+    const data = await res.json();
+    return data.text || "";
+  } catch (err) {
+    console.warn("Transcription failed:", err);
+    return "";
+  }
+};
