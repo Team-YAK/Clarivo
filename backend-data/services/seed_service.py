@@ -132,9 +132,35 @@ async def seed():
             "timestamp": (now - timedelta(minutes=10 * (i+1))).isoformat()
         })
 
+    # 4. Default Prompts
+    default_prompts = [
+        {
+            "prompt_id": "generation_sys",
+            "user_id": user_id,
+            "content": "You are Clarivo, a patient communication AI. Use context to build a natural sentence from path segments.",
+            "description": "System prompt for predicted sentence generation",
+            "updated_at": now.isoformat()
+        },
+        {
+            "prompt_id": "generation_hu",
+            "user_id": user_id,
+            "content": "Context: {context}\nPath: {path}\nLast Utterances: {utterances}",
+            "description": "Human template for generation",
+            "updated_at": now.isoformat()
+        },
+        {
+            "prompt_id": "icon_sys",
+            "user_id": user_id,
+            "content": "Map labels to unicode emojis from the provided set.",
+            "description": "System prompt for icon matching",
+            "updated_at": now.isoformat()
+        }
+    ]
+
     await db.icons.insert_many(icon_list)
     await db.sentences.insert_many(sentences)
     await db.sessions.insert_many(sessions)
+    await db.prompts.insert_many(default_prompts)
     await db.users.insert_one(alex)
     
     print("✓ Async Seeded successfully")
