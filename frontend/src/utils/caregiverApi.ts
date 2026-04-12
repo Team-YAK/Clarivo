@@ -187,11 +187,14 @@ export const cloneVoice = async (file: File, userId: string = DEFAULT_USER_ID) =
       method: 'POST',
       body: formData
     });
-    if (!res.ok) throw new Error('Failed to clone voice');
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Server error ${res.status}: ${errBody}`);
+    }
     return await res.json();
   } catch (error) {
-    console.warn('Mock cloneVoice', file.name);
-    return { success: true, voice_id: 'mock_voice_123' };
+    console.error('cloneVoice failed:', error);
+    throw error;  // Let the caller handle the error instead of silently mocking
   }
 };
 

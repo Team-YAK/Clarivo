@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { generateIntentStream, synthesizeVoice } from "@/utils/patientApi";
 import { addUtterance, fetchActiveConversation } from "@/utils/caregiverApi";
-import { SpeakerHigh, X } from "@phosphor-icons/react";
+import { SpeakerHigh, X, Waveform, MicrophoneStage } from "@phosphor-icons/react";
 
 interface SentenceOutputProps {
   labels: string[];
@@ -22,6 +22,7 @@ export default function SentenceOutput({
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [voiceSource, setVoiceSource] = useState<string | null>(null);
   const sentenceRef = useRef("");
 
   // Stream the sentence word-by-word via backend /api/intent SSE
@@ -60,8 +61,13 @@ export default function SentenceOutput({
         const res = await synthesizeVoice(finalSentence);
         if (res?.audio_url) {
           setAudioUrl(res.audio_url);
+          // Track which voice was used (cloned, env_override, or preset)
+          if (res.voice_source) {
+            setVoiceSource(res.voice_source);
+          }
         } else {
           fallbackSpeech(finalSentence);
+          setVoiceSource("browser");
         }
 
         // Log patient utterance to any active conversation
@@ -165,8 +171,30 @@ export default function SentenceOutput({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-end gap-4 border-t border-outline-variant/20 pt-6"
+          className="flex flex-col items-end gap-3 border-t border-outline-variant/20 pt-6"
         >
+          {/* Voice source badge */}
+          {voiceSource && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
+                voiceSource === "cloned"
+                  ? "bg-emerald-500/15 text-emerald-600 ring-1 ring-emerald-500/30"
+                  : voiceSource === "browser"
+                    ? "bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30"
+                    : "bg-primary/10 text-primary ring-1 ring-primary/20"
+              }`}
+            >
+              {voiceSource === "cloned" ? (
+                <><MicrophoneStage size={14} weight="fill" /> Using Cloned Voice</>
+              ) : voiceSource === "browser" ? (
+                <><Waveform size={14} weight="fill" /> Browser Fallback</>
+              ) : (
+                <><Waveform size={14} weight="fill" /> AI Preset Voice</>
+              )}
+            </motion.div>
+          )}
           <button
             disabled={isPlaying || isSynthesizing}
             onClick={playAudio}

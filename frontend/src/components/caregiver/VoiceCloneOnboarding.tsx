@@ -20,6 +20,7 @@ export default function VoiceCloneOnboarding() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [cloneNote, setCloneNote] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -89,13 +90,17 @@ export default function VoiceCloneOnboarding() {
     if (!audioBlob) return;
     setState('uploading');
     setError(null);
+    setCloneNote(null);
     try {
       const file = new File([audioBlob], 'voice_sample.webm', { type: audioBlob.type });
       const result = await cloneVoice(file);
       if (result.success) {
         setState('done');
+        if (result.note) {
+          setCloneNote(result.note);
+        }
       } else {
-        throw new Error('Upload failed');
+        throw new Error(result.error || 'Upload failed');
       }
     } catch (e: any) {
       setError(e.message || 'Failed to clone voice. Please try again.');
@@ -260,8 +265,12 @@ export default function VoiceCloneOnboarding() {
               >
                 <CheckCircle size={64} className="text-emerald-500" weight="fill" />
                 <div className="text-center">
-                  <p className="text-emerald-700 font-black font-headline text-xl mb-1">Voice Cloned Successfully!</p>
-                  <p className="text-on-surface-variant text-sm">Kishan&apos;s voice is now active. All generated sentences will use this voice profile.</p>
+                  <p className="text-emerald-700 font-black font-headline text-xl mb-1">Voice Profile Active!</p>
+                  <p className="text-on-surface-variant text-sm">
+                    {cloneNote
+                      ? cloneNote
+                      : "Kishan\u0027s voice has been cloned. All generated sentences will use this voice profile."}
+                  </p>
                 </div>
               </motion.div>
             )}
