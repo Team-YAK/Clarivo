@@ -1,26 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { AiOption, reverseTranslateSentence } from "@/utils/patientApi";
-import { ChatCircleText, ArrowRight, Spinner, HandPointing } from "@phosphor-icons/react";
+import { ChatCircleText, ArrowRight, Spinner, HandPointing, MicrophoneStage } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function PartnerPanel() {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<AiOption[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
-  const handleTranslate = async () => {
-    if (!inputText.trim()) return;
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false; // Auto-stop on pause
+        recognitionRef.current.interimResults = true;
+      }
+    }
+  }, []);
+
+  const translateText = async (text: string) => {
+    if (!text.trim()) return;
+    setInputText(text);
     setIsLoading(true);
     setResults([]);
     try {
-      const res = await reverseTranslateSentence(inputText);
+      const res = await reverseTranslateSentence(text);
       if (res && res.options) {
         setResults(res.options);
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTranslate = () => translateText(inputText);
+
+  const handleStartRecording = () => {
+    if (!recognitionRef.current) return;
+    
+    setIsRecording(true);
+    setInputText(""); // Reset text on new recording
+    
+    let finalString = "";
+
+    recognitionRef.current.onresult = (event: any) => {
+      let interim = "";
+      let finalTx = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTx += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      finalString += finalTx;
+      setInputText(finalString + interim);
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsRecording(false);
+      // Automatically translate on end if there's text
+      if (finalString.trim()) {
+        translateText(finalString);
+      }
+    };
+    
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      console.warn("Speech recognition already running", e);
     }
   };
 
@@ -42,12 +95,12 @@ export default function PartnerPanel() {
         </div>
         <div>
           <h2 className="text-xl font-headline font-black text-on-surface">Partner Input</h2>
-          <p className="text-sm text-outline font-medium">Type a sentence to visualize it</p>
+          <p className="text-sm text-outline font-medium">Type or speak a sentence to visualize it</p>
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="relative z-10 shrink-0 mb-8">
+      <div className="relative z-10 shrink-0 mb-8 flex flex-col">
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
@@ -56,18 +109,34 @@ export default function PartnerPanel() {
           className="w-full h-32 p-5 rounded-2xl bg-surface/80 border border-white/10 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-2 focus:ring-tertiary/50 resize-none glass-textarea shadow-inner text-lg"
           style={{ WebkitBackdropFilter: "blur(12px)" }}
         />
-        <button
-          onClick={handleTranslate}
-          disabled={isLoading || !inputText.trim()}
-          className="absolute bottom-4 right-4 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold bg-tertiary text-on-tertiary shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <Spinner size={20} className="animate-spin" />
-          ) : (
-            <ArrowRight size={20} weight="bold" />
+        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+          {recognitionRef.current && (
+            <button
+              onClick={handleStartRecording}
+              disabled={isRecording || isLoading}
+              className={`flex items-center justify-center p-3 rounded-xl transition-all shadow-md ${
+                isRecording
+                  ? "bg-red-500/20 text-red-500 animate-pulse ring-1 ring-red-500/50"
+                  : "bg-surface-variant text-outline hover:text-on-surface hover:bg-surface-variant/80 cursor-pointer"
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title="Speak sentence"
+            >
+              <MicrophoneStage size={22} weight={isRecording ? "fill" : "bold"} />
+            </button>
           )}
-          Translate
-        </button>
+          <button
+            onClick={handleTranslate}
+            disabled={isLoading || !inputText.trim()}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold bg-tertiary text-on-tertiary shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <Spinner size={20} className="animate-spin" />
+            ) : (
+              <ArrowRight size={20} weight="bold" />
+            )}
+            Translate
+          </button>
+        </div>
       </div>
 
       {/* Results Area */}
@@ -76,7 +145,7 @@ export default function PartnerPanel() {
           <div className="h-full flex flex-col items-center justify-center opacity-50">
             <HandPointing size={48} weight="duotone" className="text-outline mb-4" />
             <p className="text-center font-medium max-w-[250px]">
-              Type a sentence above and press Translate to see it broken down into core concepts.
+              Type or speak a sentence above. Translation begins automatically when you stop speaking.
             </p>
           </div>
         ) : (
