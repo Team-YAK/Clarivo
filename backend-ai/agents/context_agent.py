@@ -12,12 +12,25 @@ from __future__ import annotations
 import os
 import logging
 import time
-from datetime import datetime
 import httpx
 
 logger = logging.getLogger(__name__)
 
 E3_BASE = os.getenv("E3_BASE_URL", "http://localhost:8002")
+
+
+def _flatten_concepts(paths: list[list[str]], limit: int = 24) -> list[str]:
+    seen = set()
+    concepts: list[str] = []
+    for path in paths:
+        for item in path:
+            token = str(item).strip()
+            if token and token not in seen:
+                seen.add(token)
+                concepts.append(token)
+            if len(concepts) >= limit:
+                return concepts
+    return concepts
 
 
 async def fetch_context(user_id: str, current_path: list[str]) -> dict:
@@ -54,23 +67,21 @@ async def fetch_context(user_id: str, current_path: list[str]) -> dict:
     known = prefs.get("known_preferences", "")
     always = prefs.get("always_know", "")
 
-    hour = datetime.now().hour
-    if hour < 11:
-        time_context = "morning"
-    elif hour < 17:
-        time_context = "afternoon"
-    else:
-        time_context = "evening"
+    recent_concepts = _flatten_concepts(recent_paths)
+    historical_concepts = _flatten_concepts(
+        [str(item.get("key", "")).split("→") for item in top_paths if item.get("key")]
+    )
 
     total_ms = (time.perf_counter() - start) * 1000
 
     return {
         "user_id": user_id,
         "current_path": current_path,
-        "time_context": time_context,
         "conversation_utterances": conversation_utterances,
         "recent_paths": recent_paths,
         "top_paths": top_paths,
+        "recent_concepts": recent_concepts,
+        "historical_concepts": historical_concepts,
         "preferences": known,
         "always_know": always,
         "_metrics": {

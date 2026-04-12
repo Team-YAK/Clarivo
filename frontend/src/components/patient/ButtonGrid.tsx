@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable react-hooks/static-components */
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
 import {
@@ -25,9 +26,6 @@ interface DisplayOption {
   key: string;
   label: string;
   icon: string;
-  isQuickOption?: boolean;
-  color?: string;       // category color override
-  isCoreSeed?: boolean;  // home screen core need
 }
 
 // ── Navigation frame ───────────────────────────────────────────
@@ -38,26 +36,12 @@ interface NavFrame {
   quickOption: DisplayOption | null;
 }
 
-// ── Core need color palette ────────────────────────────────────
-// Urgency-ordered, high-contrast, immediately recognizable
-const CORE_COLORS: Record<string, string> = {
-  pain:      "#ef4444",  // red — most urgent
-  toilet:    "#f59e0b",  // amber — time-sensitive
-  food:      "#22c55e",  // green — frequent
-  medicine:  "#3b82f6",  // blue — critical
-  emotional: "#a855f7",  // purple — emotional
-  family:    "#f97316",  // warm orange — social
-};
-
-// Icon color for deeper (non-root) levels
 const DEPTH_COLORS = [
   "#14b8a6", "#6366f1", "#0ea5e9", "#a855f7",
   "#f59e0b", "#ec4899", "#22c55e", "#ef4444",
 ];
 
 function getIconColor(option: DisplayOption, index: number): string {
-  if (option.color) return option.color;
-  if (option.isCoreSeed && CORE_COLORS[option.icon]) return CORE_COLORS[option.icon];
   return DEPTH_COLORS[index % DEPTH_COLORS.length];
 }
 
@@ -67,19 +51,17 @@ function aiResultToDisplayOptions(result: AiExpandResult): {
   quickOption: DisplayOption | null;
 } {
   const options: DisplayOption[] = result.options.map((o) => ({
-    key: o.label.toLowerCase().replace(/\s+/g, "_"),
+    key: o.key || o.label.toLowerCase().replace(/\s+/g, "-"),
     label: o.label,
-    icon: o.icon || o.label.toLowerCase().replace(/\s+/g, "_"),
-    isCoreSeed: false,
+    icon: o.icon || o.label.toLowerCase().replace(/\s+/g, "-"),
   }));
 
   const qo = result.quick_option;
   const quickOption: DisplayOption | null = qo
     ? {
-        key: qo.label.toLowerCase().replace(/\s+/g, "_"),
+        key: qo.key || qo.label.toLowerCase().replace(/\s+/g, "-"),
         label: qo.label,
-        icon: qo.icon || qo.label.toLowerCase().replace(/\s+/g, "_"),
-        isQuickOption: true,
+        icon: qo.icon || qo.label.toLowerCase().replace(/\s+/g, "-"),
       }
     : null;
 
@@ -95,77 +77,6 @@ function SkeletonCard({ large = false }: { large?: boolean }) {
         large ? "aspect-square" : "aspect-square",
       ].join(" ")}
     />
-  );
-}
-
-// ── Core Need Card (home screen) ──────────────────────────────
-function CoreNeedCard({
-  option,
-  onSelect,
-  onExpand,
-  index,
-}: {
-  option: DisplayOption;
-  onSelect: (opt: DisplayOption) => void;
-  onExpand: (opt: DisplayOption) => void;
-  index: number;
-}) {
-  const color = getIconColor(option, index);
-  const Icon = getIconComponent(option.icon);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.25, delay: index * 0.05 }}
-      className="relative group"
-    >
-      <LiquidButton
-        size="xxl"
-        onClick={() => onSelect(option)}
-        className="!w-full !h-full !rounded-[2rem] !px-0 !py-0 flex-col shadow-xl border border-white/5"
-        style={{
-          background: `linear-gradient(135deg, ${color}15, ${color}08)`,
-          borderColor: `${color}30`,
-        }}
-      >
-        <div className="flex flex-col items-center justify-center w-full h-full p-3 gap-2">
-          {/* Icon takes 65-70% of card height */}
-          <div className="flex-1 flex items-center justify-center min-h-0">
-            <Icon
-              weight="fill"
-              color={color}
-              className="!w-14 !h-14 sm:!w-16 sm:!h-16 md:!w-20 md:!h-20 drop-shadow-[0_2px_20px_rgba(0,0,0,0.4)]"
-            />
-          </div>
-          {/* Decorative label — small, muted */}
-          <span
-            className="text-xs font-bold uppercase tracking-wider opacity-40 text-center leading-tight"
-            style={{ color }}
-          >
-            {option.label}
-          </span>
-        </div>
-      </LiquidButton>
-
-      {/* Expand button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onExpand(option);
-        }}
-        className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10
-          flex items-center justify-center w-7 h-7 rounded-full
-          shadow-lg opacity-0 group-hover:opacity-100
-          hover:scale-110 active:scale-95 transition-all duration-200"
-        style={{
-          backgroundColor: color,
-          color: "#fff",
-        }}
-      >
-        <CaretDown size={16} weight="bold" />
-      </button>
-    </motion.div>
   );
 }
 
@@ -201,7 +112,13 @@ function OptionCard({
     return () => observer.disconnect();
   }, []);
 
-  const Icon = isVisible ? getIconComponent(option.icon) : null;
+  const Icon = useMemo(
+    () => {
+      if (!isVisible) return null;
+      return getIconComponent(option.icon);
+    },
+    [isVisible, option.icon]
+  );
 
   return (
     <div ref={ref} className="relative group">
@@ -279,16 +196,10 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
         return;
       }
       const { options, quickOption } = aiResultToDisplayOptions(result);
-      // Mark root options as core seeds for color coding
-      const coreOptions = options.map((o) => ({
-        ...o,
-        isCoreSeed: true,
-        color: CORE_COLORS[o.icon] || undefined,
-      }));
       setCurrentFrame({
         path: [],
         pathLabels: [],
-        options: coreOptions,
+        options,
         quickOption,
       });
       setLoading(false);
@@ -354,8 +265,6 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
   }, [navStack]);
 
   const depth = currentFrame.path.length;
-  const isRoot = depth === 0;
-
   return (
     <section className="h-full flex-1 min-w-0 bg-transparent flex flex-col overflow-hidden relative">
       {/* Breadcrumb — icon-based */}
@@ -437,14 +346,10 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className={
-                isRoot
-                  ? "grid grid-cols-2 sm:grid-cols-3 gap-6 content-start px-6 md:px-12 pb-12"
-                  : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
-              }
+              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
             >
-              {Array.from({ length: isRoot ? 6 : 8 }).map((_, i) => (
-                <SkeletonCard key={i} large={isRoot} />
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SkeletonCard key={i} />
               ))}
             </motion.div>
           ) : (
@@ -454,37 +359,17 @@ export default function ButtonGrid({ onAddToStack }: ButtonGridProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className={
-                isRoot
-                  ? "grid grid-cols-2 sm:grid-cols-3 gap-6 content-start px-6 md:px-12 pb-12"
-                  : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
-              }
+              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-6 content-start px-4 md:px-8 pb-12"
             >
-              {/* Home screen: large core need cards */}
-              {isRoot
-                ? currentFrame.options.map((opt, i) => (
-                    <CoreNeedCard
-                      key={`core-${opt.key}`}
-                      option={opt}
-                      onSelect={handleSelect}
-                      onExpand={handleExpand}
-                      index={i}
-                    />
-                  ))
-                : (
-                  <>
-                    {/* All options */}
-                    {currentFrame.options.map((opt, i) => (
-                      <OptionCard
-                        key={`${opt.key}-${i}`}
-                        option={opt}
-                        onSelect={handleSelect}
-                        onExpand={handleExpand}
-                        index={i}
-                      />
-                    ))}
-                  </>
-                )}
+              {currentFrame.options.map((opt, i) => (
+                <OptionCard
+                  key={`${opt.key}-${i}`}
+                  option={opt}
+                  onSelect={handleSelect}
+                  onExpand={handleExpand}
+                  index={i}
+                />
+              ))}
 
               {currentFrame.options.length === 0 && (
                 <div className="col-span-full flex flex-col items-center justify-center p-16 gap-4">

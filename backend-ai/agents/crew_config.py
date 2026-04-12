@@ -45,18 +45,6 @@ async def _chat_once(system: str, user: str, max_tokens: int, temperature: float
     return (resp.choices[0].message.content or "").strip()
 
 
-ROOT_OPTIONS = {
-    "quick_option": {"label": "Pain", "icon": "warning"},
-    "options": [
-        {"label": "Pain", "icon": "warning"},
-        {"label": "Bathroom", "icon": "toilet"},
-        {"label": "Food", "icon": "fork-knife"},
-        {"label": "Medicine", "icon": "pill"},
-        {"label": "Feelings", "icon": "smiley"},
-        {"label": "Family", "icon": "users"},
-    ],
-}
-
 SYNONYM_HINTS: dict[str, list[str]] = {
     "run": ["running", "jog", "exercise", "sprint"],
     "exercise": ["workout", "gym", "fitness", "stretch"],
@@ -84,12 +72,20 @@ def _tokenize(text: str) -> list[str]:
 def _label_limit(label: str) -> str:
     words = [w for w in re.split(r"\s+", label.strip()) if w]
     if not words:
-        return "More"
+        return ""
     return " ".join(words[:2]).title()
 
 
 def _concept_to_key(concept: str) -> str:
     return "-".join(_tokenize(concept))
+
+
+def _semantic_key(*parts: str) -> str:
+    for part in parts:
+        key = _concept_to_key(part)
+        if key:
+            return key
+    return ""
 
 
 def _score_candidate(concept: str, candidate: str) -> float:
@@ -196,7 +192,6 @@ async def context_agent(context_data: dict) -> dict:
     return {
         "current_path": context_data.get("current_path", []),
         "conversation_utterances": context_data.get("conversation_utterances", [])[-5:],
-        "time_context": context_data.get("time_context", ""),
     }
 
 
@@ -204,6 +199,8 @@ async def personalization_agent(context_data: dict) -> dict:
     return {
         "recent_paths": context_data.get("recent_paths", [])[:8],
         "top_paths": context_data.get("top_paths", [])[:8],
+        "recent_concepts": context_data.get("recent_concepts", [])[:16],
+        "historical_concepts": context_data.get("historical_concepts", [])[:16],
         "preferences": context_data.get("preferences", ""),
         "always_know": context_data.get("always_know", ""),
     }
@@ -211,24 +208,33 @@ async def personalization_agent(context_data: dict) -> dict:
 
 async def generation_agent(context_slice: dict, personalization_slice: dict) -> tuple[dict, float]:
     sys_msg = (
-        "You generate AAC decision-tree options for an aphasia patient. "
+        "You generate the next semantic navigation options for Clarivo, an aphasia communication system. "
         "Output JSON only with schema: "
-        "{\"quick_option\":{\"label\":\"...\",\"concept\":\"...\"},"
-        "\"options\":[{\"label\":\"...\",\"concept\":\"...\"}]}. "
+        "{\"quick_option\":{\"label\":\"...\",\"concept\":\"...\",\"key\":\"...\"},"
+        "\"options\":[{\"label\":\"...\",\"concept\":\"...\",\"key\":\"...\"}]}. "
         "Rules: labels must be 1 word, rarely 2 words max. "
+        "Keys must be kebab-case semantic identifiers. "
         "No subtitles, no long phrases, no questions, no punctuation-heavy text. "
-        "Return 4-8 options."
+        "No canned AAC categories, no fixed menu sets, no resets to root, no generic top-level buckets unless the context truly demands them. "
+        "Treat the current path as an evolving meaning sequence, not a tree hierarchy. "
+        "Return 4-10 options that continue the current meaning."
     )
     hu_msg = (
-        "Prioritize context in this order:\n"
-        "1) Current conversation utterances (highest)\n"
+        "Use only these signals, in this priority order:\n"
+        "1) Current conversation utterances\n"
         "2) Current navigation path\n"
-        "3) Past paths/preferences (lighter)\n\n"
+        "3) Past choices and preferences with lighter weight\n\n"
+        "Behavior requirements:\n"
+        "- Every option must feel like a semantic continuation of the current path.\n"
+        "- Do not emit generic resets or hidden default menus.\n"
+        "- The quick option should be the single most probable next concept.\n"
+        "- Any concept can lead to any other concept if semantically relevant.\n\n"
         f"Current path: {json.dumps(context_slice.get('current_path', []))}\n"
         f"Conversation: {json.dumps(context_slice.get('conversation_utterances', []))}\n"
-        f"Time context: {context_slice.get('time_context', '')}\n"
         f"Past paths: {json.dumps(personalization_slice.get('recent_paths', []))}\n"
         f"Top paths: {json.dumps(personalization_slice.get('top_paths', []))}\n"
+        f"Recent concepts: {json.dumps(personalization_slice.get('recent_concepts', []))}\n"
+        f"Historical concepts: {json.dumps(personalization_slice.get('historical_concepts', []))}\n"
         f"Preferences: {personalization_slice.get('preferences', '')}\n"
         f"Always know: {personalization_slice.get('always_know', '')}\n"
     )
@@ -241,22 +247,16 @@ async def generation_agent(context_slice: dict, personalization_slice: dict) -> 
         res_text = ""
     first_token_ms = (time.perf_counter() - start) * 1000
 
-    parsed = {
-        "quick_option": {"label": "More", "concept": "more"},
-        "options": [
-            {"label": "More", "concept": "more"},
-            {"label": "Help", "concept": "help"},
-            {"label": "Water", "concept": "water"},
-            {"label": "Rest", "concept": "rest"},
-        ],
-    }
     try:
         raw = _clean_json(res_text)
         data = json.loads(raw)
         if isinstance(data, dict):
             parsed = data
+        else:
+            raise ValueError("generation output was not a dict")
     except Exception as e:
-        logger.warning(f"generation agent JSON parse fallback: {e}")
+        logger.error(f"generation agent invalid output: {e}")
+        raise ValueError("generation agent returned invalid JSON") from e
 
     return parsed, round(first_token_ms, 2)
 
@@ -336,44 +336,38 @@ def manager_agent(result: dict) -> dict:
     options = result.get("options", [])[:12]
     cleaned = []
     for opt in options:
-        label = _label_limit(opt.get("label", "More"))
+        label = _label_limit(opt.get("label", ""))
         concept = (opt.get("concept") or label).strip()
+        key = _semantic_key(opt.get("key", ""), concept, label)
         icon = opt.get("icon", "")
+
+        if not label or not concept or not key:
+            continue
 
         if not _is_valid_icon_payload(icon):
             fallback_pool = _prefilter_candidates(concept, limit=5)
             icon = fallback_pool[0] if fallback_pool else _custom_svg_for_concept(concept)
 
-        cleaned.append({"label": label, "icon": icon})
+        cleaned.append({"label": label, "key": key, "icon": icon})
 
-    # Ensure minimum viable depth options
-    while len(cleaned) < 4:
-        cleaned.append({"label": "More", "icon": "dots-three-circle"})
+    if not cleaned:
+        raise ValueError("manager agent produced no valid semantic options")
 
-    qo = result.get("quick_option") or (cleaned[0] if cleaned else {"label": "More", "icon": "dots-three-circle"})
+    qo = result.get("quick_option") or cleaned[0]
+    quick_label = _label_limit(qo.get("label", ""))
+    quick_key = _semantic_key(qo.get("key", ""), qo.get("concept", ""), quick_label)
     quick_option = {
-        "label": _label_limit(qo.get("label", cleaned[0]["label"] if cleaned else "More")),
-        "icon": qo.get("icon", cleaned[0]["icon"] if cleaned else "dots-three-circle"),
+        "label": quick_label or cleaned[0]["label"],
+        "key": quick_key or cleaned[0]["key"],
+        "icon": qo.get("icon", cleaned[0]["icon"]),
     }
     if not _is_valid_icon_payload(quick_option["icon"]):
-        quick_option["icon"] = cleaned[0]["icon"] if cleaned else "warning"
+        quick_option["icon"] = cleaned[0]["icon"]
 
     return {"quick_option": quick_option, "options": cleaned}
 
 
 async def run_crew_pipeline(current_path: list[str], context_data: dict) -> dict:
-    # Deterministic root for fast first paint
-    if not current_path:
-        return {
-            **ROOT_OPTIONS,
-            "_timings": {
-                "personalization_ms": 0.0,
-                "generation_first_token_ms": 0.0,
-                "icon_resolve_ms": 0.0,
-                "manager_ms": 0.0,
-            },
-        }
-
     async def _timed(coro):
         start = time.perf_counter()
         value = await coro

@@ -76,6 +76,7 @@ const AI_URL = process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8001';
 const DEFAULT_USER_ID = 'alex_demo';
 
 export interface AiOption {
+  key?: string;
   label: string;
   icon: string;  // kebab-case Phosphor icon name (e.g. "fork-knife")
 }
