@@ -140,6 +140,33 @@ export default function PartnerPanel() {
         mediaRecorderRef.current = recorder;
         recorder.start();
 
+        // Start Parallel Web Speech API for real-time live preview text
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SR && !recognitionRef.current) {
+          try {
+            const recognition = new SR();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.onresult = (evt: any) => {
+              let text = "";
+              for (let i = evt.resultIndex; i < evt.results.length; ++i) {
+                text += evt.results[i][0].transcript;
+              }
+              if (text.trim()) setLiveText(text.trim());
+            };
+            recognition.onend = () => {
+              // Keep alive if still listening
+              if (isListeningRef.current) {
+                try { recognition.start(); } catch {}
+              }
+            };
+            recognitionRef.current = recognition;
+            recognition.start();
+          } catch (err) {
+            console.warn("SpeechRecognition silent fallback:", err);
+          }
+        }
+
         recordingIntervalRef.current = setTimeout(() => {
           if (recorder.state === 'recording') recorder.stop();
         }, 5000);
@@ -161,6 +188,10 @@ export default function PartnerPanel() {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(t => t.stop());
       mediaStreamRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
     }
     mediaRecorderRef.current = null;
   }, []);
