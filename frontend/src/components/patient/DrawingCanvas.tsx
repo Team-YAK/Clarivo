@@ -101,7 +101,7 @@ export default function DrawingCanvas({ onComplete }: DrawingCanvasProps) {
       </div>
 
       <div 
-        className="flex-1 w-full min-h-[400px] bg-[#f8f9fa] rounded-2xl overflow-hidden shadow-inner border border-white/10 relative"
+        className="flex-1 w-full min-h-0 bg-[#f8f9fa] rounded-2xl overflow-hidden shadow-inner border border-white/10 relative"
       >
         <div 
           className="absolute inset-0 p-1" 

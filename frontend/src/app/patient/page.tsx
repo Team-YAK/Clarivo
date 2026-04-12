@@ -152,7 +152,7 @@ export default function PatientScreen() {
         {/* Top Section: 50:50 Split */}
         <div className="flex-1 flex overflow-hidden">
           {/* Patient Area (Left 50%) */}
-          <div className="w-1/2 h-full relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6 border-r border-white/5">
+          <div className="w-1/2 h-full flex flex-col relative bg-transparent overflow-hidden px-4 md:px-8 pt-4 pb-6 border-r border-white/5">
             <div className="flex justify-center mb-4 shrink-0">
               <div className="bg-surface/50 p-1 rounded-full border border-white/5 flex gap-1">
                 <button
