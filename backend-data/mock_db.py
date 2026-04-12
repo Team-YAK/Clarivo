@@ -1,6 +1,38 @@
 import asyncio
 import logging
 
+def _project_doc(doc, projection):
+    if not projection:
+        return doc
+    include_keys = {k for k, v in projection.items() if v and k != "_id"}
+    exclude_id = projection.get("_id") == 0
+    if not include_keys and not exclude_id:
+        return doc
+
+    out = {}
+    if not exclude_id and "_id" in doc:
+        out["_id"] = doc["_id"]
+
+    for key in include_keys:
+        if "." in key:
+            parts = key.split(".")
+            src = doc
+            ok = True
+            for p in parts:
+                if isinstance(src, dict) and p in src:
+                    src = src[p]
+                else:
+                    ok = False
+                    break
+            if ok:
+                dst = out
+                for p in parts[:-1]:
+                    dst = dst.setdefault(p, {})
+                dst[parts[-1]] = src
+        elif key in doc:
+            out[key] = doc[key]
+    return out
+
 class MockCursor:
     def __init__(self, data):
         self.data = data
@@ -31,7 +63,9 @@ class MockCollection:
     async def find_one(self, query, projection=None, sort=None):
         import copy
         doc = await self._find_one_raw(query, projection, sort)
-        return copy.deepcopy(doc) if doc else None
+        if not doc:
+            return None
+        return copy.deepcopy(_project_doc(doc, projection))
 
     async def _find_one_raw(self, query, projection=None, sort=None):
         """Internal: returns the original stored doc reference (for mutations)."""
@@ -58,7 +92,7 @@ class MockCollection:
         
         return matches[0]
 
-    def find(self, query=None):
+    def find(self, query=None, projection=None):
         query = query or {}
         matches = []
         for doc in self._data.values():
@@ -71,7 +105,7 @@ class MockCollection:
                     match = False
                     break
             if match:
-                matches.append(doc)
+                matches.append(_project_doc(doc, projection))
         return MockCursor(matches)
 
     async def count_documents(self, query):

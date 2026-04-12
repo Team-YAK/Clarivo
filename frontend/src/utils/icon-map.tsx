@@ -924,6 +924,33 @@ export const ICON_MAP: Record<string, string> = {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getIconComponent = (key: string): React.ComponentType<any> => {
+  // Layered icon payload from backend, e.g. layer:person-simple-run+sun
+  if (key && key.startsWith("layer:")) {
+    const [a, b] = key.replace("layer:", "").split("+");
+    const toPascal = (value: string) =>
+      value
+        .split("-")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const A = (PhosphorIcons as any)[toPascal(a)];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const B = (PhosphorIcons as any)[toPascal(b)];
+    if (A && B) {
+      const LayeredIcon = (props: { className?: string; style?: React.CSSProperties }) => (
+        <span className={props.className} style={{ position: "relative", display: "inline-flex", ...props.style }}>
+          <A weight="regular" style={{ position: "absolute", inset: 0, opacity: 0.9 }} />
+          <B weight="fill" style={{ position: "absolute", inset: 0, transform: "scale(0.68) translate(32%, 32%)" }} />
+          <span style={{ width: "1em", height: "1em", display: "inline-block" }} />
+        </span>
+      );
+      LayeredIcon.displayName = "LayeredIcon";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return LayeredIcon as any;
+    }
+  }
+
   // Tier 3 fallback: inline SVG from the Icon Agent
   if (key && key.trim().startsWith("<svg")) {
     // Return a component that renders the raw SVG
@@ -941,12 +968,24 @@ export const getIconComponent = (key: string): React.ComponentType<any> => {
     return InlineSvgIcon as any;
   }
 
-  const iconName = ICON_MAP[key] || key; // try key directly as icon name if not in map
+  const toPascal = (value: string) =>
+    value
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+
+  // New backend payload: kebab-case Phosphor name, e.g. "fork-knife"
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const directKebab = (PhosphorIcons as any)[toPascal(key)];
+  if (directKebab) return directKebab;
+
+  const iconName = ICON_MAP[key] || key; // legacy semantic key path
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = (PhosphorIcons as any)[iconName];
   if (!Icon) {
-    console.warn(`Icon "${iconName}" (key: "${key}") not found in Phosphor Icons, falling back to Question.`);
-    return PhosphorIcons.Question;
+    console.warn(`Icon "${iconName}" (key: "${key}") not found in Phosphor Icons, falling back to DotsThreeCircle.`);
+    return PhosphorIcons.DotsThreeCircle;
   }
   return Icon;
 };

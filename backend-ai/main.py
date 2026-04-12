@@ -72,6 +72,17 @@ app.include_router(live_router)
 app.include_router(tree_ai_router)
 
 
+@app.on_event("startup")
+async def preload_icon_dictionary():
+    from services.icon_dictionary import ICON_DICTIONARY, ICON_DICTIONARY_PATH
+
+    logging.info(
+        "Loaded icon dictionary at startup: %s entries from %s",
+        len(ICON_DICTIONARY),
+        ICON_DICTIONARY_PATH,
+    )
+
+
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "VoiceMap AI Backend (E2)", "port": 8001}
@@ -85,4 +96,5 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    reload_enabled = os.getenv("CLARIVO_RELOAD", "false").lower() == "true"
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=reload_enabled)
