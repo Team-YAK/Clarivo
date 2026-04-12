@@ -1,0 +1,29 @@
+# ─── Clarivo Universal Python Requirements ───────────────────────
+# Includes dependencies for both Backend AI (E2) and Data (E3)
+
+# Core Framework
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic==2.6.4
+python-dotenv==1.0.1
+
+# AI & LLM
+openai==1.14.3
+langchain-openai
+langchain-core
+langchain
+tiktoken==0.6.0
+elevenlabs==1.0.1
+
+# Data & Database
+motor==3.4.0
+pymongo==4.6.3
+
+# Utilities
+httpx==0.27.0
+sse-starlette==2.0.0
+python-multipart==0.0.9
+
+# ─── Node.js (Frontend) Requirements ─────────────────────────────
+# Note: Frontend requires Node.js 18+ and 'npm install' inside /frontend
+# Main dependencies: next, react, framer-motion, @phosphor-icons/react, lucide-react, tailwindcss
