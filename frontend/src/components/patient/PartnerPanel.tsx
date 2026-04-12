@@ -213,9 +213,8 @@ export default function PartnerPanel() {
   const isActive = mode !== "idle";
 
   return (
-    <div className="flex flex-col h-full w-full bg-surface-container/50 rounded-3xl p-6 border border-white/5 relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-tertiary/10 rounded-full blur-[80px] pointer-events-none" />
+    <div className="flex flex-col h-full w-full liquid-glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+      {/* Remove massive fuzzy glow, let liquid-glass handle styling */}
       {mode === "listening" && (
         <motion.div
           className="absolute inset-0 rounded-3xl pointer-events-none"
@@ -227,10 +226,9 @@ export default function PartnerPanel() {
         />
       )}
 
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-tertiary to-tertiary-container shadow-sm">
-          <ChatCircleText size={24} weight="fill" className="text-on-tertiary" />
+        <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-md">
+          <ChatCircleText size={24} weight="fill" className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-headline font-black text-on-surface">Partner Input</h2>
@@ -276,7 +274,7 @@ export default function PartnerPanel() {
           <button
             onClick={handleStartConversation}
             disabled={!hasSpeechSupport}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-gradient-to-r from-tertiary to-emerald-500 text-on-tertiary shadow-lg hover:opacity-90 active:scale-98 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-base bg-white/10 hover:bg-white/20 border border-white/20 text-white shadow-lg backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Play size={20} weight="fill" />
             Start Conversation

@@ -84,12 +84,12 @@ async def _chat_once(system: str, user: str, max_tokens: int, temperature: float
     if _openai_client is None:
         raise RuntimeError("openai package is not installed")
     resp = await _openai_client.chat.completions.create(
-        model="gpt-5.4-mini",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        max_tokens=max_tokens,
+        max_completion_tokens=max_tokens,
         temperature=temperature,
         stream=False,
     )

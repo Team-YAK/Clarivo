@@ -3,6 +3,8 @@ HTTP client for E3 (data layer on localhost:8002).
 Falls back to mock_data.py when E3 is unavailable.
 """
 
+from __future__ import annotations  # ⚠️ DO NOT REMOVE — required for Python 3.9 compatibility (Fixes TypeError on dict | None)
+
 import os
 import logging
 import httpx

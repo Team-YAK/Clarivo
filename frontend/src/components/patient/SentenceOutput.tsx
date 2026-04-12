@@ -154,8 +154,6 @@ export default function SentenceOutput({
       className="fixed inset-x-4 bottom-24 z-50 liquid-glass-card shadow-[0_32px_80px_rgba(0,0,0,0.35)] rounded-[2rem] p-8 flex flex-col gap-6"
       style={{ '--depth-color': 'var(--color-primary)' } as React.CSSProperties}
     >
-      {/* Top gradient glow line */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <p className="text-sm font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
@@ -188,7 +186,7 @@ export default function SentenceOutput({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-end gap-3 border-t border-outline-variant/20 pt-6"
+          className="flex flex-row items-center justify-between gap-3 border-t border-outline-variant/20 pt-6"
         >
           {/* Voice source badge */}
           {voiceSource && (

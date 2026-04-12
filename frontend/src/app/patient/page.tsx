@@ -9,6 +9,7 @@ import { Desktop, FlowerLotus } from "@phosphor-icons/react";
 import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
 
 let idCounter = 0;
 const nextId = () => `stack-${++idCounter}`;
@@ -117,22 +118,19 @@ export default function PatientScreen() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-surface to-surface-container-low transition-colors duration-500 relative">
-      {/* Ambient gradient orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
-        <div className="absolute top-[-15%] left-[-10%] w-[55vw] h-[55vw] rounded-full bg-primary/20 blur-[130px] opacity-60" />
-        <div className="absolute bottom-[-10%] right-[-8%] w-[50vw] h-[50vw] rounded-full bg-tertiary/15 blur-[110px] opacity-50" />
-      </div>
-
+    <BackgroundGradientAnimation 
+      containerClassName="dark h-screen overflow-hidden transition-colors duration-500 relative"
+      className="flex flex-col h-full w-full"
+    >
       {/* Glass header */}
-      <header className="fixed top-0 w-full h-14 flex items-center justify-between px-6 md:px-12 bg-surface/50 backdrop-blur-2xl backdrop-saturate-150 z-50 border-b border-white/5 shadow-[0_1px_0_rgba(255,255,255,0.05)]"
-        style={{ WebkitBackdropFilter: 'blur(48px) saturate(1.5)' }}
+      <header className="fixed top-0 w-full h-16 flex items-center justify-between px-6 md:px-12 bg-black/20 backdrop-blur-3xl backdrop-saturate-150 z-50 border-b border-white/5 shadow-2xl"
+        style={{ WebkitBackdropFilter: 'blur(64px) saturate(1.5)' }}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-xl bg-gradient-to-br from-primary to-primary-container shadow-sm">
-            <FlowerLotus size={18} weight="fill" className="text-on-primary" />
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-white/5 border border-white/10 shadow-sm backdrop-blur-md">
+            <FlowerLotus size={20} weight="fill" className="text-primary" />
           </div>
-          <span className="font-headline font-black text-lg tracking-tight bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">Clarivo</span>
+          <span className="font-headline font-black text-xl tracking-tight text-white drop-shadow-sm">Clarivo</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -193,6 +191,6 @@ export default function PatientScreen() {
           />
         )}
       </AnimatePresence>
-    </div>
+    </BackgroundGradientAnimation>
   );
 }
