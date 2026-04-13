@@ -32,13 +32,13 @@ ICON_DICTIONARY: dict[str, str] = _load_json_dict(
     ICON_DICTIONARY_PATH,
     {
         "warning": "⚠️",
-        "toilet": "🚽",
-        "food": "🍽️",
-        "pill": "💊",
+        "help": "🆘",
+        "home": "🏠",
+        "meds": "💊",
         "smiley": "😊",
         "user": "🧍",
         "more": "➕",
-        "dessert": "🍰",
+        "settings": "⚙️",
         "back": "🔙",
         "good": "👍",
     }
@@ -49,8 +49,8 @@ PHOSPHOR_MAP: dict[str, str] = _load_json_dict(
     {
         "physical": "PersonArmsSpread",
         "emotional": "Smiley",
-        "food": "ForkKnife",
-        "drink": "Drop",
+        "needs": "HandHelping",
+        "places": "House",
     }
 )
 

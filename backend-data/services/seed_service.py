@@ -6,29 +6,30 @@ from utils import path_to_key
 from config import DEFAULT_USER_ID
 
 async def seed():
-    # Clear collections (assuming MockCollection and real Motor collections both support these)
-    await db.users.delete_many({})
-    await db.sessions.delete_many({})
-    await db.sentences.delete_many({})
-    await db.context_log.delete_many({})
-    await db.icons.delete_many({})
+    # Clear ALL collections
+    collections = [
+        db.users, db.sessions, db.sentences, db.context_log,
+        db.icons, db.conversations, db.prompts, db.live_sessions, db.anchors
+    ]
+    for coll in collections:
+        if coll is not None:
+            await coll.delete_many({})
 
     user_id = DEFAULT_USER_ID
     now = datetime.utcnow()
 
-    # 1. Composer Icons
+    # 1. Composer Icons - Generic and expressive
     icon_list = [
-        {"key": "running", "icon_name": "person-simple-run", "label": "Running", "category": "actions", "tags": ["run", "jog", "sprint"]},
-        {"key": "medicine", "icon_name": "pill", "label": "Medicine", "category": "objects", "tags": ["pill", "drugs", "meds"]},
-        {"key": "home", "icon_name": "house", "label": "Home", "category": "places", "tags": ["house", "live"]},
-        {"key": "morning", "icon_name": "sun", "label": "Morning", "category": "times", "tags": ["am", "sun", "wake"]},
+        {"key": "help", "icon_name": "hand-helping", "label": "Help", "category": "actions", "tags": ["aid", "assistance"]},
+        {"key": "home", "icon_name": "house", "label": "Home", "category": "places", "tags": ["house", "stay"]},
+        {"key": "feeling", "icon_name": "heart", "label": "Feeling", "category": "state", "tags": ["mood", "emotion"]},
+        {"key": "needs", "icon_name": "star", "label": "Needs", "category": "urgent", "tags": ["want", "request"]},
     ]
 
-    # Pre-cache sentences
+    # Minimal generic starter sentences
     paths = [
-        {"k": "food→drink→water", "s": "I would like some water."},
-        {"k": "needs→rest", "s": "I need to rest for a while."},
-        {"k": "feelings→happy", "s": "I am feeling happy today."},
+        {"k": "greeting→hello", "s": "Hello, how are you?"},
+        {"k": "needs→break", "s": "I would like to take a break."},
     ]
     
     sentences = []
@@ -48,7 +49,7 @@ async def seed():
     # 2. Profile Data
     user_doc = {
         "_id": user_id,
-        "profile": {"name": "User", "diagnosis_date": "2024-01-01", "caregiver_name": "Caregiver"},
+        "profile": {"name": "Patient", "diagnosis_date": "2024-01-01", "caregiver_name": "Caregiver"},
         "medical": {"medications": [], "allergies": [], "conditions": []},
         "preferences": {
             "communication_notes": "", 
@@ -77,15 +78,12 @@ async def seed():
         }
     }
     
-    # 3. Session Data
-    sessions = []
-    
-    # 4. Default Prompts
+    # 3. Default Prompts
     default_prompts = [
         {
             "prompt_id": "generation_sys",
             "user_id": user_id,
-            "content": "You are Clarivo, a patient communication AI. Use context to build a natural sentence from path segments.",
+            "content": "You are Clarivo, a patient communication AI. Assist patients with aphasia by predicting the next logical communication concepts. CRITICAL: Avoid making everything about food. Prioritize diverse needs, feelings, places, and activities. Keep labels very short (1-2 words).",
             "description": "System prompt for predicted sentence generation",
             "updated_at": now.isoformat()
         },
@@ -99,7 +97,7 @@ async def seed():
         {
             "prompt_id": "icon_sys",
             "user_id": user_id,
-            "content": "Map labels to unicode emojis from the provided set.",
+            "content": "Map semantic labels to a unique, highly expressive emoji combination (1-3 emojis). Ensure no duplicates across options.",
             "description": "System prompt for icon matching",
             "updated_at": now.isoformat()
         }
@@ -107,10 +105,8 @@ async def seed():
 
     await db.icons.insert_many(icon_list)
     await db.sentences.insert_many(sentences)
-    if sessions:
-        await db.sessions.insert_many(sessions)
     await db.prompts.insert_many(default_prompts)
     await db.users.insert_one(user_doc)
     
-    print("✓ Async Seeded successfully with generic data")
+    print("✓ Async Seeded successfully with clean generic data")
     return True
